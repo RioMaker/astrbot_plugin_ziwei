@@ -1,0 +1,89 @@
+# 紫微斗数排盘
+
+AstrBot 紫微斗数排盘插件，按参考会话提取的文墨天机 2.5.9 安星公式与规则表独立实现。输入出生日期、明确时刻和性别，返回十二宫图片或完整文字盘，支持公历、农历闰月、真太阳时及运限四化。
+
+目录、独立 Git 仓库名与插件标识统一为 `astrbot_plugin_ziwei`，版本 `1.0.0`。计算不调用 LLM 或外部排盘网站。
+
+## 安装
+
+要求 Python 3.10+、AstrBot 4.24.0+。
+
+1. 将整个插件目录放入 AstrBot 的 `data/plugins/`。
+2. 在 **AstrBot 实际使用的 Python 环境** 安装依赖：
+
+   ```sh
+   python -m pip install -r data/plugins/astrbot_plugin_ziwei/requirements.txt
+   ```
+
+3. 在 WebUI 重载插件，检查日志，发送 `/紫微 帮助`。
+
+Windows 自动查找微软雅黑或黑体，Linux 查找 Noto CJK 或文泉驿，macOS 查找苹方。也可在 WebUI 的 `font_path` 填服务器上中文字体的完整路径。没有可读字体或渲染失败时返回文字盘。
+
+尚无远程仓库，`metadata.yaml:repo` 留空，当前使用本地目录安装。插件使用平台无关的普通消息和图片组件；真实 AstrBot、QQ／OneBot 及其他平台收发尚待集成验收。
+
+## 指令
+
+`/紫微`、`/紫微排盘`、`/ziwei` 等效；命令前缀随 AstrBot 唤醒前缀配置调整。
+
+```text
+/紫微 2001-03-19 10:00 男
+/紫微 20010319 10:00:30 女 文字
+/紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
+/紫微 2001-03-19 巳时 男 经度=116.4 时区=8
+/紫微 2001-03-19 10:00 男 流年=2026
+/紫微 2001-03-19 10:00 男 流盘=2026-10-06 流时=10:00
+```
+
+必须给出日期、时刻和性别。默认公历，可显式写 `公历`／`阳历`；农历须写 `农历`／`阴历`。闰月在月份前写 `闰`。性别接受 `男`／`女`、`male`／`female`。时刻接受 `HH:MM`、`HH:MM:SS` 或十二时辰；时辰名采用本时辰的偶数小时作代表（子时 00:00，巳时 10:00），有精确出生时刻时应填钟表时间。
+
+支持输入年份 1900—2100，转换和校正后的公历也须在此范围内。不存在的公历日、农历日或闰月会拒绝，不补造未知出生时刻。
+
+| 选项 | 示例与含义 |
+| --- | --- |
+| 经度 | `经度=116.4`，东经为正、西经为负；默认 120 |
+| 时区 | `时区=8`，当时当地 UTC 偏移小时，可含小数；默认 8 |
+| 真太阳时 | `真太阳时=开`／`关`，校正经度和均时差；默认开 |
+| 闰月 | `闰月=current`／`next`／`split`，本月／下月／十五十六分界；默认 split |
+| 子时 | `子时=next_day`／`midnight`，23 时或零点换日；默认 next_day |
+| 输出 | `输出=image`／`text`，也可直接在末尾写 图片／文字 |
+| 流年 | `流年=2026`，指定农历年份，计算大限、小限、流年宫名和四化 |
+| 流盘 | `流盘=2026-10-06`，指定公历日期，增加流月、流日、流时 |
+| 流时 | `流时=10:00`，目标钟表时刻；流盘未填流时默认 12:00 |
+
+`流年`、`流盘` 互斥。流盘沿用本次出生资料的经度、时区和校正开关，结果显示校正后的目标时间。虚岁按目标农历年减安星农历生年加一，不查询出生前或十二大限范围外的流盘。
+
+图片显示十二宫、本命主辅杂曜、庙旺、生年和流年四化、自化、大限与十二神，底部列各选中运限的命宫和四化。文字盘提供每层宫名与各星全部四化。红色表示该星带生年四化；`年禄／年权／年科／年忌` 表示流年四化，`↑` 为离心自化，`↓` 为向心自化。
+
+## 配置与范围
+
+WebUI 的 `_conf_schema.json` 提供字体、输出、历法、四化变体及安星配置。默认使用三合天盘基础公式：闰月十五／十六分界、晚子时换日、全书七级庙旺、第一魁钺表、正副截空旬空、年马、命宫支取命主、阴阳性别顺逆长生、水土共长生。
+
+默认生成 70 个本命星曜实例（主星、辅星、三合杂曜及正副空曜）；长生、博士、岁前、将前独立保存。运限含童限、十二大限、小限和年、月、日、时宫名与本命星四化。此版尚未生成独立的限流曜集合，也未实现原程序三模式门控、天地人盘、定盘、安星码、命例库、四柱反查或八字起运。具体差异见 [实现与规则边界](references/IMPLEMENTATION.md)。
+
+历法使用 `lunar-python 1.4.8`，真太阳时使用独立 Meeus 近似计算。没有打包原程序源码、历法 JavaScript、EXE、字体或 UI 资源，未宣称全盘与原软件逐秒相同。见 [来源记录](references/provenance.json)、[验证记录](VERIFICATION.md)、[第三方说明](THIRD_PARTY_NOTICES.md)。
+
+资料只用于当前请求，不保存命例或写入输入日志；群聊盘面会显示出生日期，应在需要的会话内使用。图片在内存生成，插件代码目录不写运行数据。最多两个计算并发、四个请求在途，超过时提示稍后重试。
+
+## 离线预览与验证
+
+在插件目录执行，离线预览不依赖 AstrBot：
+
+```sh
+python -m pip install -r requirements-dev.txt
+python scripts/preview.py "2001-03-19 10:00 男" --output .dev/natal-preview.png
+python scripts/preview.py "2001-03-19 10:00 男 流盘=2026-10-06 流时=10:00" --output .dev/flow-preview.png
+python scripts/preview.py "2001-03-19 10:00 男" --json --output .dev/chart.json
+python scripts/preview.py "2001-03-19 10:00 男 文字" --output .dev/chart.txt
+python -m ruff format --check .
+python -m ruff check .
+python -m pytest -q
+```
+
+命令行导出由调用者指定保存位置，插件自身不持久化导出。
+
+## 来源
+
+- 参考会话 `逆向文墨天机程序`，ID `01a1101e-078d-7071-befc-919cf9031da1`，2026-10-06 提取的 2.5.9 文档。
+- [AstrBot 消息事件](https://docs.astrbot.app/dev/star/guides/listen-message-event.html)、[插件配置](https://docs.astrbot.app/dev/star/guides/plugin-config.html)、[GreedyStr 源码](https://github.com/AstrBotDevs/AstrBot/blob/master/astrbot/core/star/filter/command.py)，核对日期 2026-10-06。
+- [lunar-python](https://github.com/6tail/lunar-python)，MIT 许可。
+- 均时差采用 [NOAA 所说明的 Meeus 太阳计算方法](https://gml.noaa.gov/grad/solcalc/calcdetails.html) 的独立近似实现。

@@ -1,0 +1,214 @@
+{
+  "output_mode": {
+    "description": "默认输出方式",
+    "type": "string",
+    "default": "image",
+    "options": [
+      "image",
+      "text"
+    ]
+  },
+  "font_path": {
+    "description": "中文字体路径",
+    "type": "string",
+    "default": "",
+    "options": "Windows/Linux/macOS 上可读的中文 ttf/ttc/otf 字体完整路径；留空自动查找。"
+  },
+  "timezone": {
+    "description": "默认 UTC 偏移小时",
+    "type": "float",
+    "default": 8.0,
+    "hint": "出生当时的实际偏移，包含当时夏令时；范围 -12 至 14。"
+  },
+  "longitude": {
+    "description": "默认经度",
+    "type": "float",
+    "default": 120.0,
+    "hint": "东经为正、西经为负；范围 -180 至 180。"
+  },
+  "true_solar": {
+    "description": "默认启用真太阳时近似校正",
+    "type": "bool",
+    "default": true
+  },
+  "leap_month_rule": {
+    "description": "闰月取法",
+    "type": "string",
+    "default": "split",
+    "options": [
+      "current",
+      "next",
+      "split"
+    ],
+    "hint": "本月、下月或十五／十六分界。"
+  },
+  "late_zi_rule": {
+    "description": "晚子时换日",
+    "type": "string",
+    "default": "next_day",
+    "options": [
+      "next_day",
+      "midnight"
+    ],
+    "hint": "23时换日或零点换日，影响安星日与四柱日时。"
+  },
+  "brightness": {
+    "description": "庙旺表",
+    "type": "string",
+    "default": "qs",
+    "options": [
+      "qs",
+      "zz",
+      "xd1",
+      "xd2"
+    ],
+    "hint": "qs全书七级、zz中州五级、xd1现代七级、xd2现代五级。"
+  },
+  "kuiyue": {
+    "description": "魁钺取法",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "hint": "采用参考资料中对应编号表。"
+  },
+  "void_rule": {
+    "description": "截空旬空取法",
+    "type": "int",
+    "default": 2,
+    "options": [
+      1,
+      2,
+      3
+    ],
+    "hint": "常规单星、正副双星或占验派。"
+  },
+  "tianma": {
+    "description": "天马取法",
+    "type": "string",
+    "default": "year",
+    "options": [
+      "year",
+      "month"
+    ],
+    "hint": "按年支或安星月取天马。"
+  },
+  "life_master": {
+    "description": "命主取法",
+    "type": "string",
+    "default": "palace",
+    "options": [
+      "palace",
+      "year"
+    ],
+    "hint": "按命宫地支或生年地支。"
+  },
+  "sky_hour": {
+    "description": "天空附加时支",
+    "type": "bool",
+    "default": false
+  },
+  "swap_injury": {
+    "description": "天伤天使按阴阳性别交换",
+    "type": "bool",
+    "default": false
+  },
+  "growth_forward": {
+    "description": "长生统一顺行",
+    "type": "bool",
+    "default": false
+  },
+  "earth_growth": {
+    "description": "土五局长生起点",
+    "type": "string",
+    "default": "water",
+    "options": [
+      "water",
+      "fire"
+    ],
+    "hint": "水土共长生或火土共长生。"
+  },
+  "annual_hua": {
+    "description": "流年四化取干",
+    "type": "string",
+    "default": "year",
+    "options": [
+      "year",
+      "palace"
+    ],
+    "hint": "流年年干或流年命宫宫干。"
+  },
+  "minor_stars": {
+    "description": "生成本命杂曜",
+    "type": "bool",
+    "default": true
+  },
+  "jia": {
+    "description": "甲四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2
+    ],
+    "hint": "科星为武曲或文曲。"
+  },
+  "wu": {
+    "description": "戊四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2
+    ],
+    "hint": "科星为右弼或太阳。"
+  },
+  "geng": {
+    "description": "庚四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "hint": "科忌：太阴天同、天同太阴、天府天同、天府天相、天同天相。"
+  },
+  "xin": {
+    "description": "辛四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2
+    ],
+    "hint": "科星为文曲或武曲。"
+  },
+  "ren": {
+    "description": "壬四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2,
+      3
+    ],
+    "hint": "科星为左辅、天府或天相。"
+  },
+  "gui": {
+    "description": "癸四化变体",
+    "type": "int",
+    "default": 1,
+    "options": [
+      1,
+      2
+    ],
+    "hint": "科星为太阴或太阳。"
+  }
+}

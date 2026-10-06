@@ -1,0 +1,253 @@
+{
+  "reference": "逆向文墨天机程序，会话 01a1101e-078d-7071-befc-919cf9031da1",
+  "sample_version": "2.5.9",
+  "analysis_date": "2026-10-06",
+  "tables_source_sha256": "e7137973535974ea516d5f5fd29578a8e37c6b5286db89e7315f72c7b2ee9d57",
+  "tables": {
+    "_SECS_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 216
+    },
+    "_SETSSL_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 222
+    },
+    "_LNSQX_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 228
+    },
+    "_LNJQX_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 234
+    },
+    "_StarBN_QS_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 282
+    },
+    "_StarBN_ZZ_CHS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 288
+    },
+    "_WHD": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 512
+    },
+    "_MZX_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 514
+    },
+    "_SZX_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 516
+    },
+    "_AX_WXJS_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 518
+    },
+    "_AX_SHB_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 520
+    },
+    "_AX_SHB_ARR_JLPWY": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 522
+    },
+    "_AX_SHB_ARR_JLPQY": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 524
+    },
+    "_AX_SHB_ARR_WTYYOUJ": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 526
+    },
+    "_AX_SHB_ARR_WTYYANGJ": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 528
+    },
+    "_AX_SHB_ARR_GYWYT": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 530
+    },
+    "_AX_SHB_ARR_GYWTY": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 532
+    },
+    "_AX_SHB_ARR_GYWFT": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 534
+    },
+    "_AX_SHB_ARR_GYWFX": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 536
+    },
+    "_AX_SHB_ARR_GYWTX": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 538
+    },
+    "_AX_SHB_ARR_XJYQC": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 540
+    },
+    "_AX_SHB_ARR_XJYWC": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 542
+    },
+    "_AX_SHB_ARR_RLZFW": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 544
+    },
+    "_AX_SHB_ARR_RLZFW2": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 546
+    },
+    "_AX_SHB_ARR_RLZXW": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 548
+    },
+    "_AX_SHB_ARR_GPJYT1": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 550
+    },
+    "_AX_SHB_ARR_GPJYT2": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 552
+    },
+    "_AX_CQ_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 554
+    },
+    "_AX_ZY_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 556
+    },
+    "_AX_KY_ARR1": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 558
+    },
+    "_AX_KY_ARR2": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 560
+    },
+    "_AX_KY_ARR3": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 562
+    },
+    "_AX_KY_ARR4": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 564
+    },
+    "_AX_HL_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 566
+    },
+    "_AX_GG_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 568
+    },
+    "_AX_FG_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 570
+    },
+    "_AX_JK_ARR1": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 572
+    },
+    "_AX_JK_ARR2": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 574
+    },
+    "_AX_JK_ARR3": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 576
+    },
+    "_AX_YS_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 578
+    },
+    "_AX_TY_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 580
+    },
+    "_AX_TW_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 582
+    },
+    "_AX_JS_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 584
+    },
+    "_AX_FL_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 586
+    },
+    "_AX_PS_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 588
+    },
+    "_AX_HG_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 590
+    },
+    "_AX_XC_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 592
+    },
+    "_AX_TC_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 594
+    },
+    "_AX_SB_QS": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 596
+    },
+    "_AX_SB_XD1": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 600
+    },
+    "_AX_SB_ZZ": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 604
+    },
+    "_AX_SB_XD2": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 608
+    },
+    "_AX_SECS_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 612
+    },
+    "_AX_LNSQX_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 614
+    },
+    "_AX_LNJQX_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 616
+    },
+    "_AX_ZNDJ_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 618
+    },
+    "_AX_LC_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 620
+    },
+    "_AX_TM_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 622
+    },
+    "_AX_LIUCHANG_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 624
+    },
+    "_AX_LIUQU_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 626
+    },
+    "_AX_XIAOXIAN_ARR": {
+      "source": "recovered/scripts/WenMoTianJiKBFF16CDEABBD49E68E432BF743F0F255K/WenMoTianJiK26D2B9FDB77F4EC2AB30B26025D57FDFK.as",
+      "line": 628
+    }
+  },
+  "note": "仅提取安星规则、星曜名和数值表；未打包原程序源码、图片、字体或可执行文件。历法由独立依赖替换。"
+}

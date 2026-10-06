@@ -1,0 +1,26 @@
+[
+  {
+    "id": "birth-2001",
+    "reference": "2001-03-19 09:52:08",
+    "computed": "2001-03-19 09:52:09",
+    "delta_seconds": 1.0
+  },
+  {
+    "id": "leap-month-2023",
+    "reference": "2023-03-22 11:52:58",
+    "computed": "2023-03-22 11:52:59",
+    "delta_seconds": 1.0
+  },
+  {
+    "id": "leap-eleventh-2033",
+    "reference": "2033-12-22 12:01:29",
+    "computed": "2033-12-22 12:01:28",
+    "delta_seconds": -1.0
+  },
+  {
+    "id": "longitude-cross-day",
+    "reference": "2001-03-18 21:17:01",
+    "computed": "2001-03-18 21:17:02",
+    "delta_seconds": 1.0
+  }
+]
