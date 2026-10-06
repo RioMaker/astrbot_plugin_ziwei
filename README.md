@@ -19,7 +19,7 @@ AstrBot 紫微斗数排盘插件，按参考会话提取的文墨天机 2.5.9 �
 
 Windows 自动查找微软雅黑或黑体，Linux 查找 Noto CJK 或文泉驿，macOS 查找苹方。也可在 WebUI 的 `font_path` 填服务器上中文字体的完整路径。没有可读字体或渲染失败时返回文字盘。
 
-尚无远程仓库，`metadata.yaml:repo` 留空，当前使用本地目录安装。插件使用平台无关的普通消息和图片组件；真实 AstrBot、QQ／OneBot 及其他平台收发尚待集成验收。
+仓库地址：[RioMaker/astrbot_plugin_ziwei](https://github.com/RioMaker/astrbot_plugin_ziwei)。本次版本提供本地安装包，远程安装的版本以仓库已推送内容为准。插件使用平台无关的普通消息和图片组件；真实 AstrBot、QQ／OneBot 及其他平台收发尚待集成验收。
 
 ## 指令
 
