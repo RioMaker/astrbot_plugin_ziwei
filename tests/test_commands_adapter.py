@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 
+from astrbot_plugin_ziwei.access import capture_group
 from astrbot_plugin_ziwei.commands import HELP, parse_request
 from astrbot_plugin_ziwei.main import ZiweiPlugin
 
@@ -67,6 +68,9 @@ def test_bad_configuration_fails_at_load(config):
 
 
 async def collect(plugin, args):
+    # Existing chart tests explicitly arrange an authorized group. Default
+    # denial, management commands and persistence are covered in test_access.
+    await plugin.access.set_enabled(capture_group(Event()), True)
     return [result async for result in plugin.ziwei(Event(), args)]
 
 

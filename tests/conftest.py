@@ -1,5 +1,6 @@
 """Local AstrBot adapter doubles; not a real platform integration."""
 
+import copy
 import logging
 import sys
 from pathlib import Path
@@ -25,6 +26,16 @@ def command(name, **kwargs):
 class Star:
     def __init__(self, context):
         self.context = context
+        self.db = getattr(context, "db", {})
+
+    async def get_kv_data(self, key, default=None):
+        return copy.deepcopy(self.db.get(key, default))
+
+    async def put_kv_data(self, key, value):
+        self.db[key] = copy.deepcopy(value)
+
+    async def delete_kv_data(self, key):
+        self.db.pop(key, None)
 
 
 class Image:
@@ -55,6 +66,36 @@ module("astrbot.core.star.filter.command", GreedyStr=GreedyStr)
 
 
 class Event:
+    def __init__(
+        self,
+        *,
+        platform="qq-one",
+        group="20001",
+        user="10001",
+        role="member",
+        admin=False,
+        platform_name="aiocqhttp",
+        bot=None,
+    ):
+        self.platform, self.group, self.user = platform, group, user
+        self.platform_name, self.admin, self.bot = platform_name, admin, bot
+        self.message_obj = SimpleNamespace(raw_message={"sender": {"role": role}})
+
+    def get_platform_id(self):
+        return self.platform
+
+    def get_platform_name(self):
+        return self.platform_name
+
+    def get_group_id(self):
+        return self.group
+
+    def get_sender_id(self):
+        return self.user
+
+    def is_admin(self):
+        return self.admin
+
     def stop_event(self):
         self.stopped = True
 

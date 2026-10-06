@@ -1,7 +1,7 @@
 name: astrbot_plugin_ziwei
 display_name: 紫微斗数排盘
-desc: 公农历紫微斗数排盘，十二宫图片、主辅杂曜、四化自化、大限小限与流年流月流日流时。
-version: "1.0.0"
+desc: 群白名单控制的公农历紫微斗数排盘，十二宫图片、主辅杂曜、四化自化与运限。
+version: "1.1.0"
 author: Rio
 repo: ""
 astrbot_version: ">=4.24.0"
