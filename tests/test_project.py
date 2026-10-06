@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_metadata_and_config_are_loadable_and_consistent():
     meta = yaml.safe_load((ROOT / "metadata.yaml").read_text("utf-8"))
     assert meta["name"] == ROOT.name == "astrbot_plugin_ziwei"
-    assert meta["version"] == "1.1.0" and meta["repo"] == ""
+    assert meta["version"] == "1.2.0" and meta["repo"] == ""
     tree = ast.parse((ROOT / "main.py").read_text("utf-8"))
     registration = next(
         n
