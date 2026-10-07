@@ -1,19 +1,21 @@
 {
   "input": {
-    "month": 2,
-    "day": 25,
-    "hourBranch": 6,
-    "yearStem": 8,
-    "yearBranch": 6,
+    "month": 5,
+    "day": 23,
+    "hourBranch": 5,
+    "yearStem": 7,
+    "yearBranch": 7,
     "sex": 1
   },
   "result": {
-    "life": 11,
-    "body": 9,
-    "bureau": 3,
+    "life": 3,
+    "body": 11,
+    "bureau": 5,
     "palaceStems": [
-      7,
-      8,
+      5,
+      6,
+      5,
+      6,
       7,
       8,
       9,
@@ -21,40 +23,38 @@
       1,
       2,
       3,
-      4,
-      5,
-      6
+      4
     ],
     "starPositions": {
-      "1": 1,
-      "2": 12,
-      "3": 10,
-      "4": 9,
-      "5": 8,
-      "6": 5,
-      "7": 5,
-      "8": 6,
-      "9": 7,
-      "10": 8,
-      "11": 9,
-      "12": 10,
-      "13": 11,
-      "14": 3,
-      "15": 6,
-      "16": 10,
-      "17": 6,
-      "18": 10,
-      "19": 3,
-      "20": 7,
-      "21": 10,
-      "25": 11,
-      "26": 9
+      "1": 9,
+      "2": 8,
+      "3": 6,
+      "4": 5,
+      "5": 4,
+      "6": 1,
+      "7": 9,
+      "8": 10,
+      "9": 11,
+      "10": 12,
+      "11": 1,
+      "12": 2,
+      "13": 3,
+      "14": 7,
+      "15": 7,
+      "16": 9,
+      "17": 9,
+      "18": 7,
+      "19": 2,
+      "20": 8,
+      "21": 9,
+      "25": 10,
+      "26": 8
     },
     "birthFourHua": [
-      10,
       3,
-      16,
-      15
+      4,
+      8,
+      5
     ],
     "lifePalaceFourHua": [
       9,
@@ -65,85 +65,87 @@
     "decades": [
       {
         "index": 1,
-        "branch": 11,
-        "ageStart": 3,
-        "ageEnd": 12
+        "branch": 3,
+        "ageStart": 5,
+        "ageEnd": 14
       },
       {
         "index": 2,
-        "branch": 10,
-        "ageStart": 13,
-        "ageEnd": 22
+        "branch": 4,
+        "ageStart": 15,
+        "ageEnd": 24
       },
       {
         "index": 3,
-        "branch": 9,
-        "ageStart": 23,
-        "ageEnd": 32
+        "branch": 5,
+        "ageStart": 25,
+        "ageEnd": 34
       },
       {
         "index": 4,
-        "branch": 8,
-        "ageStart": 33,
-        "ageEnd": 42
+        "branch": 6,
+        "ageStart": 35,
+        "ageEnd": 44
       },
       {
         "index": 5,
         "branch": 7,
-        "ageStart": 43,
-        "ageEnd": 52
+        "ageStart": 45,
+        "ageEnd": 54
       },
       {
         "index": 6,
-        "branch": 6,
-        "ageStart": 53,
-        "ageEnd": 62
+        "branch": 8,
+        "ageStart": 55,
+        "ageEnd": 64
       },
       {
         "index": 7,
-        "branch": 5,
-        "ageStart": 63,
-        "ageEnd": 72
+        "branch": 9,
+        "ageStart": 65,
+        "ageEnd": 74
       },
       {
         "index": 8,
-        "branch": 4,
-        "ageStart": 73,
-        "ageEnd": 82
+        "branch": 10,
+        "ageStart": 75,
+        "ageEnd": 84
       },
       {
         "index": 9,
-        "branch": 3,
-        "ageStart": 83,
-        "ageEnd": 92
+        "branch": 11,
+        "ageStart": 85,
+        "ageEnd": 94
       },
       {
         "index": 10,
-        "branch": 2,
-        "ageStart": 93,
-        "ageEnd": 102
+        "branch": 12,
+        "ageStart": 95,
+        "ageEnd": 104
       },
       {
         "index": 11,
         "branch": 1,
-        "ageStart": 103,
-        "ageEnd": 112
+        "ageStart": 105,
+        "ageEnd": 114
       },
       {
         "index": 12,
-        "branch": 12,
-        "ageStart": 113,
-        "ageEnd": 122
+        "branch": 2,
+        "ageStart": 115,
+        "ageEnd": 124
       }
     ]
   },
   "named": {
-    "life": 11,
-    "body": 9,
-    "bureau": 3,
+    "life": 3,
+    "body": 11,
+    "bureau": 5,
     "palaceStems": [
-      7,
-      8,
+      5,
+      6,
+      5,
+      6,
       7,
       8,
       9,
@@ -151,40 +153,38 @@
       1,
       2,
       3,
-      4,
-      5,
-      6
+      4
     ],
     "starPositions": {
-      "紫微": "子",
-      "天机": "亥",
-      "太阳": "酉",
-      "武曲": "申",
-      "天同": "未",
-      "廉贞": "辰",
-      "天府": "辰",
-      "太阴": "巳",
-      "贪狼": "午",
-      "巨门": "未",
-      "天相": "申",
-      "天梁": "酉",
-      "七杀": "戌",
-      "破军": "寅",
-      "文昌": "巳",
-      "文曲": "酉",
-      "左辅": "巳",
-      "右弼": "酉",
-      "天魁": "寅",
-      "天钺": "午",
-      "禄存": "酉",
-      "擎羊": "戌",
-      "陀罗": "申"
+      "紫微": "申",
+      "天机": "未",
+      "太阳": "巳",
+      "武曲": "辰",
+      "天同": "卯",
+      "廉贞": "子",
+      "天府": "申",
+      "太阴": "酉",
+      "贪狼": "戌",
+      "巨门": "亥",
+      "天相": "子",
+      "天梁": "丑",
+      "七杀": "寅",
+      "破军": "午",
+      "文昌": "午",
+      "文曲": "申",
+      "左辅": "申",
+      "右弼": "午",
+      "天魁": "丑",
+      "天钺": "未",
+      "禄存": "申",
+      "擎羊": "酉",
+      "陀罗": "未"
     },
     "birthFourHua": [
-      10,
       3,
-      16,
-      15
+      4,
+      8,
+      5
     ],
     "lifePalaceFourHua": [
       9,
@@ -195,77 +195,77 @@
     "decades": [
       {
         "index": 1,
-        "branch": 11,
-        "ageStart": 3,
-        "ageEnd": 12
+        "branch": 3,
+        "ageStart": 5,
+        "ageEnd": 14
       },
       {
         "index": 2,
-        "branch": 10,
-        "ageStart": 13,
-        "ageEnd": 22
+        "branch": 4,
+        "ageStart": 15,
+        "ageEnd": 24
       },
       {
         "index": 3,
-        "branch": 9,
-        "ageStart": 23,
-        "ageEnd": 32
+        "branch": 5,
+        "ageStart": 25,
+        "ageEnd": 34
       },
       {
         "index": 4,
-        "branch": 8,
-        "ageStart": 33,
-        "ageEnd": 42
+        "branch": 6,
+        "ageStart": 35,
+        "ageEnd": 44
       },
       {
         "index": 5,
         "branch": 7,
-        "ageStart": 43,
-        "ageEnd": 52
+        "ageStart": 45,
+        "ageEnd": 54
       },
       {
         "index": 6,
-        "branch": 6,
-        "ageStart": 53,
-        "ageEnd": 62
+        "branch": 8,
+        "ageStart": 55,
+        "ageEnd": 64
       },
       {
         "index": 7,
-        "branch": 5,
-        "ageStart": 63,
-        "ageEnd": 72
+        "branch": 9,
+        "ageStart": 65,
+        "ageEnd": 74
       },
       {
         "index": 8,
-        "branch": 4,
-        "ageStart": 73,
-        "ageEnd": 82
+        "branch": 10,
+        "ageStart": 75,
+        "ageEnd": 84
       },
       {
         "index": 9,
-        "branch": 3,
-        "ageStart": 83,
-        "ageEnd": 92
+        "branch": 11,
+        "ageStart": 85,
+        "ageEnd": 94
       },
       {
         "index": 10,
-        "branch": 2,
-        "ageStart": 93,
-        "ageEnd": 102
+        "branch": 12,
+        "ageStart": 95,
+        "ageEnd": 104
       },
       {
         "index": 11,
         "branch": 1,
-        "ageStart": 103,
-        "ageEnd": 112
+        "ageStart": 105,
+        "ageEnd": 114
       },
       {
         "index": 12,
-        "branch": 12,
-        "ageStart": 113,
-        "ageEnd": 122
+        "branch": 2,
+        "ageStart": 115,
+        "ageEnd": 124
       }
     ]
   },
-  "provenance": "Replayed documented formulas with a manually fixed natal sample; not a full AIR execution."
+  "provenance": "Independent documented formula reference replay with a fictional demo input; not a full AIR execution."
 }

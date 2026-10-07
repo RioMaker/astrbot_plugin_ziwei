@@ -15,7 +15,7 @@ from astrbot_plugin_ziwei.rules import RuleProfile
 @pytest.mark.parametrize(
     "args",
     [
-        "2001-03-19 10:00 男",
+        "1990-06-15 08:30 男",
         "农历 2023-闰02-16 12:00 女",
         "2024-02-09 23:30 男 真太阳时=关",
         "1988-08-08 08:08 女 经度=-74 时区=-5",
@@ -39,7 +39,7 @@ def test_render_decodable_bounded_image(args):
 
 
 def test_text_preserves_all_flow_layers_and_secondary_stars():
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     text = text_chart(
         apply_flow(build_chart(r.birth), target=datetime(2026, 10, 6, 10))
     )
@@ -49,9 +49,9 @@ def test_text_preserves_all_flow_layers_and_secondary_stars():
         "流日命宫",
         "流时命宫",
         "旬空(副)",
-        "离心科",
+        "离心忌",
         "童限",
-        "虚岁26",
+        "虚岁37",
     ):
         assert word in text
 
@@ -61,13 +61,13 @@ def test_no_minor_stars_image():
         font = find_font()
     except ValueError:
         pytest.skip("需要中文字体进行图片验收")
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     c = build_chart(r.birth, RuleProfile(minor_stars=False))
     assert Renderer(font).render(c).startswith(b"\x89PNG")
 
 
 def test_star_groups_and_transformation_marks_do_not_mutate_calculation():
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     chart = apply_flow(build_chart(r.birth), year=2026)
     before = deepcopy(chart)
     view = make_chart_view(chart)
@@ -88,7 +88,9 @@ def test_star_groups_and_transformation_marks_do_not_mutate_calculation():
             assert category == "assistant"
     assert displayed["natal-33-primary"][1] == "minor"
     assert displayed["natal-16-primary"][1] == "assistant"
-    assert displayed["natal-16-primary"][0]["marks"]  # Hua never recolors its category.
+    # 丙年文昌化科；its assistant color remains independent of the Hua mark.
+    assert displayed["natal-15-primary"][1] == "assistant"
+    assert displayed["natal-15-primary"][0]["marks"]
     assert "natal-78-secondary" in displayed
 
 
@@ -104,11 +106,11 @@ def test_four_hua_sources_and_self_transformations_remain_separate():
 
 
 def test_annual_year_series_maps_to_the_correct_branch_and_age():
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     view = make_chart_view(build_chart(r.birth))
-    si = view["palaces"][5]
-    assert si["annual_years"] == [2001, 2013, 2025, 2037, 2049]
-    assert si["annual_ages"] == [1, 13, 25, 37, 49]
+    wu = view["palaces"][6]
+    assert wu["annual_years"] == [1990, 2002, 2014, 2026, 2038]
+    assert wu["annual_ages"] == [1, 13, 25, 37, 49]
     for item in view["palaces"]:
         assert all(
             (year - 4) % 12 + 1 == item["palace"]["branch"]
@@ -120,7 +122,7 @@ def test_annual_year_series_maps_to_the_correct_branch_and_age():
 # 2099 己未与 2027 丁未相差 72 年，二者流年均落未宫。
 @pytest.mark.parametrize("year,branch", [(2026, 7), (2027, 8), (2099, 8)])
 def test_selected_annual_year_has_one_highlight_and_stays_in_the_series(year, branch):
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     view = make_chart_view(apply_flow(build_chart(r.birth), year=year))
     selected = [item for item in view["palaces"] if item["annual_selected"]]
     assert len(selected) == 1
@@ -130,7 +132,7 @@ def test_selected_annual_year_has_one_highlight_and_stays_in_the_series(year, br
 
 
 def test_spring_boundary_labels_lunar_flow_year_instead_of_civil_year():
-    r = parse_request("2001-03-19 10:00 男")
+    r = parse_request("1990-06-15 08:30 男")
     c = apply_flow(build_chart(r.birth), target=datetime(2024, 2, 9, 12))
     view = make_chart_view(c)
     selected = next(item for item in view["palaces"] if item["annual_selected"])

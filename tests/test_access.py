@@ -9,7 +9,7 @@ from astrbot_plugin_ziwei.main import ZiweiPlugin
 
 from .conftest import Event
 
-BIRTH = "2001-03-19 10:00 男 文字"
+BIRTH = "1990-06-15 08:30 男 文字"
 
 
 async def invoke(plugin, text, event=None):
@@ -41,7 +41,7 @@ def test_open_then_member_use_and_close(role, admin):
         assert "未开启" in (await invoke(p, "状态"))[0]
         assert "已开启" in (await invoke(p, "开启", operator))[0]
         assert "已开启" in (await invoke(p, "状态"))[0]
-        assert "木三局" in "".join(await invoke(p, BIRTH))
+        assert "土五局" in "".join(await invoke(p, BIRTH))
         assert "已关闭" in (await invoke(p, "关闭", operator))[0]
         assert "尚未开启" in (await invoke(p, BIRTH))[0]
 
@@ -84,7 +84,7 @@ def test_platform_and_group_isolation_with_all_members_sharing_one_authorization
 
     async def run():
         await invoke(p, "开启", Event(role="owner", platform="qq-one", group="20001"))
-        assert "木三局" in "".join(await invoke(p, BIRTH, Event(user="other-member")))
+        assert "土五局" in "".join(await invoke(p, BIRTH, Event(user="other-member")))
         assert "尚未开启" in (await invoke(p, BIRTH, Event(group="20002")))[0]
         assert "尚未开启" in (await invoke(p, BIRTH, Event(platform="qq-two")))[0]
         assert len(p.db) == 1
@@ -98,7 +98,7 @@ def test_persisted_open_and_close_survive_plugin_reload():
     asyncio.run(invoke(p, "开启", Event(role="owner")))
     asyncio.run(p.terminate())
     replacement = ZiweiPlugin(context, {})
-    assert "木三局" in "".join(asyncio.run(invoke(replacement, BIRTH)))
+    assert "土五局" in "".join(asyncio.run(invoke(replacement, BIRTH)))
     asyncio.run(invoke(replacement, "关闭", Event(role="admin")))
     final = ZiweiPlugin(context, {})
     assert "尚未开启" in asyncio.run(invoke(final, BIRTH))[0]
@@ -210,7 +210,7 @@ def test_other_platform_needs_astrbot_admin_for_management():
     event.admin = True
     assert "已开启" in asyncio.run(invoke(p, "开启", event))[0]
     event.admin = False
-    assert "木三局" in "".join(asyncio.run(invoke(p, BIRTH, event)))
+    assert "土五局" in "".join(asyncio.run(invoke(p, BIRTH, event)))
 
 
 def test_management_command_targets_only_current_group():

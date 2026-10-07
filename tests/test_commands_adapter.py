@@ -15,7 +15,7 @@ def test_explicit_clock_and_options():
     assert (r.birth.hour, r.birth.minute) == (10, 0)
     assert r.birth.true_solar is False
     assert r.profile.leap_month_rule == "current" and r.output == "text"
-    a = parse_request("20010319 10:00:30 male 经度=116.4 流年=2026")
+    a = parse_request("19900615 08:30:30 male 经度=116.4 流年=2026")
     assert a.birth.sex == "男" and a.birth.second == 30
     assert a.flow_year == 2026 and a.birth.longitude == 116.4
 
@@ -41,14 +41,14 @@ def test_explicit_clock_and_options():
 )
 def test_bad_options(suffix):
     with pytest.raises(ValueError):
-        parse_request("2001-03-19 10:00 男 " + suffix)
+        parse_request("1990-06-15 08:30 男 " + suffix)
 
 
 def test_flow_clock_uses_same_correction_policy():
     raw = parse_request(
-        "2001-03-19 10:00 男 流盘=2026-10-06 流时=00:05 经度=80 真太阳时=关"
+        "1990-06-15 08:30 男 流盘=2026-10-06 流时=00:05 经度=80 真太阳时=关"
     )
-    solar = parse_request("2001-03-19 10:00 男 流盘=2026-10-06 流时=00:05 经度=80")
+    solar = parse_request("1990-06-15 08:30 男 流盘=2026-10-06 流时=00:05 经度=80")
     assert raw.flow_target.day == 6 and solar.flow_target.day == 5
 
 
@@ -77,11 +77,11 @@ async def collect(plugin, args):
 def test_help_text_error_and_fallback():
     p = ZiweiPlugin(object(), {"font_path": "/missing/ziwei-font.ttf"})
     assert asyncio.run(collect(p, "")) == [HELP]
-    error = asyncio.run(collect(p, "2001-02-29 10:00 男"))
+    error = asyncio.run(collect(p, "1991-02-29 10:00 男"))
     assert "日期不存在" in error[0]
-    results = asyncio.run(collect(p, "2001-03-19 10:00 男"))
+    results = asyncio.run(collect(p, "1990-06-15 08:30 男"))
     assert results[0].startswith("图片暂不可用")
-    assert "木三局" in "".join(results) and "巨门禄" in "".join(results)
+    assert "土五局" in "".join(results) and "太阳禄" in "".join(results)
     assert all(len(part) <= 2800 for part in results)
     assert p.pending == 0
 
@@ -93,8 +93,8 @@ def test_render_failure_and_unexpected_error_are_recoverable(caplog):
 
     p = ZiweiPlugin(object(), {"output_mode": "image"})
     p.renderer = BrokenRenderer()
-    assert "文字盘" in asyncio.run(collect(p, "2001-03-19 10:00 男"))[0]
-    assert "2001-03-19" not in caplog.text
+    assert "文字盘" in asyncio.run(collect(p, "1990-06-15 08:30 男"))[0]
+    assert "1990-06-15" not in caplog.text
     assert p.pending == 0
 
 
@@ -105,25 +105,25 @@ def test_image_output_and_reload():
 
     p = ZiweiPlugin(object(), {})
     p.renderer = FakeRenderer()
-    result = asyncio.run(collect(p, "2001-03-19 10:00 男"))
+    result = asyncio.run(collect(p, "1990-06-15 08:30 男"))
     assert result[0][0].type == "image" and result[0][0].data == b"png"
     asyncio.run(p.terminate())
-    assert "重载" in asyncio.run(collect(p, "2001-03-19 10:00 男"))[0]
+    assert "重载" in asyncio.run(collect(p, "1990-06-15 08:30 男"))[0]
 
 
 def test_queue_bound_and_concurrent_isolation():
     p = ZiweiPlugin(object(), {"output_mode": "text"})
     p.pending = 4
-    assert "请求较多" in asyncio.run(collect(p, "2001-03-19 10:00 男"))[0]
+    assert "请求较多" in asyncio.run(collect(p, "1990-06-15 08:30 男"))[0]
     p.pending = 0
 
     async def run():
         return await asyncio.gather(
-            collect(p, "2001-03-19 10:00 男"), collect(p, "2001-03-19 10:00 女")
+            collect(p, "1990-06-15 08:30 男"), collect(p, "1990-06-15 08:30 女")
         )
 
     a, b = asyncio.run(run())
-    assert "逆行" in "".join(a) and "顺行" in "".join(b)
+    assert "顺行" in "".join(a) and "逆行" in "".join(b)
     assert p.pending == 0
 
 
@@ -153,7 +153,7 @@ def test_real_concurrent_queue_and_worker_bound(monkeypatch):
 
     async def run():
         return await asyncio.gather(
-            *(collect(p, "2001-03-19 10:00 男") for _ in range(6))
+            *(collect(p, "1990-06-15 08:30 男") for _ in range(6))
         )
 
     results = asyncio.run(run())

@@ -8,16 +8,19 @@ from datetime import datetime, timedelta
 from .calendar_core import BirthInput, equation_of_time
 from .rules import RuleProfile
 
-HELP = """紫微斗数排盘
+DEMO_BIRTH = "1990-06-15 08:30 男"
+
+HELP = f"""紫微斗数排盘
 /紫微 开启：群主、群管理员或 AstrBot 管理员在目标群内授权使用。
 /紫微 关闭：移除本群使用授权。
 /紫微 状态：查看本群是否已开启。
 所有群默认未开启，排盘仅限已开启的群聊；帮助可直接查看。
-/紫微 2001-03-19 10:00 男
+/紫微 {DEMO_BIRTH}
 /紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
-/紫微 2001-03-19 10:00 男 经度=116.4 时区=8
-/紫微 2001-03-19 10:00 男 流年=2026
-/紫微 2001-03-19 10:00 男 流盘=2026-10-06 流时=10:00
+/紫微 {DEMO_BIRTH} 经度=116.4 时区=8
+/紫微 {DEMO_BIRTH} 流年=2026
+/紫微 {DEMO_BIRTH} 流盘=2026-10-06 流时=10:00
+以上日期均为虚构演示数据，请替换为需要排盘的出生资料。
 末尾加「文字」返回完整文字盘；默认发送图片。别名 /紫微排盘、/ziwei。
 支持 1900—2100 年，时间须明确填写，可用 HH:MM:SS 或十二时辰（子时以 00:00 代表）。
 默认公历、UTC+8、东经120度，启用真太阳时近似校正。
@@ -74,7 +77,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
     if tokens[0] in {"公历", "阳历", "solar", "农历", "阴历", "lunar"}:
         calendar = "lunar" if tokens.pop(0) in {"农历", "阴历", "lunar"} else "solar"
     if len(tokens) < 3:
-        raise ValueError("请完整填写出生日期、时刻和性别，例如：2001-03-19 10:00 男")
+        raise ValueError(f"请完整填写出生日期、时刻和性别，例如：{DEMO_BIRTH}")
     year, month, day, leap = parse_date(tokens[0], calendar == "lunar")
     hour, minute, second = parse_clock(tokens[1])
     sex = {"male": "男", "female": "女", "m": "男", "f": "女"}.get(

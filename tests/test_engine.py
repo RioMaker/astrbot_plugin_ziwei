@@ -6,12 +6,17 @@ from pathlib import Path
 import pytest
 
 from astrbot_plugin_ziwei.commands import parse_request
-from astrbot_plugin_ziwei.engine import apply_flow, build_chart, build_natal
+from astrbot_plugin_ziwei.engine import (
+    _brightness,
+    apply_flow,
+    build_chart,
+    build_natal,
+)
 from astrbot_plugin_ziwei.rules import RuleProfile
 
 
 def natal(profile=None):
-    request = parse_request("2001-03-19 10:00 男")
+    request = parse_request("1990-06-15 08:30 男")
     return build_chart(request.birth, profile or request.profile)
 
 
@@ -28,7 +33,7 @@ def test_reference_core_fixed_expectations():
     positions = {str(s["id"]): s["branch"] for s in c["stars"]}
     for sid, branch in expected["starPositions"].items():
         assert positions[sid] == branch
-    assert list(RuleProfile().four_hua(8)) == expected["birthFourHua"]
+    assert list(RuleProfile().four_hua(7)) == expected["birthFourHua"]
     assert (
         list(RuleProfile().four_hua(c["palaces"][c["life"] - 1]["stem"]))
         == expected["lifePalaceFourHua"]
@@ -95,7 +100,7 @@ def test_all_nondefault_hua_variants_isolated(name, selection, stem, wanted):
 def test_self_hua_and_secondary_voids_are_distinct():
     c = natal()
     moon = next(s for s in c["stars"] if s["id"] == 8)
-    assert moon["self_hua"]["outward"] == "科"
+    assert moon["self_hua"]["outward"] == "忌"
     for sid in (77, 78):
         pair = [s for s in c["stars"] if s["id"] == sid]
         assert (
@@ -119,7 +124,7 @@ def test_flow_is_pure_and_higher_layer_clears_lower_layers():
         "流日",
         "流时",
     }
-    assert all_layers["flow"]["age"] == 26
+    assert all_layers["flow"]["age"] == 37
     assert all_layers["flow"]["layers"]["流年"]["life"] == 7
     changed = apply_flow(all_layers, year=2027)
     assert set(changed["flow"]["layers"]) == {"大限", "小限", "流年"}
@@ -139,11 +144,11 @@ def test_flow_new_year_and_toddler_boundary():
     after_spring = apply_flow(c, target=datetime(2024, 2, 10, 12))
     assert before_spring["flow"]["year"] == 2023
     assert after_spring["flow"]["year"] == 2024
-    assert apply_flow(c, year=2002)["flow"]["decade"]["index"] == 0
-    assert apply_flow(c, year=2003)["flow"]["decade"]["index"] == 1
+    assert apply_flow(c, year=1993)["flow"]["decade"]["index"] == 0
+    assert apply_flow(c, year=1994)["flow"]["decade"]["index"] == 1
 
 
-@pytest.mark.parametrize("year", [1899, 2000, 2123])
+@pytest.mark.parametrize("year", [1899, 1989, 2123])
 def test_flow_invalid_range(year):
     with pytest.raises(ValueError):
         apply_flow(natal(), year=year)
@@ -153,8 +158,11 @@ def test_flow_invalid_range(year):
 def test_brightness_tables_and_small_star_switch(brightness):
     c = natal(RuleProfile(brightness=brightness, minor_stars=False))
     assert len(c["stars"]) == 28
-    expected = {"qs": "", "zz": "", "xd1": "", "xd2": "庙"}
+    # The independent source tables give grade 2 at 丑 for all four profiles.
+    expected = {"qs": "旺", "zz": "旺", "xd1": "旺", "xd2": "旺"}
     assert (
         next(s for s in c["stars"] if s["id"] == 19)["brightness"]
         == expected[brightness]
     )
+    if brightness != "xd2":
+        assert _brightness(19, 3, RuleProfile(brightness=brightness)) == ""

@@ -1,9 +1,9 @@
 [
   {
-    "id": "birth-2001",
-    "reference": "2001-03-19 09:52:08",
-    "computed": "2001-03-19 09:52:09",
-    "delta_seconds": 1.0
+    "id": "civil-demo",
+    "reference": "1990-06-15 08:29:44",
+    "computed": "1990-06-15 08:29:43",
+    "delta_seconds": -1.0
   },
   {
     "id": "leap-month-2023",
@@ -19,8 +19,8 @@
   },
   {
     "id": "longitude-cross-day",
-    "reference": "2001-03-18 21:17:01",
-    "computed": "2001-03-18 21:17:02",
-    "delta_seconds": 1.0
+    "reference": "1990-06-14 21:24:48",
+    "computed": "1990-06-14 21:24:48",
+    "delta_seconds": 0.0
   }
 ]

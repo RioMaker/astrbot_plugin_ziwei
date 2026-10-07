@@ -9,20 +9,20 @@ from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter.command import GreedyStr
 
 from .access import GroupAccess, can_manage, capture_group
-from .commands import HELP, parse_request
+from .commands import DEMO_BIRTH, HELP, parse_request
 from .engine import apply_flow, build_chart
 from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.2.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.2.1")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = dict(config)
         # Validate global configuration at load, rather than fail for every user.
         RuleProfile.from_config(self.config)
-        parse_request("2001-03-19 10:00 男", self.config)
+        parse_request(DEMO_BIRTH, self.config)
         self.gate = asyncio.Semaphore(2)
         self.pending = 0
         self.closed = False

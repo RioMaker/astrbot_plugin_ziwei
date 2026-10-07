@@ -33,15 +33,8 @@ def test_recovered_calendar_samples(fixture):
     # bit-for-bit reproduction of the recovered ephemeris.
     assert delta <= 45
     assert "".join(n["pillars"]) == expected["pillars"]
-    assert n["lunar"]["leap"] == ("闰" in expected["lunar"])
-    assert n["lunar"]["day"] == (
-        25
-        if fixture["id"] == "birth-2001"
-        else 24
-        if fixture["id"] == "longitude-cross-day"
-        else 1
-    )
-    assert n["lunar"]["month"] == (11 if fixture["id"] == "leap-eleventh-2033" else 2)
+    for field in ("year", "month", "day", "leap"):
+        assert n["lunar"][field] == expected["lunarDate"][field]
 
 
 @pytest.mark.parametrize(
@@ -105,25 +98,25 @@ def test_same_ut_has_same_term_pillars_across_timezones():
 
 
 def test_solar_lunar_input_equivalence():
-    a = normalize(parse_request("2001-03-19 10:00 男").birth, RuleProfile())
-    b = normalize(parse_request("农历 2001-02-25 10:00 男").birth, RuleProfile())
+    a = normalize(parse_request("1990-06-15 08:30 男").birth, RuleProfile())
+    b = normalize(parse_request("农历 1990-05-23 08:30 男").birth, RuleProfile())
     assert a["computed"] == b["computed"] and a["pillars"] == b["pillars"]
 
 
 @pytest.mark.parametrize(
     "text",
     [
-        "2001-02-29 10:00 男",
-        "2001-13-01 10:00 男",
+        "1991-02-29 10:00 男",
+        "1990-13-01 10:00 男",
         "1899-01-01 10:00 女",
         "2101-01-01 10:00 女",
         "农历 2024-闰02-01 12:00 女",
         "农历 2023-闰02-30 12:00 男",
-        "2001-03-19 24:00 男",
-        "2001-03-19 10:00 未知",
-        "2001-03-19 10:00 男 经度=nan",
-        "2001-03-19 10:00 男 时区=15",
-        "2001-03-19 10:00 男 经度=181",
+        "1990-06-15 24:00 男",
+        "1990-06-15 08:30 未知",
+        "1990-06-15 08:30 男 经度=nan",
+        "1990-06-15 08:30 男 时区=15",
+        "1990-06-15 08:30 男 经度=181",
     ],
 )
 def test_invalid_birth_rejected(text):
