@@ -17,7 +17,7 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.3.1")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.3.2")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)

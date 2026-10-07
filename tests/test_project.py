@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_metadata_and_config_are_loadable_and_consistent():
     meta = yaml.safe_load((ROOT / "metadata.yaml").read_text("utf-8"))
     assert meta["name"] == ROOT.name == "astrbot_plugin_ziwei"
-    assert meta["version"] == "1.3.1"
+    assert meta["version"] == "1.3.2"
     assert meta["repo"] == "https://github.com/RioMaker/astrbot_plugin_ziwei"
     tree = ast.parse((ROOT / "main.py").read_text("utf-8"))
     registration = next(

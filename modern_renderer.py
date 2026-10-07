@@ -35,6 +35,74 @@ GRID = ((6, 7, 8, 9), (5, None, None, 10), (4, None, None, 11), (3, 2, 1, 12))
 CELL_WIDTH = 400
 MARGIN = 32
 GAP = 0
+PALACE_POSITIONS = {
+    branch: (row, col)
+    for row, cells in enumerate(GRID)
+    for col, branch in enumerate(cells)
+    if branch is not None
+}
+
+
+def self_hua_vector(branch, source, *, cell_height=CELL_WIDTH):
+    """Screen direction: outward leaves the chart, inward enters the palace."""
+    if source not in {"outward", "inward"}:
+        raise ValueError("未知自化方向")
+    row, col = PALACE_POSITIONS[branch]
+    dx, dy = (col - 1.5) * CELL_WIDTH, (row - 1.5) * cell_height
+    length = math.hypot(dx, dy)
+    sign = 1 if source == "outward" else -1
+    return sign * dx / length, sign * dy / length
+
+
+def self_hua_arrow_layout(stars, branch, x, y, height):
+    """Allocate separate border arrows, carrying the associated star and Hua."""
+    row, col = PALACE_POSITIONS[branch]
+    side = (
+        "top" if row == 0 else "bottom" if row == 3 else "left" if col == 0 else "right"
+    )
+    marks = [
+        (star, source, value)
+        for star in stars
+        for source, value in star["self_hua"].items()
+        if value
+    ]
+    arrows = []
+    for index, (star, source, value) in enumerate(marks):
+        lane = (index + 1) / (len(marks) + 1)
+        if side == "top":
+            anchor = (x + CELL_WIDTH * lane, y)
+            label = (anchor[0] + 12, y + 2)
+        elif side == "bottom":
+            # Reserve the middle for the palace title and body-palace badge.
+            left_count = (len(marks) + 1) // 2
+            if index < left_count:
+                offset = 60 + 80 * (index + 1) / (left_count + 1)
+            else:
+                offset = 280 + 64 * (index - left_count + 1) / (
+                    len(marks) - left_count + 1
+                )
+            anchor = (x + offset, y + height)
+            label = (anchor[0] + 12, y + height - 15)
+        else:
+            # Use the outer margin for labels, clear of dense star columns.
+            anchor = (
+                x if side == "left" else x + CELL_WIDTH,
+                y + 24 + (height - 128) * lane,
+            )
+            label = (x - 23 if side == "left" else x + CELL_WIDTH + 9, anchor[1] + 8)
+        dx, dy = self_hua_vector(branch, source, cell_height=height)
+        arrows.append(
+            {
+                "star_id": star["id"],
+                "instance_id": star["instance_id"],
+                "source": source,
+                "hua": value,
+                "start": (anchor[0] - dx * 10, anchor[1] - dy * 10),
+                "end": (anchor[0] + dx * 15, anchor[1] + dy * 15),
+                "label_position": label,
+            }
+        )
+    return arrows
 
 
 def display_category(star):
@@ -171,8 +239,25 @@ class Painter:
     def rule(self, x, y, width):
         self.draw.line((x, y, x + width, y), fill=BORDER)
 
+    def arrow(self, start, end, color, *, head=6, stroke=2):
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if not length:
+            return
+        ux, uy = dx / length, dy / length
+        base = (end[0] - ux * head, end[1] - uy * head)
+        self.draw.line((start, base), fill=color, width=stroke)
+        self.draw.polygon(
+            (
+                end,
+                (base[0] - uy * head / 2, base[1] + ux * head / 2),
+                (base[0] + uy * head / 2, base[1] - ux * head / 2),
+            ),
+            fill=color,
+        )
 
-def _vertical_star(painter, star, x, y, color, step):
+
+def _vertical_star(painter, star, x, y, color, step, cell_height):
     name_size = min(25 if star["group"] == "major" else 22, int(step) - 5)
     for index, character in enumerate(star["name"]):
         painter.text(
@@ -193,6 +278,19 @@ def _vertical_star(painter, star, x, y, color, step):
     size = min(13, int((step - 8) / 2))
     for index, mark in enumerate(star["marks"]):
         color, fill = HUA_COLORS[mark["hua"]]
+        if mark["self"]:
+            dx, dy = self_hua_vector(
+                star["branch"], mark["source"], cell_height=cell_height
+            )
+            row_width = 18 + size
+            left = x + (step - row_width) / 2
+            cy = y + 101 + index * 23
+            cx = left + 7
+            painter.arrow(
+                (cx - dx * 6, cy - dy * 6), (cx + dx * 6, cy + dy * 6), color, head=4
+            )
+            painter.text(mark["hua"], left + 18, y + 95 + index * 23, size, color)
+            continue
         width = painter.font(size).getlength(mark["label"]) + 8
         painter.pill(
             mark["label"],
@@ -219,7 +317,13 @@ def _draw_palace(painter, item, chart, x, y, height):
         step = min(36, (CELL_WIDTH - 40) / len(row))
         for col, (star, color) in enumerate(row):
             _vertical_star(
-                painter, star, x + 16 + col * step, y + 20 + bank * 190, color, step
+                painter,
+                star,
+                x + 16 + col * step,
+                y + 30 + bank * 190,
+                color,
+                step,
+                height,
             )
     if chart["flow"]:
         painter.pill(
@@ -302,6 +406,12 @@ def _draw_palace(painter, item, chart, x, y, height):
             outline=JADE if selected else NAVY,
             width=2,
         )
+    for arrow in self_hua_arrow_layout(
+        [s for s, _ in stars], palace["branch"], x, y, height
+    ):
+        color, _ = HUA_COLORS[arrow["hua"]]
+        painter.arrow(arrow["start"], arrow["end"], color)
+        painter.text(arrow["hua"], *arrow["label_position"], 11, color)
 
 
 def _draw_hua_row(painter, row, x, y, cell=152, size=19):
@@ -429,7 +539,7 @@ def _draw_center(painter, chart, x, y, width, height):
 def render_chart(chart, font_path):
     view = make_chart_view(chart)
     max_banks = max(math.ceil(len(p["palace"]["stars"]) / 12) for p in view["palaces"])
-    cell_height = max(360, max_banks * 190 + 176)
+    cell_height = max(376, max_banks * 190 + 186)
     width = 2 * MARGIN + 4 * CELL_WIDTH
     grid_y = 160
     footer_y = grid_y + 4 * cell_height + 24
@@ -462,7 +572,15 @@ def render_chart(chart, font_path):
     for i, value in enumerate(HUA[1:]):
         color, fill = HUA_COLORS[value]
         painter.pill(value, lx + 65 + i * 44, 98, color, fill, size=17, height=30)
-    painter.text("生＝生年  年＝流年  离／向＝自化", lx + 270, 105, 17, MUTED)
+    painter.text("生＝生年  年＝流年", lx + 270, 105, 17, MUTED)
+    for index, (outward, label) in enumerate(
+        ((True, "出宫：离心"), (False, "入宫：向心"))
+    ):
+        ax = lx + 485 + index * 175
+        painter.draw.line((ax, 99, ax, 128), fill=BORDER, width=2)
+        start, end = ((ax + 12, 113), (ax - 12, 113))
+        painter.arrow(start if outward else end, end if outward else start, MUTED)
+        painter.text(label, ax + 24, 105, 16, MUTED)
     for row, cells in enumerate(GRID):
         for col, branch in enumerate(cells):
             if branch is not None:
