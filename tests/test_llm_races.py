@@ -39,7 +39,7 @@ def test_group_close_during_image_delivery_does_not_return_cached_birth():
     p = context.plugin = ZiweiPlugin(context, {})
 
     class FakeRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
             return b"png"
 
     p.renderer = FakeRenderer()
@@ -62,7 +62,7 @@ def test_event_mutation_does_not_change_cache_owner_or_delivery_route():
     original = p.access.get
 
     class FakeRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
             return b"png"
 
     p.renderer = FakeRenderer()

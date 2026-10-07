@@ -6,31 +6,17 @@ import math
 from PIL import Image, ImageDraw, ImageFont
 
 from .rules import BRANCHES, HUA, STAR_NAMES, STEMS, RuleProfile
+from .themes import get_theme
 
-BG = "#f4f2eb"
-PAPER = "#fffefb"
-INK = "#263c36"
-MUTED = "#65756d"
-BORDER = "#d9dfd6"
-JADE = "#296f60"
-NAVY = "#365879"
-CINNABAR = "#b55349"
-BRONZE = "#88704c"
 STAR_CATEGORIES = (
-    ("major", "主星", NAVY),
-    ("assistant", "辅星", JADE),
-    ("malefic", "煞星", CINNABAR),
-    ("minor", "杂曜", BRONZE),
+    ("major", "主星"),
+    ("assistant", "辅星"),
+    ("malefic", "煞星"),
+    ("minor", "杂曜"),
 )
 MALEFIC_IDS = frozenset(
     {23, 24, 25, 26, 27, 28, 31, 37, 39, 41, 48, 53, 54, 57, 59, 62, 77, 78, 80}
 )
-HUA_COLORS = {
-    "禄": ("#23765d", "#e4f0e8"),
-    "权": ("#956614", "#f7edd5"),
-    "科": ("#356d9b", "#e5eef6"),
-    "忌": ("#aa4354", "#f7e5e8"),
-}
 GRID = ((6, 7, 8, 9), (5, None, None, 10), (4, None, None, 11), (3, 2, 1, 12))
 CELL_WIDTH = 400
 MARGIN = 32
@@ -44,7 +30,7 @@ PALACE_POSITIONS = {
 
 
 def self_hua_vector(branch, source, *, cell_height=CELL_WIDTH):
-    """Screen direction: outward leaves the chart, inward enters the palace."""
+    """Outward points away from the chart center; inward points toward it."""
     if source not in {"outward", "inward"}:
         raise ValueError("未知自化方向")
     row, col = PALACE_POSITIONS[branch]
@@ -54,54 +40,63 @@ def self_hua_vector(branch, source, *, cell_height=CELL_WIDTH):
     return sign * dx / length, sign * dy / length
 
 
+def _horizontal_arrow_slot(index, count):
+    """Leave the central palace title and its body badge clear."""
+    left_count = (count + 1) // 2
+    if index < left_count:
+        return 66 + 80 * (index + 1) / (left_count + 1)
+    return 280 + 64 * (index - left_count + 1) / (count - left_count + 1)
+
+
 def self_hua_arrow_layout(stars, branch, x, y, height):
-    """Allocate separate border arrows, carrying the associated star and Hua."""
+    """Outer frame for outward Hua; inner frame for inward Hua."""
     row, col = PALACE_POSITIONS[branch]
-    side = (
+    outer_side = (
         "top" if row == 0 else "bottom" if row == 3 else "left" if col == 0 else "right"
     )
-    marks = [
-        (star, source, value)
-        for star in stars
-        for source, value in star["self_hua"].items()
-        if value
-    ]
+    opposite = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}
     arrows = []
-    for index, (star, source, value) in enumerate(marks):
-        lane = (index + 1) / (len(marks) + 1)
-        if side == "top":
-            anchor = (x + CELL_WIDTH * lane, y)
-            label = (anchor[0] + 12, y + 2)
-        elif side == "bottom":
-            # Reserve the middle for the palace title and body-palace badge.
-            left_count = (len(marks) + 1) // 2
-            if index < left_count:
-                offset = 60 + 80 * (index + 1) / (left_count + 1)
-            else:
-                offset = 280 + 64 * (index - left_count + 1) / (
-                    len(marks) - left_count + 1
+    for source in ("outward", "inward"):
+        marks = [
+            (s, s["self_hua"].get(source)) for s in stars if s["self_hua"].get(source)
+        ]
+        side = outer_side if source == "outward" else opposite[outer_side]
+        for index, (star, value) in enumerate(marks):
+            lane = (index + 1) / (len(marks) + 1)
+            if side in {"top", "bottom"}:
+                anchor = (
+                    x + _horizontal_arrow_slot(index, len(marks)),
+                    y if side == "top" else y + height,
                 )
-            anchor = (x + offset, y + height)
-            label = (anchor[0] + 12, y + height - 15)
-        else:
-            # Use the outer margin for labels, clear of dense star columns.
-            anchor = (
-                x if side == "left" else x + CELL_WIDTH,
-                y + 24 + (height - 128) * lane,
+                label = (anchor[0] + 18, y + 2 if side == "top" else y + height - 15)
+            else:
+                anchor = (
+                    x if side == "left" else x + CELL_WIDTH,
+                    y + 24 + (height - 128) * lane,
+                )
+                if source == "outward":
+                    label = (
+                        x - 23 if side == "left" else x + CELL_WIDTH + 9,
+                        anchor[1] + 14,
+                    )
+                else:
+                    label = (
+                        x + 7 if side == "left" else x + CELL_WIDTH - 21,
+                        anchor[1] + 14,
+                    )
+            dx, dy = self_hua_vector(branch, source, cell_height=height)
+            arrows.append(
+                {
+                    "star_id": star["id"],
+                    "instance_id": star["instance_id"],
+                    "source": source,
+                    "hua": value,
+                    "side": side,
+                    "start": (anchor[0] - dx * 10, anchor[1] - dy * 10),
+                    "end": (anchor[0] + dx * 15, anchor[1] + dy * 15),
+                    "label_position": label,
+                }
             )
-            label = (x - 23 if side == "left" else x + CELL_WIDTH + 9, anchor[1] + 8)
-        dx, dy = self_hua_vector(branch, source, cell_height=height)
-        arrows.append(
-            {
-                "star_id": star["id"],
-                "instance_id": star["instance_id"],
-                "source": source,
-                "hua": value,
-                "start": (anchor[0] - dx * 10, anchor[1] - dy * 10),
-                "end": (anchor[0] + dx * 15, anchor[1] + dy * 15),
-                "label_position": label,
-            }
-        )
     return arrows
 
 
@@ -114,27 +109,22 @@ def display_category(star):
 def star_marks(star):
     """Keep transformation source explicit without repainting the star name."""
     marks = []
-    for layer, prefix in (("生年", "生"), ("流年", "年")):
+    for layer in ("生年", "流年"):
         if star["hua"].get(layer):
             marks.append(
                 {
-                    "label": prefix + star["hua"][layer],
+                    "label": star["hua"][layer],
                     "hua": star["hua"][layer],
                     "source": layer,
                     "self": False,
                 }
             )
-    for source, prefix in (("outward", "离"), ("inward", "向")):
-        value = star["self_hua"].get(source)
-        if value:
-            marks.append(
-                {"label": prefix + value, "hua": value, "source": source, "self": True}
-            )
     return marks
 
 
-def make_chart_view(chart):
+def make_chart_view(chart, theme="day"):
     """Reference-style display model, preserving all natal calculation fields."""
+    palette = get_theme(theme)
     birth_year = chart["normalized"]["astrology_lunar"]["year"]
     decades = {d["branch"]: d for d in chart["decades"] if d["index"] > 0}
     flow = chart["flow"]
@@ -142,7 +132,8 @@ def make_chart_view(chart):
     palaces = []
     for palace in chart["palaces"]:
         groups = []
-        for key, label, color in STAR_CATEGORIES:
+        for key, label in STAR_CATEGORIES:
+            color = palette.star_color(key)
             stars = [
                 dict(s, marks=star_marks(s))
                 for s in sorted(palace["stars"], key=lambda s: s["id"])
@@ -181,8 +172,9 @@ def make_chart_view(chart):
 
 
 class Painter:
-    def __init__(self, width, height, font_path):
-        self.image = Image.new("RGB", (width, height), BG)
+    def __init__(self, width, height, font_path, theme="day"):
+        self.palette = get_theme(theme)
+        self.image = Image.new("RGB", (width, height), self.palette.bg)
         self.draw = ImageDraw.Draw(self.image)
         self.font_path = font_path
         self.fonts = {}
@@ -192,7 +184,7 @@ class Painter:
             self.fonts[size] = ImageFont.truetype(self.font_path, size)
         return self.fonts[size]
 
-    def text(self, value, x, y, size=20, color=INK, width=None):
+    def text(self, value, x, y, size=20, color=None, width=None):
         while (
             width is not None and self.font(size).getlength(value) > width and size > 14
         ):
@@ -207,14 +199,20 @@ class Painter:
             or y + box[3] > self.image.height
         ):
             raise ValueError("盘面文字超出画布")
-        self.draw.text((x, y), value, fill=color, font=self.font(size), anchor="lt")
+        self.draw.text(
+            (x, y),
+            value,
+            fill=color or self.palette.ink,
+            font=self.font(size),
+            anchor="lt",
+        )
 
-    def card(self, x, y, w, h, fill=PAPER, outline=BORDER, thickness=1, radius=14):
+    def card(self, x, y, w, h, fill=None, outline=None, thickness=1, radius=14):
         self.draw.rounded_rectangle(
             (x, y, x + w, y + h),
             radius=radius,
-            fill=fill,
-            outline=outline,
+            fill=fill or self.palette.paper,
+            outline=outline or self.palette.border,
             width=thickness,
         )
 
@@ -223,21 +221,28 @@ class Painter:
         label,
         x,
         y,
-        color=MUTED,
-        fill="#eef0e9",
+        color=None,
+        fill=None,
         size=15,
         height=25,
         outline=None,
         padding=16,
     ):
         width = math.ceil(self.font(size).getlength(label)) + padding
+        fill = fill or self.palette.center
         self.card(x, y, width, height, fill=fill, outline=outline or fill, radius=6)
         text_height = self.font(size).getbbox(label, anchor="lt")[3]
-        self.text(label, x + padding / 2, y + (height - text_height) // 2, size, color)
+        self.text(
+            label,
+            x + padding / 2,
+            y + (height - text_height) // 2,
+            size,
+            color or self.palette.muted,
+        )
         return width
 
     def rule(self, x, y, width):
-        self.draw.line((x, y, x + width, y), fill=BORDER)
+        self.draw.line((x, y, x + width, y), fill=self.palette.border)
 
     def arrow(self, start, end, color, *, head=6, stroke=2):
         dx, dy = end[0] - start[0], end[1] - start[1]
@@ -257,50 +262,42 @@ class Painter:
         )
 
 
-def _vertical_star(painter, star, x, y, color, step, cell_height):
-    name_size = min(25 if star["group"] == "major" else 22, int(step) - 5)
+def _vertical_star(painter, star, x, y, color, step):
+    major = star["group"] == "major"
+    name_size = min(26 if major else 23, int(step) - 5)
     for index, character in enumerate(star["name"]):
         painter.text(
-            character, x + (step - name_size) / 2, y + index * 28, name_size, color
+            character,
+            x + (step - name_size) / 2,
+            y + index * 28,
+            name_size,
+            color,
         )
     if star["secondary"]:
-        painter.text("副", x + step - 12, y - 12, 10, MUTED)
+        painter.text("副", x + step - 13, y - 15, 12, painter.palette.muted)
     if star["brightness"]:
-        width = painter.font(13).getlength(star["brightness"]) + 8
+        width = painter.font(14).getlength(star["brightness"]) + 8
         painter.pill(
             star["brightness"],
             x + (step - width) / 2,
             y + 65,
-            size=13,
-            height=21,
+            size=14,
+            height=22,
             padding=8,
         )
-    size = min(13, int((step - 8) / 2))
+    size = 14
     for index, mark in enumerate(star["marks"]):
-        color, fill = HUA_COLORS[mark["hua"]]
-        if mark["self"]:
-            dx, dy = self_hua_vector(
-                star["branch"], mark["source"], cell_height=cell_height
-            )
-            row_width = 18 + size
-            left = x + (step - row_width) / 2
-            cy = y + 101 + index * 23
-            cx = left + 7
-            painter.arrow(
-                (cx - dx * 6, cy - dy * 6), (cx + dx * 6, cy + dy * 6), color, head=4
-            )
-            painter.text(mark["hua"], left + 18, y + 95 + index * 23, size, color)
-            continue
+        color, fill = painter.palette.hua_color(mark["hua"])
         width = painter.font(size).getlength(mark["label"]) + 8
         painter.pill(
             mark["label"],
             x + (step - width) / 2,
             y + 91 + index * 23,
             color,
-            PAPER if mark["self"] else fill,
+            fill if mark["source"] == "生年" else painter.palette.paper,
             size=size,
-            height=21,
-            outline=fill if mark["self"] else None,
+            height=24,
+            outline=color if mark["source"] == "流年" else fill,
             padding=8,
         )
 
@@ -323,20 +320,19 @@ def _draw_palace(painter, item, chart, x, y, height):
                 y + 30 + bank * 190,
                 color,
                 step,
-                height,
             )
     if chart["flow"]:
         painter.pill(
             item["annual_label"],
             x + 70,
             y + height - 156,
-            PAPER if selected else MUTED,
-            JADE if selected else "#eef1e8",
-            size=15,
-            height=25,
+            painter.palette.on_accent if selected else painter.palette.muted,
+            painter.palette.accent if selected else painter.palette.center,
+            size=16,
+            height=28,
         )
-    painter.text("流年", x + 70, y + height - 120, 14, MUTED)
-    year_x = x + 108
+    painter.text("流年", x + 70, y + height - 120, 15, painter.palette.muted)
+    year_x = x + 110
     for year in item["annual_years"]:
         active = bool(chart["flow"] and chart["flow"]["year"] == year)
         year_x += (
@@ -344,11 +340,11 @@ def _draw_palace(painter, item, chart, x, y, height):
                 str(year),
                 year_x,
                 y + height - 124,
-                PAPER if active else INK,
-                JADE if active else PAPER,
-                size=14,
-                height=23,
-                padding=6,
+                painter.palette.on_accent if active else painter.palette.ink,
+                painter.palette.accent if active else painter.palette.paper,
+                size=15,
+                height=25,
+                padding=4,
             )
             + 1
         )
@@ -356,8 +352,8 @@ def _draw_palace(painter, item, chart, x, y, height):
         "虚岁 " + "、".join(map(str, item["annual_ages"])),
         x + 70,
         y + height - 92,
-        13,
-        MUTED,
+        14,
+        painter.palette.muted,
         CELL_WIDTH - 123,
     )
     d = item["decade"]
@@ -367,9 +363,15 @@ def _draw_palace(painter, item, chart, x, y, height):
         x + (CELL_WIDTH - painter.font(21).getlength(age)) / 2,
         y + height - 64,
         21,
-        INK,
+        painter.palette.ink,
     )
-    name_color = NAVY if natal_life else JADE if selected else INK
+    name_color = (
+        painter.palette.major
+        if natal_life
+        else painter.palette.accent
+        if selected
+        else painter.palette.ink
+    )
     px = x + (CELL_WIDTH - painter.font(26).getlength(palace["name"])) / 2
     painter.text(palace["name"], px, y + height - 33, 26, name_color)
     if palace["body"]:
@@ -377,9 +379,9 @@ def _draw_palace(painter, item, chart, x, y, height):
             "身",
             px + painter.font(26).getlength(palace["name"]) + 9,
             y + height - 34,
-            JADE,
-            "#e2ecdf",
-            size=14,
+            painter.palette.accent,
+            painter.palette.center,
+            size=15,
             height=24,
             padding=8,
         )
@@ -387,37 +389,45 @@ def _draw_palace(painter, item, chart, x, y, height):
     for index, key in enumerate(("博士", "岁前", "将前")):
         painter.text(
             sequences[key],
-            x + 16,
+            x + 12,
             y + height - 81 + index * 24,
-            14,
-            JADE if index == 0 else MUTED,
+            15,
+            painter.palette.accent if index == 0 else painter.palette.muted,
         )
     for index, character in enumerate(sequences["长生"]):
         painter.text(
-            character, x + CELL_WIDTH - 31, y + height - 121 + index * 17, 14, MUTED
+            character,
+            x + CELL_WIDTH - 30,
+            y + height - 121 + index * 18,
+            15,
+            painter.palette.muted,
         )
-    painter.text(palace["stem_name"], x + CELL_WIDTH - 34, y + height - 65, 23, BRONZE)
     painter.text(
-        palace["branch_name"], x + CELL_WIDTH - 34, y + height - 36, 23, BRONZE
+        palace["stem_name"],
+        x + CELL_WIDTH - 34,
+        y + height - 65,
+        24,
+        painter.palette.element_color(palace["stem_name"]),
+    )
+    painter.text(
+        palace["branch_name"],
+        x + CELL_WIDTH - 34,
+        y + height - 36,
+        24,
+        painter.palette.element_color(palace["branch_name"]),
     )
     if selected or natal_life:
         painter.draw.rectangle(
             (x + 3, y + 3, x + CELL_WIDTH - 3, y + height - 3),
-            outline=JADE if selected else NAVY,
+            outline=painter.palette.accent if selected else painter.palette.major,
             width=2,
         )
-    for arrow in self_hua_arrow_layout(
-        [s for s, _ in stars], palace["branch"], x, y, height
-    ):
-        color, _ = HUA_COLORS[arrow["hua"]]
-        painter.arrow(arrow["start"], arrow["end"], color)
-        painter.text(arrow["hua"], *arrow["label_position"], 11, color)
 
 
 def _draw_hua_row(painter, row, x, y, cell=152, size=19):
     for index, (name, value) in enumerate(row):
         sx = x + index * cell
-        color, fill = HUA_COLORS[value]
+        color, fill = painter.palette.hua_color(value)
         painter.text(name, sx, y + 5, size)
         painter.pill(
             value,
@@ -431,13 +441,27 @@ def _draw_hua_row(painter, row, x, y, cell=152, size=19):
 
 
 def _draw_center(painter, chart, x, y, width, height):
-    painter.card(x, y, width, height, fill="#eaf0e7", outline=BORDER, radius=0)
+    painter.card(
+        x,
+        y,
+        width,
+        height,
+        fill=painter.palette.center,
+        outline=painter.palette.border,
+        radius=0,
+    )
     n, profile = chart["normalized"], chart["profile"]
-    painter.text("本命概览", x + 28, y + 23, 18, JADE)
+    painter.text("本命概览", x + 28, y + 23, 18, painter.palette.accent)
     yg = STEMS[n["year_stem"] - 1] + BRANCHES[n["year_branch"] - 1]
     painter.text(f"{yg}年 · {chart['bureau_name']}", x + 28, y + 56, 34)
     painter.pill(
-        chart["sex"], x + width - 67, y + 61, JADE, "#d7e6d7", size=18, height=30
+        chart["sex"],
+        x + width - 67,
+        y + 61,
+        painter.palette.accent,
+        painter.palette.center,
+        size=18,
+        height=30,
     )
     painter.text(
         f"命宫 {BRANCHES[chart['life'] - 1]}   身宫 {BRANCHES[chart['body'] - 1]}"
@@ -464,16 +488,28 @@ def _draw_center(painter, chart, x, y, width, height):
         ),
     ]
     for index, (label, value) in enumerate(fields):
-        painter.text(label, x + 28, y + 165 + index * 32, 16, MUTED)
-        painter.text(value, x + 135, y + 162 + index * 32, 20, width=width - 163)
-    painter.text("四柱", x + 28, y + 317, 16, MUTED)
+        painter.text(label, x + 28, y + 165 + index * 32, 17, painter.palette.muted)
+        painter.text(value, x + 135, y + 162 + index * 32, 21, width=width - 163)
+    painter.text("四柱", x + 28, y + 317, 16, painter.palette.muted)
     for index, pillar in enumerate(n["pillars"]):
         sx = x + 135 + index * 142
         painter.text(
-            ("年柱", "月柱", "日柱", "时柱")[index], sx + 8, y + 292, 13, MUTED
+            ("年柱", "月柱", "日柱", "时柱")[index],
+            sx + 8,
+            y + 292,
+            15,
+            painter.palette.muted,
         )
-        painter.pill(pillar, sx, y + 311, INK, PAPER, size=24, height=40)
-    painter.text("生年四化", x + 28, y + 373, 18, JADE)
+        painter.pill(
+            pillar,
+            sx,
+            y + 311,
+            painter.palette.ink,
+            painter.palette.paper,
+            size=24,
+            height=40,
+        )
+    painter.text("生年四化", x + 28, y + 373, 18, painter.palette.accent)
     p = RuleProfile(**profile)
     row = [
         (STAR_NAMES[sid], HUA[i]) for i, sid in enumerate(p.four_hua(n["year_stem"]), 1)
@@ -484,21 +520,32 @@ def _draw_center(painter, chart, x, y, width, height):
         profile["leap_month_rule"]
     ]
     boundary = "23时换日" if profile["late_zi_rule"] == "next_day" else "零点换日"
-    painter.text(f"闰月 {leap}  ·  {boundary}", x + 28, y + 469, 16, MUTED)
+    painter.text(
+        f"闰月 {leap}  ·  {boundary}", x + 28, y + 469, 16, painter.palette.muted
+    )
     painter.text(
         f"大限：虚岁起限 · {'顺行' if chart['direction'] == 1 else '逆行'}",
         x + 28,
         y + 498,
         16,
-        MUTED,
+        painter.palette.muted,
     )
     if chart["flow"]:
         flow = chart["flow"]
         by = y + 540
-        painter.card(x + 24, by, width - 48, 151, fill=PAPER, outline="#d6e3d6")
-        painter.text("当前流年", x + 44, by + 16, 16, JADE)
+        painter.card(
+            x + 24,
+            by,
+            width - 48,
+            151,
+            fill=painter.palette.paper,
+            outline=painter.palette.border,
+        )
+        painter.text("当前流年", x + 44, by + 16, 16, painter.palette.accent)
         annual_gz = STEMS[(flow["year"] - 4) % 10] + BRANCHES[(flow["year"] - 4) % 12]
-        painter.text(f"{flow['year']} · {annual_gz}", x + 44, by + 49, 28, JADE)
+        painter.text(
+            f"{flow['year']} · {annual_gz}", x + 44, by + 49, 28, painter.palette.accent
+        )
         label = "童限" if flow["decade"]["index"] == 0 else "大限"
         painter.text(
             f"虚岁 {flow['age']}   {label} "
@@ -513,14 +560,18 @@ def _draw_center(painter, chart, x, y, width, height):
             x + 44,
             by + 101,
             18,
-            MUTED,
+            painter.palette.muted,
             width - 88,
         )
         painter.text(
-            "年份按农历标注，同宫流年每12年重复。", x + 44, by + 130, 14, MUTED
+            "年份按农历标注，同宫流年每12年重复。",
+            x + 44,
+            by + 130,
+            14,
+            painter.palette.muted,
         )
     else:
-        painter.text("大限一览 · 虚岁", x + 28, y + 538, 16, JADE)
+        painter.text("大限一览 · 虚岁", x + 28, y + 538, 16, painter.palette.accent)
         cell = (width - 56) / 4
         for i, d in enumerate(chart["decades"][1:]):
             sx = x + 28 + i % 4 * cell
@@ -530,25 +581,27 @@ def _draw_center(painter, chart, x, y, width, height):
                 sx,
                 sy,
                 16,
-                INK,
+                painter.palette.ink,
             )
     if height < 710:
         raise ValueError("盘心资料区域高度不足")
 
 
-def render_chart(chart, font_path):
-    view = make_chart_view(chart)
+def render_chart(chart, font_path, theme="day"):
+    view = make_chart_view(chart, theme)
     max_banks = max(math.ceil(len(p["palace"]["stars"]) / 12) for p in view["palaces"])
     cell_height = max(376, max_banks * 190 + 186)
     width = 2 * MARGIN + 4 * CELL_WIDTH
-    grid_y = 160
+    grid_y = 118
     footer_y = grid_y + 4 * cell_height + 24
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
-    painter = Painter(width, footer_y + summary_height + 84, font_path)
-    painter.draw.line((MARGIN, 30, MARGIN + 4, 93), fill=JADE, width=4)
-    painter.text("紫微斗数", MARGIN + 21, 30, 41)
-    painter.text("十二宫命盘", MARGIN + 213, 54, 20, MUTED)
+    painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
+    painter.draw.line(
+        (MARGIN, 30, MARGIN + 4, 93), fill=painter.palette.accent, width=4
+    )
+    painter.text("紫微斗数", MARGIN + 21, 30, 40)
+    painter.text("十二宫命盘", MARGIN + 213, 54, 20, painter.palette.muted)
     label = (
         f"{chart['flow']['year']} 农历流年 · 虚岁{chart['flow']['age']}"
         if chart["flow"]
@@ -558,29 +611,11 @@ def render_chart(chart, font_path):
         label,
         width - MARGIN - (289 if chart["flow"] else 110),
         40,
-        JADE,
-        "#e2ecdf",
+        painter.palette.accent,
+        painter.palette.center,
         size=20,
         height=41,
     )
-    lx = MARGIN
-    for _, label, color in STAR_CATEGORIES:
-        painter.draw.ellipse((lx, 109, lx + 8, 117), fill=color)
-        painter.text(label, lx + 18, 104, 18, color)
-        lx += 102
-    painter.text("四化", lx + 10, 105, 17, MUTED)
-    for i, value in enumerate(HUA[1:]):
-        color, fill = HUA_COLORS[value]
-        painter.pill(value, lx + 65 + i * 44, 98, color, fill, size=17, height=30)
-    painter.text("生＝生年  年＝流年", lx + 270, 105, 17, MUTED)
-    for index, (outward, label) in enumerate(
-        ((True, "出宫：离心"), (False, "入宫：向心"))
-    ):
-        ax = lx + 485 + index * 175
-        painter.draw.line((ax, 99, ax, 128), fill=BORDER, width=2)
-        start, end = ((ax + 12, 113), (ax - 12, 113))
-        painter.arrow(start if outward else end, end if outward else start, MUTED)
-        painter.text(label, ax + 24, 105, 16, MUTED)
     for row, cells in enumerate(GRID):
         for col, branch in enumerate(cells):
             if branch is not None:
@@ -600,8 +635,22 @@ def render_chart(chart, font_path):
         2 * CELL_WIDTH,
         2 * cell_height,
     )
+    # Paint inner frame arrows after palace and center backgrounds.
+    for row, cells in enumerate(GRID):
+        for col, branch in enumerate(cells):
+            if branch is not None:
+                for arrow in self_hua_arrow_layout(
+                    chart["palaces"][branch - 1]["stars"],
+                    branch,
+                    MARGIN + col * CELL_WIDTH,
+                    grid_y + row * cell_height,
+                    cell_height,
+                ):
+                    color, _ = painter.palette.hua_color(arrow["hua"])
+                    painter.arrow(arrow["start"], arrow["end"], color)
+                    painter.text(arrow["hua"], *arrow["label_position"], 13, color)
     if layers:
-        painter.text("运限四化", MARGIN, footer_y, 21, JADE)
+        painter.text("运限四化", MARGIN, footer_y, 21, painter.palette.accent)
         for i, (label, layer) in enumerate(layers):
             sx = MARGIN + i % 2 * (2 * CELL_WIDTH + 8)
             sy = footer_y + 38 + i // 2 * 88
@@ -611,7 +660,7 @@ def render_chart(chart, font_path):
                 sx + 18,
                 sy + 12,
                 16,
-                MUTED,
+                painter.palette.muted,
             )
             pairs = [(text[:-1], text[-1]) for text in layer["four_hua"]]
             _draw_hua_row(painter, pairs, sx + 18, sy + 39, cell=184, size=18)
@@ -621,14 +670,14 @@ def render_chart(chart, font_path):
         MARGIN,
         by,
         16,
-        MUTED,
+        painter.palette.muted,
     )
     painter.text(
         "真太阳时为近似校正。支持本人临时读盘，不建立永久命例库。",
         MARGIN,
         by + 29,
         15,
-        MUTED,
+        painter.palette.muted,
     )
     stream = io.BytesIO()
     painter.image.save(stream, format="PNG", optimize=True)

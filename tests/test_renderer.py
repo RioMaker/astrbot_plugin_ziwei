@@ -12,6 +12,7 @@ from astrbot_plugin_ziwei.renderer import Renderer, find_font, text_chart
 from astrbot_plugin_ziwei.rules import RuleProfile
 
 
+@pytest.mark.parametrize("theme", ["day", "night"])
 @pytest.mark.parametrize(
     "args",
     [
@@ -22,14 +23,14 @@ from astrbot_plugin_ziwei.rules import RuleProfile
         "农历 1993-10-25 20:00 男 真太阳时=关",
     ],
 )
-def test_render_decodable_bounded_image(args):
+def test_render_decodable_bounded_image(args, theme):
     try:
         font = find_font()
     except ValueError:
         pytest.skip("需要中文字体进行图片验收")
     r = parse_request(args)
     c = apply_flow(build_chart(r.birth, r.profile), target=datetime(2026, 10, 6, 10))
-    png = Renderer(font).render(c)
+    png = Renderer(font, theme).render(c)
     with Image.open(io.BytesIO(png)) as image:
         image.load()
         assert image.format == "PNG" and image.mode == "RGB"
@@ -100,9 +101,10 @@ def test_four_hua_sources_and_self_transformations_remain_separate():
         "self_hua": {"outward": "权", "inward": "科"},
     }
     marks = star_marks(star)
-    assert [mark["label"] for mark in marks] == ["生禄", "年忌", "离权", "向科"]
-    assert [mark["source"] for mark in marks] == ["生年", "流年", "outward", "inward"]
-    assert [mark["self"] for mark in marks] == [False, False, True, True]
+    assert [mark["label"] for mark in marks] == ["禄", "忌"]
+    assert [mark["source"] for mark in marks] == ["生年", "流年"]
+    assert not any(mark["self"] for mark in marks)
+    assert star["self_hua"] == {"outward": "权", "inward": "科"}
 
 
 def test_annual_year_series_maps_to_the_correct_branch_and_age():

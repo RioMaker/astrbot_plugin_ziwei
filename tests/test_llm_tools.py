@@ -84,7 +84,7 @@ def test_tool_can_compute_complete_flow_data_without_stopping_llm_or_rendering(
     p = ZiweiPlugin(Context(), {})
 
     class ForbiddenRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
             raise AssertionError("no unsolicited image")
 
     p.renderer = ForbiddenRenderer()
@@ -285,10 +285,11 @@ def test_reload_clears_cache_and_kv_contains_only_group_authorization():
 def test_optional_image_delivery_does_not_lose_structured_results(
     failure, accepted, status
 ):
-    p = ZiweiPlugin(Context(failure, accepted), {})
+    p = ZiweiPlugin(Context(failure, accepted), {"image_theme": "night"})
 
     class FakeRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
+            assert theme == "day"
             return b"png"
 
     p.renderer = FakeRenderer()
@@ -296,7 +297,9 @@ def test_optional_image_delivery_does_not_lose_structured_results(
 
     async def run():
         await allow(p)
-        result = json.loads(await p.ziwei_paipan(event, DEMO_BIRTH, True))
+        result = json.loads(
+            await p.ziwei_paipan(event, DEMO_BIRTH + " 主题=白天", True)
+        )
         assert result["status"] == "ok" and result["image_status"] == status
         if p.context.sent:
             assert p.context.sent[0][0] == event.unified_msg_origin

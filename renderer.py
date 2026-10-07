@@ -6,6 +6,7 @@ from PIL import ImageFont
 
 from .modern_renderer import render_chart
 from .rules import BRANCHES, HUA, STAR_NAMES, STEMS, RuleProfile
+from .themes import normalize_theme
 
 
 def birth_hua(chart):
@@ -122,10 +123,13 @@ def find_font(configured=""):
 
 
 class Renderer:
-    def __init__(self, font_path=""):
+    def __init__(self, font_path="", theme="day"):
         self.font_path = find_font(font_path)
+        self.theme = normalize_theme(theme)
         # Check readability at construction, before accepting image requests.
         ImageFont.truetype(self.font_path, 20)
 
-    def render(self, chart) -> bytes:
-        return render_chart(chart, self.font_path)
+    def render(self, chart, theme=None) -> bytes:
+        return render_chart(
+            chart, self.font_path, self.theme if theme is None else theme
+        )

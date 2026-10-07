@@ -1,4 +1,11 @@
 {
+  "image_theme": {
+    "description": "默认图片主题",
+    "type": "string",
+    "default": "day",
+    "options": ["day", "night"],
+    "hint": "白天宣纸色，夜间深青墨色。单次指令可用主题=白天或主题=夜间覆盖；仅影响图片。"
+  },
   "output_mode": {
     "description": "默认输出方式",
     "type": "string",

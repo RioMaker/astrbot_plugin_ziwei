@@ -35,7 +35,7 @@ def main():
         elif request.output == "text":
             target.write_text(text_chart(chart) + "\n", encoding="utf-8")
         else:
-            target.write_bytes(Renderer(args.font).render(chart))
+            target.write_bytes(Renderer(args.font, request.image_theme).render(chart))
         print(target)
     except (OSError, ValueError) as exc:
         parser.exit(2, f"排盘失败：{exc}\n")

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from .calendar_core import BirthInput, equation_of_time
 from .rules import RuleProfile
+from .themes import normalize_theme
 
 DEMO_BIRTH = "1990-06-15 08:30 男"
 
@@ -22,6 +23,7 @@ HELP = f"""紫微斗数排盘
 /紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
 /紫微 {DEMO_BIRTH} 经度=116.4 时区=8
 /紫微 {DEMO_BIRTH} 流年=2026
+/紫微 {DEMO_BIRTH} 主题=夜间
 /紫微 {DEMO_BIRTH} 流盘=2026-10-06 流时=10:00
 以上日期均为虚构演示数据，请替换为需要排盘的出生资料。
 末尾加「文字」返回完整文字盘；默认发送图片。别名 /紫微排盘、/ziwei。
@@ -29,6 +31,7 @@ HELP = f"""紫微斗数排盘
 支持 1900—2100 年，时间须明确填写，可用 HH:MM:SS、HHMM、HHMMSS 或十二时辰。
 默认公历、UTC+8、东经120度，启用真太阳时近似校正。
 可选：闰月=current|next|split，子时=next_day|midnight。
+图片主题：主题=白天|夜间（或 day|night）；留空使用插件默认主题。
 默认闰月十五／十六分界、晚子时换日。出生资料不写入永久命例库。"""
 
 
@@ -39,6 +42,7 @@ class ChartRequest:
     output: str
     flow_year: int | None = None
     flow_target: datetime | None = None
+    image_theme: str = "day"
 
 
 def parse_date(text: str, lunar=False):
@@ -119,6 +123,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
             "流年",
             "流盘",
             "流时",
+            "主题",
         }:
             raise ValueError(f"不支持参数「{key}」")
         options[key] = value
@@ -126,6 +131,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
         output = {"文字": "text", "图片": "image"}.get(options["输出"], options["输出"])
     if output not in {"image", "text"}:
         raise ValueError("输出须为 image／图片或 text／文字")
+    image_theme = normalize_theme(options.get("主题", config.get("image_theme", "day")))
     solar_option = options.get("真太阳时")
     if solar_option is None:
         true_solar = config.get("true_solar", True)
@@ -189,4 +195,4 @@ def parse_request(text: str, config=None) -> ChartRequest:
             utc = flow_target - timedelta(hours=timezone)
             correction = 4 * (longitude - 15 * timezone) + equation_of_time(utc)
             flow_target += timedelta(seconds=round(correction * 60))
-    return ChartRequest(birth, profile, output, flow_year, flow_target)
+    return ChartRequest(birth, profile, output, flow_year, flow_target, image_theme)

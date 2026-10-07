@@ -88,7 +88,7 @@ def test_help_text_error_and_fallback():
 
 def test_render_failure_and_unexpected_error_are_recoverable(caplog):
     class BrokenRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
             raise OSError("cannot render")
 
     p = ZiweiPlugin(object(), {"output_mode": "image"})
@@ -100,7 +100,7 @@ def test_render_failure_and_unexpected_error_are_recoverable(caplog):
 
 def test_image_output_and_reload():
     class FakeRenderer:
-        def render(self, chart):
+        def render(self, chart, theme="day"):
             return b"png"
 
     p = ZiweiPlugin(object(), {})
@@ -109,6 +109,25 @@ def test_image_output_and_reload():
     assert result[0][0].type == "image" and result[0][0].data == b"png"
     asyncio.run(p.terminate())
     assert "重载" in asyncio.run(collect(p, "1990-06-15 08:30 男"))[0]
+
+
+def test_command_themes_follow_each_request_and_default():
+    class RecordingRenderer:
+        def render(self, chart, theme="day"):
+            return theme.encode("ascii")
+
+    p = ZiweiPlugin(object(), {"image_theme": "night"})
+    p.renderer = RecordingRenderer()
+
+    async def run():
+        return await asyncio.gather(
+            collect(p, "1990-06-15 08:30 男 主题=白天"),
+            collect(p, "1990-06-15 08:30 男"),
+        )
+
+    day, night = asyncio.run(run())
+    assert day[0][0].data == b"day" and night[0][0].data == b"night"
+    assert p.config["image_theme"] == "night"
 
 
 def test_queue_bound_and_concurrent_isolation():

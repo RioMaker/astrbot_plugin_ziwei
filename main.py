@@ -17,7 +17,7 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.3.2")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.4.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -33,7 +33,10 @@ class ZiweiPlugin(Star):
             self.get_kv_data, self.put_kv_data, self.delete_kv_data
         )
         try:
-            self.renderer = Renderer(str(config.get("font_path", "") or ""))
+            self.renderer = Renderer(
+                str(config.get("font_path", "") or ""),
+                self.config.get("image_theme", "day"),
+            )
         except (OSError, ValueError):
             self.renderer = None
             logger.warning("紫微斗数：中文字体不可用，将返回文字盘。可配置 font_path。")
@@ -136,7 +139,9 @@ class ZiweiPlugin(Star):
                     self.chart_cache.put(scope, chart)
                 if request.output == "image" and self.renderer is not None:
                     try:
-                        png = await asyncio.to_thread(self.renderer.render, chart)
+                        png = await asyncio.to_thread(
+                            self.renderer.render, chart, request.image_theme
+                        )
                     except (OSError, ValueError):
                         logger.warning("紫微斗数：图片生成失败，返回文字盘。")
                         png = None
@@ -169,6 +174,7 @@ class ZiweiPlugin(Star):
                 格式如1990-06-15 08:30 男（仅虚构示例）；农历加农历前缀。
                 也支持199006150830 男或19900615083045 男的日期时间连写格式。
                 可附经度、时区、真太阳时、流年或流盘及流时选项，使用名称=值。
+                图片可附主题=白天或主题=夜间；不填使用插件默认主题。
                 未知的出生资料先询问用户，不得代用示例。
             send_image(boolean): 用户需要图片时设true，默认false。
                 结构化数据始终返回给模型。
@@ -207,7 +213,9 @@ class ZiweiPlugin(Star):
                     image_status = "unavailable"
                     if self.renderer is not None and scope.umo:
                         try:
-                            png = await asyncio.to_thread(self.renderer.render, chart)
+                            png = await asyncio.to_thread(
+                                self.renderer.render, chart, request.image_theme
+                            )
                             rejection = await self._chart_access(scope)
                             if rejection or self.closed:
                                 return tool_error(
