@@ -23,6 +23,7 @@ HELP = f"""紫微斗数排盘
 /紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
 /紫微 {DEMO_BIRTH} 经度=116.4 时区=8
 /紫微 {DEMO_BIRTH} 流年=2026
+/紫微 {DEMO_BIRTH} 运限=2
 /紫微 {DEMO_BIRTH} 主题=夜间
 /紫微 {DEMO_BIRTH} 流盘=2026-10-06 流时=10:00
 以上日期均为虚构演示数据，请替换为需要排盘的出生资料。
@@ -32,6 +33,8 @@ HELP = f"""紫微斗数排盘
 默认公历、UTC+8、东经120度，启用真太阳时近似校正。
 可选：闰月=current|next|split，子时=next_day|midnight。
 图片主题：主题=白天|夜间（或 day|night）；留空使用插件默认主题。
+运限=0 选择童限，运限=1—12 选择第几个大限；也支持大限=、大运=。
+运限与流年／流盘／流时不能同时选择，流年盘会自动包含对应大限。
 默认闰月十五／十六分界、晚子时换日。出生资料不写入永久命例库。"""
 
 
@@ -43,6 +46,7 @@ class ChartRequest:
     flow_year: int | None = None
     flow_target: datetime | None = None
     image_theme: str = "day"
+    decade_index: int | None = None
 
 
 def parse_date(text: str, lunar=False):
@@ -111,6 +115,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
             if "=" not in token:
                 raise ValueError(f"无法识别参数「{token}」，选项请使用 名称=值")
             key, value = token.split("=", 1)
+        key = {"大限": "运限", "大运": "运限"}.get(key, key)
         if key in options:
             raise ValueError(f"参数「{key}」重复")
         if key not in {
@@ -124,6 +129,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
             "流盘",
             "流时",
             "主题",
+            "运限",
         }:
             raise ValueError(f"不支持参数「{key}」")
         options[key] = value
@@ -173,7 +179,13 @@ def parse_request(text: str, config=None) -> ChartRequest:
         longitude,
         true_solar,
     )
-    flow_year = flow_target = None
+    flow_year = flow_target = decade_index = None
+    if "运限" in options:
+        if {"流年", "流盘", "流时"} & options.keys():
+            raise ValueError("运限与流年／流盘／流时请选择其中一种")
+        if not re.fullmatch(r"(?:[0-9]|1[0-2])", options["运限"]):
+            raise ValueError("运限须为 0—12 的整数，0 为童限，1—12 为第几个大限")
+        decade_index = int(options["运限"])
     if "流年" in options and "流盘" in options:
         raise ValueError("流年与流盘请选择其中一种")
     if "流时" in options and "流盘" not in options:
@@ -195,4 +207,6 @@ def parse_request(text: str, config=None) -> ChartRequest:
             utc = flow_target - timedelta(hours=timezone)
             correction = 4 * (longitude - 15 * timezone) + equation_of_time(utc)
             flow_target += timedelta(seconds=round(correction * 60))
-    return ChartRequest(birth, profile, output, flow_year, flow_target, image_theme)
+    return ChartRequest(
+        birth, profile, output, flow_year, flow_target, image_theme, decade_index
+    )

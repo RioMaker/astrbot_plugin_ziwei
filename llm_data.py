@@ -129,6 +129,8 @@ def chart_payload(row, *, remaining_seconds, palace=""):
             "indices": "天干甲=1至癸=10，地支子=1至亥=12；"
             "宫名字段为本命，flow_names为运限。",
             "age": "大限年龄和流盘年龄均为虚岁；流年年份按农历换年。",
+            "mode": "flow.kind=decade为所选童限或大运，year/target为空，"
+            "start_year/end_year为农历年区间；kind=annual为流年或完整流盘。",
             "stars": "各宫stars保留独立instance_id，副星secondary=true；"
             "group为计算分类，visual_category为图面分类。",
             "hua": "hua分别存生年、命宫、日干和所选运限四化；"

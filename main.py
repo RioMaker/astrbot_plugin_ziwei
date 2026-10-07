@@ -11,13 +11,13 @@ from astrbot.core.star.filter.command import GreedyStr
 
 from .access import GroupAccess, can_manage, capture_group
 from .commands import DEMO_BIRTH, HELP, parse_request
-from .engine import apply_flow, build_chart
+from .engine import apply_decade, apply_flow, build_chart
 from .llm_data import ChartCache, chart_payload, tool_error
 from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.4.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.5.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -93,7 +93,9 @@ class ZiweiPlugin(Star):
 
     async def _compute_chart(self, request):
         chart = await asyncio.to_thread(build_chart, request.birth, request.profile)
-        if request.flow_target is not None or request.flow_year is not None:
+        if request.decade_index is not None:
+            chart = await asyncio.to_thread(apply_decade, chart, request.decade_index)
+        elif request.flow_target is not None or request.flow_year is not None:
             chart = await asyncio.to_thread(
                 apply_flow, chart, year=request.flow_year, target=request.flow_target
             )
@@ -174,6 +176,8 @@ class ZiweiPlugin(Star):
                 格式如1990-06-15 08:30 男（仅虚构示例）；农历加农历前缀。
                 也支持199006150830 男或19900615083045 男的日期时间连写格式。
                 可附经度、时区、真太阳时、流年或流盘及流时选项，使用名称=值。
+                运限=0生成童限盘，运限=1至12选择第几个大运，与流年和流盘互斥。
+                流年=2026会返回生年、大限与流年三层四化及各层宫名。
                 图片可附主题=白天或主题=夜间；不填使用插件默认主题。
                 未知的出生资料先询问用户，不得代用示例。
             send_image(boolean): 用户需要图片时设true，默认false。

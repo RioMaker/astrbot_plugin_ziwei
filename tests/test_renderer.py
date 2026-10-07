@@ -101,8 +101,9 @@ def test_four_hua_sources_and_self_transformations_remain_separate():
         "self_hua": {"outward": "权", "inward": "科"},
     }
     marks = star_marks(star)
-    assert [mark["label"] for mark in marks] == ["禄", "忌"]
-    assert [mark["source"] for mark in marks] == ["生年", "流年"]
+    assert [mark["label"] for mark in marks] == ["禄", "科", "忌"]
+    assert [mark["source"] for mark in marks] == ["生年", "大限", "流年"]
+    assert [mark["row"] for mark in marks] == [0, 1, 2]
     assert not any(mark["self"] for mark in marks)
     assert star["self_hua"] == {"outward": "权", "inward": "科"}
 

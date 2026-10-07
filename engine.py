@@ -241,18 +241,71 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
     }
 
 
-def apply_flow(
-    natal: dict, *, year: int | None = None, target: datetime | None = None
-) -> dict:
-    """Return a fresh chart; rebuilding clears all previously selected flow layers."""
+def _fresh_flow_chart(natal: dict) -> dict:
+    """Copy natal data and remove all previously selected limit and flow layers."""
     chart = deepcopy(natal)
-    profile = RuleProfile(**chart["profile"])
-    # A chart passed back from a caller may already contain flow metadata.
     natal_layers = {"生年", "命宫", "日干"}
     for palace in chart["palaces"]:
         palace["flow_names"] = {}
         for star in palace["stars"]:
             star["hua"] = {k: v for k, v in star["hua"].items() if k in natal_layers}
+    chart["flow"] = None
+    return chart
+
+
+def _apply_layers(chart: dict, layers: dict, profile: RuleProfile) -> dict:
+    """Overlay selected palace names and four transformations onto the fresh copy."""
+    result_layers = {}
+    for layer, (branch, stem) in layers.items():
+        for palace in chart["palaces"]:
+            palace["flow_names"][layer] = PALACES[
+                wrap(branch - palace["branch"] + 1) - 1
+            ]
+            for star in palace["stars"]:
+                if star["id"] <= 28:
+                    value = hua_for(star["id"], stem, profile)
+                    if value:
+                        star["hua"][layer] = value
+        result_layers[layer] = {
+            "life": branch,
+            "stem": stem,
+            "four_hua": [
+                STAR_NAMES[sid] + HUA[i]
+                for i, sid in enumerate(profile.four_hua(stem), 1)
+            ],
+        }
+    return result_layers
+
+
+def apply_decade(natal: dict, index: int) -> dict:
+    """Return the selected toddler/decade chart without inventing an annual layer."""
+    if type(index) is not int or not 0 <= index <= 12:
+        raise ValueError("运限须为 0—12 的整数，0 为童限，1—12 为第几个大限")
+    chart = _fresh_flow_chart(natal)
+    profile = RuleProfile(**chart["profile"])
+    decade = next(item for item in chart["decades"] if item["index"] == index)
+    birth_year = chart["normalized"]["astrology_lunar"]["year"]
+    chart["flow"] = {
+        "kind": "decade",
+        "year": None,
+        "target": None,
+        "age": decade["age_start"],
+        "decade": deepcopy(decade),
+        "start_year": birth_year + decade["age_start"] - 1,
+        "end_year": birth_year + decade["age_end"] - 1,
+        "layers": _apply_layers(
+            chart, {"大限": (decade["branch"], decade["stem"])}, profile
+        ),
+    }
+    return chart
+
+
+def apply_flow(
+    natal: dict, *, year: int | None = None, target: datetime | None = None
+) -> dict:
+    """Return a fresh chart; rebuilding clears all previously selected flow layers."""
+    chart = _fresh_flow_chart(natal)
+    profile = RuleProfile(**chart["profile"])
     if target is not None:
         if not 1900 <= target.year <= 2100:
             raise ValueError("流盘日期支持 1900—2100")
@@ -309,30 +362,12 @@ def apply_flow(
                 "流时": (wrap(day_life + h - 1), wrap((day_stem - 1) % 5 * 2 + h, 10)),
             }
         )
-    result_layers = {}
-    for layer, (branch, stem) in layers.items():
-        for palace in chart["palaces"]:
-            palace["flow_names"][layer] = PALACES[
-                wrap(branch - palace["branch"] + 1) - 1
-            ]
-            for star in palace["stars"]:
-                if star["id"] <= 28:
-                    value = hua_for(star["id"], stem, profile)
-                    if value:
-                        star["hua"][layer] = value
-        result_layers[layer] = {
-            "life": branch,
-            "stem": stem,
-            "four_hua": [
-                STAR_NAMES[sid] + HUA[i]
-                for i, sid in enumerate(profile.four_hua(stem), 1)
-            ],
-        }
     chart["flow"] = {
+        "kind": "annual",
         "year": year,
         "age": age,
         "target": target.isoformat(sep=" ") if target else None,
         "decade": deepcopy(decade),
-        "layers": result_layers,
+        "layers": _apply_layers(chart, layers, profile),
     }
     return chart

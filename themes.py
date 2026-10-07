@@ -53,6 +53,16 @@ class Palette:
         )
         return color, "#" + "".join(f"{channel:02x}" for channel in channels)
 
+    def layer_style(self, source):
+        """Foreground and source fill; Lu/Quan/Ke/Ji remain single glyphs."""
+        fills = (
+            ("#9e2f2f", "#1a6840", "#1e5a8f")
+            if self.name == "day"
+            else ("#8f4944", "#2e6e50", "#365f87")
+        )
+        foreground = self.paper if self.name == "day" else self.ink
+        return foreground, fills[("生年", "大限", "流年").index(source)]
+
 
 DAY = Palette(
     "day",

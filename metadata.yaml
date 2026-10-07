@@ -1,7 +1,7 @@
 name: astrbot_plugin_ziwei
 display_name: 紫微斗数排盘
 desc: 群白名单控制的紫微斗数排盘，十二宫图、四化运限，支持LLM排盘与读取本人的临时命盘数据。
-version: "1.4.0"
+version: "1.5.0"
 author: Rio
 repo: "https://github.com/RioMaker/astrbot_plugin_ziwei"
 astrbot_version: ">=4.24.0"

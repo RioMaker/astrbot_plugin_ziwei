@@ -14,6 +14,8 @@ STAR_CATEGORIES = (
     ("malefic", "煞星"),
     ("minor", "杂曜"),
 )
+HUA_LAYERS = ("生年", "大限", "流年")
+LAYER_NAMES = {"生年": "生年", "大限": "大运", "流年": "流年"}
 MALEFIC_IDS = frozenset(
     {23, 24, 25, 26, 27, 28, 31, 37, 39, 41, 48, 53, 54, 57, 59, 62, 77, 78, 80}
 )
@@ -109,13 +111,14 @@ def display_category(star):
 def star_marks(star):
     """Keep transformation source explicit without repainting the star name."""
     marks = []
-    for layer in ("生年", "流年"):
+    for row, layer in enumerate(HUA_LAYERS):
         if star["hua"].get(layer):
             marks.append(
                 {
                     "label": star["hua"][layer],
                     "hua": star["hua"][layer],
                     "source": layer,
+                    "row": row,
                     "self": False,
                 }
             )
@@ -128,6 +131,9 @@ def make_chart_view(chart, theme="day"):
     birth_year = chart["normalized"]["astrology_lunar"]["year"]
     decades = {d["branch"]: d for d in chart["decades"] if d["index"] > 0}
     flow = chart["flow"]
+    layers = flow["layers"] if flow else {}
+    selected_year = flow.get("year") if flow else None
+    focus_year = selected_year or (flow.get("start_year") if flow else None)
     limit = min(2100, birth_year + chart["decades"][-1]["age_end"] - 1)
     palaces = []
     for palace in chart["palaces"]:
@@ -146,8 +152,8 @@ def make_chart_view(chart, theme="day"):
         first_year = birth_year + (palace["branch"] - ((birth_year - 4) % 12 + 1)) % 12
         years = [year for year in range(first_year, limit + 1, 12) if year >= 1900]
         start = 0
-        if flow and years:
-            nearest = min(range(len(years)), key=lambda i: abs(years[i] - flow["year"]))
+        if focus_year is not None and years:
+            nearest = min(range(len(years)), key=lambda i: abs(years[i] - focus_year))
             start = min(max(0, nearest - 2), max(0, len(years) - 5))
         years = years[start : start + 5]
         decade = decades[palace["branch"]]
@@ -161,10 +167,16 @@ def make_chart_view(chart, theme="day"):
                 "annual_years": years,
                 "annual_ages": [year - birth_year + 1 for year in years],
                 "annual_selected": bool(
-                    flow and palace["branch"] == flow["layers"]["流年"]["life"]
+                    "流年" in layers and palace["branch"] == layers["流年"]["life"]
                 ),
+                "decade_selected": bool(
+                    "大限" in layers and palace["branch"] == layers["大限"]["life"]
+                ),
+                "decade_label": f"大运{palace['flow_names']['大限']}"
+                if "大限" in layers
+                else "",
                 "annual_label": f"{flow['year']} · 流年{palace['flow_names']['流年']}"
-                if flow
+                if selected_year is not None
                 else "",
             }
         )
@@ -286,18 +298,18 @@ def _vertical_star(painter, star, x, y, color, step):
             padding=8,
         )
     size = 14
-    for index, mark in enumerate(star["marks"]):
-        color, fill = painter.palette.hua_color(mark["hua"])
+    for mark in star["marks"]:
+        color, fill = painter.palette.layer_style(mark["source"])
         width = painter.font(size).getlength(mark["label"]) + 8
         painter.pill(
             mark["label"],
             x + (step - width) / 2,
-            y + 91 + index * 23,
+            y + 91 + mark["row"] * 24,
             color,
-            fill if mark["source"] == "生年" else painter.palette.paper,
+            fill,
             size=size,
             height=24,
-            outline=color if mark["source"] == "流年" else fill,
+            outline=fill,
             padding=8,
         )
 
@@ -321,18 +333,29 @@ def _draw_palace(painter, item, chart, x, y, height):
                 color,
                 step,
             )
-    if chart["flow"]:
-        painter.pill(
-            item["annual_label"],
-            x + 70,
-            y + height - 156,
-            painter.palette.on_accent if selected else painter.palette.muted,
-            painter.palette.accent if selected else painter.palette.center,
-            size=16,
-            height=28,
-        )
+    badge_x = x + 70
+    for source, label in (
+        ("大限", item["decade_label"]),
+        ("流年", item["annual_label"]),
+    ):
+        if label:
+            foreground, fill = painter.palette.layer_style(source)
+            badge_x += (
+                painter.pill(
+                    label,
+                    badge_x,
+                    y + height - 156,
+                    foreground,
+                    fill,
+                    size=14,
+                    height=25,
+                    padding=12,
+                )
+                + 8
+            )
     painter.text("流年", x + 70, y + height - 120, 15, painter.palette.muted)
     year_x = x + 110
+    year_foreground, year_fill = painter.palette.layer_style("流年")
     for year in item["annual_years"]:
         active = bool(chart["flow"] and chart["flow"]["year"] == year)
         year_x += (
@@ -340,8 +363,8 @@ def _draw_palace(painter, item, chart, x, y, height):
                 str(year),
                 year_x,
                 y + height - 124,
-                painter.palette.on_accent if active else painter.palette.ink,
-                painter.palette.accent if active else painter.palette.paper,
+                year_foreground if active else painter.palette.ink,
+                year_fill if active else painter.palette.paper,
                 size=15,
                 height=25,
                 padding=4,
@@ -368,7 +391,7 @@ def _draw_palace(painter, item, chart, x, y, height):
     name_color = (
         painter.palette.major
         if natal_life
-        else painter.palette.accent
+        else painter.palette.hua_color("科")[0]
         if selected
         else painter.palette.ink
     )
@@ -416,18 +439,29 @@ def _draw_palace(painter, item, chart, x, y, height):
         24,
         painter.palette.element_color(palace["branch_name"]),
     )
-    if selected or natal_life:
+    if selected or item["decade_selected"] or natal_life:
+        outline = (
+            painter.palette.hua_color("科")[0]
+            if selected
+            else painter.palette.hua_color("禄")[0]
+            if item["decade_selected"]
+            else painter.palette.major
+        )
         painter.draw.rectangle(
             (x + 3, y + 3, x + CELL_WIDTH - 3, y + height - 3),
-            outline=painter.palette.accent if selected else painter.palette.major,
+            outline=outline,
             width=2,
         )
 
 
-def _draw_hua_row(painter, row, x, y, cell=152, size=19):
+def _draw_hua_row(painter, row, x, y, cell=152, size=19, source=None):
     for index, (name, value) in enumerate(row):
         sx = x + index * cell
-        color, fill = painter.palette.hua_color(value)
+        color, fill = (
+            painter.palette.layer_style(source)
+            if source in HUA_LAYERS
+            else painter.palette.hua_color(value)
+        )
         painter.text(name, sx, y + 5, size)
         painter.pill(
             value,
@@ -438,6 +472,27 @@ def _draw_hua_row(painter, row, x, y, cell=152, size=19):
             size=16,
             height=28,
         )
+
+
+def _draw_compact_pillars(painter, pillars, x, y):
+    """Four columns, stems above branches, in a 192 x 72 area."""
+    for index, pillar in enumerate(pillars):
+        sx = x + index * 48
+        painter.text(
+            ("年柱", "月柱", "日柱", "时柱")[index],
+            sx + 9,
+            y,
+            13,
+            painter.palette.muted,
+        )
+        for line, character in enumerate(pillar):
+            painter.text(
+                character,
+                sx + 11,
+                y + 22 + line * 26,
+                24,
+                painter.palette.element_color(character),
+            )
 
 
 def _draw_center(painter, chart, x, y, width, height):
@@ -490,98 +545,132 @@ def _draw_center(painter, chart, x, y, width, height):
     for index, (label, value) in enumerate(fields):
         painter.text(label, x + 28, y + 165 + index * 32, 17, painter.palette.muted)
         painter.text(value, x + 135, y + 162 + index * 32, 21, width=width - 163)
-    painter.text("四柱", x + 28, y + 317, 16, painter.palette.muted)
-    for index, pillar in enumerate(n["pillars"]):
-        sx = x + 135 + index * 142
-        painter.text(
-            ("年柱", "月柱", "日柱", "时柱")[index],
-            sx + 8,
-            y + 292,
-            15,
-            painter.palette.muted,
+    _draw_compact_pillars(painter, n["pillars"], x + 28, y + 292)
+    profile_rules = RuleProfile(**profile)
+    flow = chart["flow"]
+    flow_layers = flow["layers"] if flow else {}
+    rows = [
+        (
+            "生年",
+            [
+                (STAR_NAMES[sid], HUA[i])
+                for i, sid in enumerate(profile_rules.four_hua(n["year_stem"]), 1)
+            ],
         )
-        painter.pill(
-            pillar,
-            sx,
-            y + 311,
-            painter.palette.ink,
-            painter.palette.paper,
-            size=24,
-            height=40,
-        )
-    painter.text("生年四化", x + 28, y + 373, 18, painter.palette.accent)
-    p = RuleProfile(**profile)
-    row = [
-        (STAR_NAMES[sid], HUA[i]) for i, sid in enumerate(p.four_hua(n["year_stem"]), 1)
     ]
-    _draw_hua_row(painter, row, x + 28, y + 407, cell=(width - 56) // 4)
-    painter.rule(x + 28, y + 449, width - 56)
+    for source in ("大限", "流年"):
+        if source in flow_layers:
+            rows.append(
+                (
+                    source,
+                    [
+                        (value[:-1], value[-1])
+                        for value in flow_layers[source]["four_hua"]
+                    ],
+                )
+            )
+    painter.text("四化来源", x + 264, y + 298, 16, painter.palette.muted)
+    legend_x = x + 264
+    for source, _ in rows:
+        foreground, fill = painter.palette.layer_style(source)
+        legend_x += (
+            painter.pill(
+                LAYER_NAMES[source],
+                legend_x,
+                y + 325,
+                foreground,
+                fill,
+                size=14,
+                height=25,
+                padding=12,
+            )
+            + 10
+        )
+    for index, (source, pairs) in enumerate(rows):
+        sy = y + 386 + index * 36
+        foreground, fill = painter.palette.layer_style(source)
+        painter.pill(
+            LAYER_NAMES[source],
+            x + 28,
+            sy + 2,
+            foreground,
+            fill,
+            size=14,
+            height=25,
+            padding=12,
+        )
+        _draw_hua_row(
+            painter, pairs, x + 98, sy, cell=(width - 126) / 4, size=19, source=source
+        )
+    row_end = y + 386 + len(rows) * 36
+    painter.rule(x + 28, row_end + 8, width - 56)
     leap = {"current": "本月", "next": "下月", "split": "十五／十六分界"}[
         profile["leap_month_rule"]
     ]
     boundary = "23时换日" if profile["late_zi_rule"] == "next_day" else "零点换日"
     painter.text(
-        f"闰月 {leap}  ·  {boundary}", x + 28, y + 469, 16, painter.palette.muted
+        f"闰月 {leap}  ·  {boundary}", x + 28, row_end + 26, 16, painter.palette.muted
     )
     painter.text(
         f"大限：虚岁起限 · {'顺行' if chart['direction'] == 1 else '逆行'}",
         x + 28,
-        y + 498,
+        row_end + 53,
         16,
         painter.palette.muted,
     )
-    if chart["flow"]:
-        flow = chart["flow"]
-        by = y + 540
-        painter.card(
-            x + 24,
-            by,
-            width - 48,
-            151,
-            fill=painter.palette.paper,
-            outline=painter.palette.border,
-        )
-        painter.text("当前流年", x + 44, by + 16, 16, painter.palette.accent)
-        annual_gz = STEMS[(flow["year"] - 4) % 10] + BRANCHES[(flow["year"] - 4) % 12]
-        painter.text(
-            f"{flow['year']} · {annual_gz}", x + 44, by + 49, 28, painter.palette.accent
-        )
-        label = "童限" if flow["decade"]["index"] == 0 else "大限"
-        painter.text(
-            f"虚岁 {flow['age']}   {label} "
-            f"{flow['decade']['age_start']}—{flow['decade']['age_end']}岁",
-            x + 365,
-            by + 55,
-            18,
-            width=width - 407,
-        )
-        painter.text(
-            "目标 " + (flow["target"] or f"{flow['year']}农历年"),
-            x + 44,
-            by + 101,
-            18,
-            painter.palette.muted,
-            width - 88,
-        )
-        painter.text(
-            "年份按农历标注，同宫流年每12年重复。",
-            x + 44,
-            by + 130,
-            14,
-            painter.palette.muted,
-        )
-    else:
-        painter.text("大限一览 · 虚岁", x + 28, y + 538, 16, painter.palette.accent)
-        cell = (width - 56) / 4
-        for i, d in enumerate(chart["decades"][1:]):
-            sx = x + 28 + i % 4 * cell
-            sy = y + 572 + i // 4 * 40
+    if flow:
+        by = row_end + 96
+        painter.card(x + 24, by, width - 48, 120)
+        decade = flow["decade"]
+        decade_label = "童限" if decade["index"] == 0 else f"第{decade['index']}大运"
+        if flow.get("kind") == "decade":
+            painter.text("当前运限", x + 44, by + 12, 16, painter.palette.accent)
+            painter.text(decade_label, x + 44, by + 40, 27, painter.palette.accent)
             painter.text(
-                f"{d['age_start']}—{d['age_end']}岁 · {BRANCHES[d['branch'] - 1]}",
-                sx,
-                sy,
+                f"虚岁 {decade['age_start']}—{decade['age_end']}岁",
+                x + 350,
+                by + 44,
+                20,
+                width=width - 394,
+            )
+            target = (
+                f"农历 {flow['start_year']}—{flow['end_year']}年"
+                f" · 命宫{BRANCHES[decade['branch'] - 1]}"
+            )
+        else:
+            painter.text("当前流年", x + 44, by + 12, 16, painter.palette.accent)
+            annual_gz = (
+                STEMS[(flow["year"] - 4) % 10] + BRANCHES[(flow["year"] - 4) % 12]
+            )
+            painter.text(
+                f"{flow['year']} · {annual_gz}",
+                x + 44,
+                by + 40,
+                27,
+                painter.palette.accent,
+            )
+            painter.text(
+                f"虚岁 {flow['age']}   {decade_label} "
+                f"{decade['age_start']}—{decade['age_end']}岁",
+                x + 350,
+                by + 44,
+                17,
+                width=width - 394,
+            )
+            target = "目标 " + (flow["target"] or f"{flow['year']}农历年")
+        painter.text(target, x + 44, by + 85, 17, painter.palette.muted, width - 88)
+    else:
+        painter.text(
+            "大限一览 · 虚岁", x + 28, row_end + 94, 16, painter.palette.accent
+        )
+        cell = (width - 56) / 4
+        for index, decade in enumerate(chart["decades"][1:]):
+            painter.text(
+                f"{decade['age_start']}—{decade['age_end']}岁 "
+                f"· {BRANCHES[decade['branch'] - 1]}",
+                x + 28 + index % 4 * cell,
+                row_end + 128 + index // 4 * 40,
                 16,
-                painter.palette.ink,
             )
     if height < 710:
         raise ValueError("盘心资料区域高度不足")
@@ -602,11 +691,20 @@ def render_chart(chart, font_path, theme="day"):
     )
     painter.text("紫微斗数", MARGIN + 21, 30, 40)
     painter.text("十二宫命盘", MARGIN + 213, 54, 20, painter.palette.muted)
-    label = (
-        f"{chart['flow']['year']} 农历流年 · 虚岁{chart['flow']['age']}"
-        if chart["flow"]
-        else "本命盘"
-    )
+    if chart["flow"] and chart["flow"].get("kind") == "decade":
+        decade = chart["flow"]["decade"]
+        label = (
+            "童限盘"
+            if decade["index"] == 0
+            else f"第{decade['index']}大运 "
+            f"· {decade['age_start']}—{decade['age_end']}岁"
+        )
+    else:
+        label = (
+            f"{chart['flow']['year']} 农历流年 · 虚岁{chart['flow']['age']}"
+            if chart["flow"]
+            else "本命盘"
+        )
     painter.pill(
         label,
         width - MARGIN - (289 if chart["flow"] else 110),
@@ -656,14 +754,16 @@ def render_chart(chart, font_path, theme="day"):
             sy = footer_y + 38 + i // 2 * 88
             painter.card(sx, sy, 2 * CELL_WIDTH - 8, 76)
             painter.text(
-                f"{label} · 命宫{BRANCHES[layer['life'] - 1]}",
+                f"{LAYER_NAMES.get(label, label)} · 命宫{BRANCHES[layer['life'] - 1]}",
                 sx + 18,
                 sy + 12,
                 16,
                 painter.palette.muted,
             )
             pairs = [(text[:-1], text[-1]) for text in layer["four_hua"]]
-            _draw_hua_row(painter, pairs, sx + 18, sy + 39, cell=184, size=18)
+            _draw_hua_row(
+                painter, pairs, sx + 18, sy + 39, cell=184, size=18, source=label
+            )
     by = footer_y + summary_height + 10
     painter.text(
         "宫位大限为虚岁；同宫流年年份每12年重复，选中流年单独高亮。",

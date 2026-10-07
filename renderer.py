@@ -50,10 +50,18 @@ def text_chart(chart):
     ]
     if chart["flow"]:
         flow = chart["flow"]
-        lines += [
-            f"目标：{flow['target'] or str(flow['year']) + '农历年'}"
-            f" · 虚岁{flow['age']}"
-        ]
+        if flow.get("kind") == "decade":
+            decade = flow["decade"]
+            label = "童限" if decade["index"] == 0 else f"第{decade['index']}大运"
+            lines.append(
+                f"运限：{label} · 虚岁{decade['age_start']}—{decade['age_end']}"
+                f" · 农历{flow['start_year']}—{flow['end_year']}年"
+            )
+        else:
+            lines += [
+                f"目标：{flow['target'] or str(flow['year']) + '农历年'}"
+                f" · 虚岁{flow['age']}"
+            ]
         for label, layer in flow["layers"].items():
             lines.append(
                 f"{label}命宫：{BRANCHES[layer['life'] - 1]}；"

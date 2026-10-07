@@ -8,7 +8,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from astrbot_plugin_ziwei.commands import parse_request  # noqa: E402
-from astrbot_plugin_ziwei.engine import apply_flow, build_chart  # noqa: E402
+from astrbot_plugin_ziwei.engine import (  # noqa: E402
+    apply_decade,
+    apply_flow,
+    build_chart,
+)
 from astrbot_plugin_ziwei.renderer import Renderer, text_chart  # noqa: E402
 
 
@@ -22,7 +26,9 @@ def main():
     try:
         request = parse_request(args.command)
         chart = build_chart(request.birth, request.profile)
-        if request.flow_year is not None or request.flow_target is not None:
+        if request.decade_index is not None:
+            chart = apply_decade(chart, request.decade_index)
+        elif request.flow_year is not None or request.flow_target is not None:
             chart = apply_flow(
                 chart, year=request.flow_year, target=request.flow_target
             )
