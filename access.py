@@ -23,6 +23,7 @@ class GroupScope:
     astrbot_admin: bool
     role: str
     bot: object
+    umo: str = ""
 
     @property
     def key(self):
@@ -46,6 +47,7 @@ def capture_group(event) -> GroupScope:
         astrbot_admin=bool(event.is_admin()),
         role=str(field(sender, "role", "") or "").lower(),
         bot=getattr(event, "bot", None),
+        umo=str(getattr(event, "unified_msg_origin", "") or ""),
     )
 
 

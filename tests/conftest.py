@@ -23,6 +23,19 @@ def command(name, **kwargs):
     return decorate
 
 
+def llm_tool(name):
+    def decorate(fn):
+        fn.tool_metadata = {"name": name}
+        return fn
+
+    return decorate
+
+
+class MessageChain:
+    def __init__(self, chain):
+        self.chain = chain
+
+
 class Star:
     def __init__(self, context):
         self.context = context
@@ -53,7 +66,8 @@ module("astrbot.api", AstrBotConfig=dict, logger=logging.getLogger("ziwei-tests"
 module(
     "astrbot.api.event",
     AstrMessageEvent=object,
-    filter=SimpleNamespace(command=command),
+    MessageChain=MessageChain,
+    filter=SimpleNamespace(command=command, llm_tool=llm_tool),
 )
 module("astrbot.api.message_components", Image=Image)
 module(
@@ -80,6 +94,11 @@ class Event:
         self.platform, self.group, self.user = platform, group, user
         self.platform_name, self.admin, self.bot = platform_name, admin, bot
         self.message_obj = SimpleNamespace(raw_message={"sender": {"role": role}})
+        self.unified_msg_origin = (
+            f"{platform}:GroupMessage:{group}"
+            if group
+            else f"{platform}:FriendMessage:{user}"
+        )
 
     def get_platform_id(self):
         return self.platform
