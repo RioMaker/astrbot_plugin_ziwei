@@ -18,13 +18,15 @@ HELP = f"""紫微斗数排盘
 开启后可让LLM按明确资料排盘，或读取本人在本群最近一张盘进行解读。
 最近命盘缓存有效期15分钟，仅保留于内存，关闭本群功能或重载后清除。
 /紫微 {DEMO_BIRTH}
+/ziwei 199006150830 男
 /紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
 /紫微 {DEMO_BIRTH} 经度=116.4 时区=8
 /紫微 {DEMO_BIRTH} 流年=2026
 /紫微 {DEMO_BIRTH} 流盘=2026-10-06 流时=10:00
 以上日期均为虚构演示数据，请替换为需要排盘的出生资料。
 末尾加「文字」返回完整文字盘；默认发送图片。别名 /紫微排盘、/ziwei。
-支持 1900—2100 年，时间须明确填写，可用 HH:MM:SS 或十二时辰（子时以 00:00 代表）。
+支持日期时间连写 YYYYMMDDHHMM 或 YYYYMMDDHHMMSS，之后填写性别。
+支持 1900—2100 年，时间须明确填写，可用 HH:MM:SS、HHMM、HHMMSS 或十二时辰。
 默认公历、UTC+8、东经120度，启用真太阳时近似校正。
 可选：闰月=current|next|split，子时=next_day|midnight。
 默认闰月十五／十六分界、晚子时换日。出生资料不写入永久命例库。"""
@@ -58,7 +60,9 @@ def parse_clock(text: str):
         return branches.index(text[0]) * 2, 0, 0
     match = re.fullmatch(r"(\d{1,2}):(\d{2})(?::(\d{2}))?", text)
     if not match:
-        raise ValueError("时刻应为 HH:MM、HH:MM:SS 或十二时辰")
+        match = re.fullmatch(r"(\d{2})(\d{2})(\d{2})?", text)
+    if not match:
+        raise ValueError("时刻应为 HH:MM、HH:MM:SS、HHMM、HHMMSS 或十二时辰")
     hour, minute, second = (int(match[1]), int(match[2]), int(match[3] or 0))
     if not 0 <= hour <= 23 or not 0 <= minute <= 59 or not 0 <= second <= 59:
         raise ValueError("时刻超出有效范围")
@@ -78,6 +82,15 @@ def parse_request(text: str, config=None) -> ChartRequest:
     calendar = "solar"
     if tokens[0] in {"公历", "阳历", "solar", "农历", "阴历", "lunar"}:
         calendar = "lunar" if tokens.pop(0) in {"农历", "阴历", "lunar"} else "solar"
+    if tokens:
+        joined = re.fullmatch(r"(\d{8})(\d{2})(\d{2})(\d{2})?", tokens[0])
+        if joined:
+            clock = f"{joined[2]}:{joined[3]}"
+            if joined[4]:
+                clock += f":{joined[4]}"
+            tokens[:1] = [joined[1], clock]
+        elif tokens[0].isdecimal() and len(tokens[0]) > 8:
+            raise ValueError("日期时间连写须为12位 YYYYMMDDHHMM 或14位 YYYYMMDDHHMMSS")
     if len(tokens) < 3:
         raise ValueError(f"请完整填写出生日期、时刻和性别，例如：{DEMO_BIRTH}")
     year, month, day, leap = parse_date(tokens[0], calendar == "lunar")

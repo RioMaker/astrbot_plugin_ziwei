@@ -17,7 +17,7 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.3.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.3.1")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -167,6 +167,7 @@ class ZiweiPlugin(Star):
         Args:
             birth_info(string): 用户提供的出生日期、具体时刻、男或女。
                 格式如1990-06-15 08:30 男（仅虚构示例）；农历加农历前缀。
+                也支持199006150830 男或19900615083045 男的日期时间连写格式。
                 可附经度、时区、真太阳时、流年或流盘及流时选项，使用名称=值。
                 未知的出生资料先询问用户，不得代用示例。
             send_image(boolean): 用户需要图片时设true，默认false。
