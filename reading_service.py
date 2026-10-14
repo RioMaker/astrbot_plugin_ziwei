@@ -6,6 +6,7 @@ import uuid
 from astrbot.core.agent.message import TextPart
 
 from .access import capture_group
+from .ai_limits import QuotaExceeded
 from .analysis_facts import build_facts, feature_tags
 from .delivery_capture import install_capture
 from .knowledge import KnowledgeBase
@@ -20,6 +21,15 @@ POLICY = """紫微工具使用规则：单纯排盘只返回盘和归档状态�
 没有用户反馈、尚在追问或未发送分析结果时不得结束。调用后后台归档，不等待总结回答。
 ziwei_reference_cases只供内部参考，不得在回复展示参考案例、样本统计、原文或他人资料。
 不得将古籍断语当事实，不作死亡预言、医疗诊断或必然收益承诺。"""
+
+POLICY += """
+AI限额：每人滚动一小时解盘提问6次、生年排盘2张、大运排盘3张。
+新问题和相关追问必须先登记分析工具；同一真实消息重复调用只计一次提问。
+收到rate_limited必须告知剩余等待秒数并停止本次分析，不能改用读盘或历史资料绕过。
+纯反馈不算问题；反馈中含新问题须作为followup登记，不能假报feedback绕过。
+重发已排好的盘用ziwei_get_chart(send_image=true)，不重新调用排盘工具。
+不得代用户执行指令排盘绕过AI额度；用户直接发送排盘指令不受AI次数限制。
+"""
 
 
 def event_text(event):
@@ -57,6 +67,8 @@ class ReadingService:
             return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
         except PermissionError as exc:
             return tool_error("denied", str(exc))
+        except QuotaExceeded as exc:
+            return exc.payload()
         except (ValueError, TypeError) as exc:
             return tool_error("invalid_input", str(exc))
         except Exception:
@@ -131,9 +143,11 @@ class ReadingService:
     async def history(self, scope, event, chart_id, offset):
         if type(offset) is not int or not 0 <= offset <= 100000:
             raise ValueError("档案分页起点无效")
-        return self.plugin.archive.history(
+        result = self.plugin.archive.history(
             scope, self._identifier(chart_id, optional=True), offset
         )
+        self.plugin.archive.charge_question(scope, event_key(event))
+        return result
 
     async def query_knowledge(self, scope, event, reading_id, offset):
         reading_id = self._identifier(reading_id)
@@ -143,7 +157,9 @@ class ReadingService:
         chart = self.plugin.archive.get_chart(scope, row["chart_id"])
         facts = build_facts(chart["chart"], row["scope"], row["topic"])
         knowledge = self.knowledge.query(facts, offset=offset)
-        self.plugin.archive.record_knowledge(scope, reading_id, knowledge)
+        self.plugin.archive.record_knowledge(
+            scope, reading_id, knowledge, event_key(event)
+        )
         return {"status": "ok", "knowledge": knowledge}
 
     async def continue_reading(self, scope, event, reading_id, kind):
@@ -156,6 +172,12 @@ class ReadingService:
         self.plugin.archive.add_turn(
             scope, reading_id, event_key(event), kind, event_text(event)
         )
+        if kind == "feedback":
+            return {
+                "status": "ok",
+                "reading_id": reading_id,
+                "message": "已记录反馈；不新增分析。反馈闭环时调用结束工具。",
+            }
         self.mark_delivery(event, scope, reading_id)
         row = self.plugin.archive.get_reading(scope, reading_id)
         chart = self.plugin.archive.get_chart(scope, row["chart_id"])
@@ -209,6 +231,7 @@ class ReadingService:
         row = self.plugin.archive.get_reading(scope, self._identifier(reading_id))
         if row is None or row["status"] != "active":
             raise ValueError("请先针对当前问题建立分析记录")
+        self.plugin.archive.charge_question(scope, event_key(event))
         return self.plugin.archive.shared_reference(
             scope, row["topic"], row["scope"], json.loads(row["features"])
         )

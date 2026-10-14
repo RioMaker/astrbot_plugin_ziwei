@@ -458,7 +458,8 @@ def test_one_reply_cannot_mix_two_chart_scopes_and_query_is_paginated():
             == "invalid_input"
         )
         for _ in range(11):
-            await plugin.ziwei_paipan(Event(), DEMO_BIRTH)
+            async for _reply in plugin.ziwei(Event(), DEMO_BIRTH + " 文字"):
+                pass
         page1 = json.loads(await plugin.ziwei_list_archives(Event()))
         page2 = json.loads(
             await plugin.ziwei_list_archives(Event(), page1["next_offset"])

@@ -45,7 +45,7 @@ def test_tool_schema_uses_actual_docstring_parser():
         (
             ZiweiPlugin.ziwei_get_chart,
             "ziwei_get_chart",
-            {"chart_id": "string", "palace": "string"},
+            {"chart_id": "string", "palace": "string", "send_image": "boolean"},
         ),
     ):
         assert function.tool_metadata["name"] == name
@@ -185,6 +185,7 @@ def test_cache_expires_without_read_refresh_and_archives_retain_old_ids():
     now = [0.0]
     p = ZiweiPlugin(Context(), {})
     p.chart_cache = ChartCache(clock=lambda: now[0])
+    p.archive.clock = lambda: now[0]
 
     async def run():
         await allow(p)
@@ -196,6 +197,7 @@ def test_cache_expires_without_read_refresh_and_archives_retain_old_ids():
             json.loads(await p.ziwei_get_chart(Event(), first["chart_id"]))["status"]
             == "ok"
         )
+        now[0] = 3601
         fresh = json.loads(await p.ziwei_paipan(Event(), DEMO_BIRTH))
         newest = json.loads(await p.ziwei_paipan(Event(), "1995-07-20 12:00 女"))
         assert newest["chart_id"] != fresh["chart_id"]

@@ -8,6 +8,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
+from .ai_limits import question_token, take
 from .llm_data import owner_key
 
 
@@ -29,7 +30,7 @@ class ArchiveStore:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             self.db.close()
             raise ValueError("命盘档案版本较新，拒绝降级打开")
         self.db.executescript("""
@@ -54,10 +55,16 @@ class ArchiveStore:
                 reading_id TEXT NOT NULL REFERENCES readings(id),
                 event_id TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL,
                 created REAL NOT NULL, UNIQUE(reading_id, event_id, kind));
-            PRAGMA user_version=1;
+            CREATE TABLE IF NOT EXISTS ai_usage (
+                owner TEXT NOT NULL, kind TEXT NOT NULL, token TEXT NOT NULL,
+                created REAL NOT NULL, pending INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY(owner,kind,token));
+            CREATE INDEX IF NOT EXISTS ai_usage_created ON ai_usage(created);
+            PRAGMA user_version=2;
         """)
         with self.transaction() as db:
             db.execute("UPDATE readings SET status='queued' WHERE status='running'")
+            db.execute("DELETE FROM ai_usage WHERE pending=1")
 
     @contextmanager
     def transaction(self):
@@ -76,7 +83,21 @@ class ArchiveStore:
                 (scope.key, int(enabled)),
             )
 
-    def save_chart(self, scope, chart):
+    def reserve_chart(self, scope, kind):
+        token = uuid.uuid4().hex
+        with self.transaction() as db:
+            take(db, scope, kind, token, self.clock(), pending=True)
+        return token
+
+    def charge_question(self, scope, event_id):
+        with self.transaction() as db:
+            take(db, scope, "question", question_token(scope, event_id), self.clock())
+
+    def release_chart(self, token):
+        with self.transaction() as db:
+            db.execute("DELETE FROM ai_usage WHERE token=? AND pending=1", (token,))
+
+    def save_chart(self, scope, chart, quota_token=None):
         owner = owner_id(scope)
         chart_id = uuid.uuid4().hex
         family = hashlib.sha256(
@@ -95,6 +116,10 @@ class ArchiveStore:
                 (chart_id, owner, scope.key, family, self.clock(), encode(chart)),
             )
             db.execute("INSERT OR REPLACE INTO groups_state VALUES (?,1)", (scope.key,))
+            if quota_token:
+                db.execute(
+                    "UPDATE ai_usage SET pending=0 WHERE token=?", (quota_token,)
+                )
         return chart_id
 
     def get_chart(self, scope, chart_id=""):
@@ -167,7 +192,7 @@ class ArchiveStore:
             "usage": "本人历史反馈仅供当前分析内部参考，不披露档案原文或参考内容。",
         }
 
-    def record_knowledge(self, scope, reading_id, knowledge):
+    def record_knowledge(self, scope, reading_id, knowledge, event_id=None):
         with self.transaction() as db:
             row = self.get_reading(scope, reading_id)
             if row is None or row["status"] != "active":
@@ -175,6 +200,10 @@ class ArchiveStore:
             stored = json.loads(row["knowledge"])
             if stored["version"] != knowledge["version"]:
                 raise ValueError("知识版本已变化，请结束原分析后重新建立分析")
+            if event_id is not None:
+                take(
+                    db, scope, "question", question_token(scope, event_id), self.clock()
+                )
             cards = {c["id"]: c for c in stored["cards"]}
             cards.update({c["id"]: c for c in knowledge["cards"]})
             stored["cards"] = list(cards.values())
@@ -209,6 +238,7 @@ class ArchiveStore:
             ).fetchone()
             if old:
                 return old["id"]
+            take(db, scope, "question", question_token(scope, event_id), self.clock())
             now = self.clock()
             db.execute(
                 "INSERT INTO readings(id,chart_id,owner,group_key,scope,topic,status,"
@@ -282,6 +312,10 @@ class ArchiveStore:
                 for t in row["turns"]
             ):
                 raise ValueError("同一用户消息不能作为其后回答的反馈")
+            if kind == "followup":
+                take(
+                    db, scope, "question", question_token(scope, event_id), self.clock()
+                )
             self._turn(db, reading_id, event_id, kind, text)
 
     def enqueue(self, scope, reading_id, feedback_event, provider):

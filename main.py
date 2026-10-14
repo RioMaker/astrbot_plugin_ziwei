@@ -12,6 +12,7 @@ from astrbot.core.star.filter.command import GreedyStr
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .access import GroupAccess, can_manage, capture_group
+from .ai_limits import QuotaExceeded
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
 from .engine import apply_decade, apply_flow, build_chart
@@ -22,7 +23,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.6.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.6.1")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -234,16 +235,24 @@ class ZiweiPlugin(Star):
             logger.error(f"紫微斗数工具授权检查失败：{type(exc).__name__}")
             return tool_error("unavailable", "群使用白名单暂不可用。")
         self.pending += 1
+        quota_token = None
         try:
             request = parse_request(birth_info, self.config)
             async with self.gate:
+                if request.decade_index is not None:
+                    quota_token = self.archive.reserve_chart(scope, "decade")
+                elif request.flow_target is None and request.flow_year is None:
+                    quota_token = self.archive.reserve_chart(scope, "natal")
                 chart = await self._compute_chart(request)
                 if self.closed:
                     return tool_error("unavailable", "插件正在重载，请稍后重试。")
                 rejection = await self._chart_access(scope)
                 if rejection:
                     return tool_error("denied", rejection)
-                chart_id = self.archive.save_chart(scope, chart)
+                chart_id = self.archive.save_chart(
+                    scope, chart, quota_token=quota_token
+                )
+                quota_token = None
                 row = self.chart_cache.put(scope, chart, chart_id=chart_id)
                 image_status = "not_requested"
                 if send_image:
@@ -284,6 +293,8 @@ class ZiweiPlugin(Star):
                     "默认不分析；只有用户明确询问才查询对应作用域的分析资料。"
                 )
                 return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+        except QuotaExceeded as exc:
+            return exc.payload()
         except ValueError as exc:
             return tool_error(
                 "invalid_input", str(exc) + "；请确认用户资料，不得代用虚构示例。"
@@ -293,10 +304,45 @@ class ZiweiPlugin(Star):
             return tool_error("unavailable", "排盘暂时失败，不要自行猜测计算结果。")
         finally:
             self.pending -= 1
+            if quota_token and not self.closed:
+                try:
+                    self.archive.release_chart(quota_token)
+                except Exception as exc:
+                    logger.warning(f"紫微斗数额度释放失败：{type(exc).__name__}")
+
+    async def _resend_chart(self, scope, chart):
+        if self.renderer is None or not scope.umo:
+            return "unavailable"
+        if self.pending >= 4:
+            return "busy"
+        self.pending += 1
+        try:
+            async with self.gate:
+                png = await asyncio.to_thread(
+                    self.renderer.render, chart, self.config.get("image_theme", "day")
+                )
+                if await self._chart_access(scope):
+                    return "denied"
+                sent = await asyncio.wait_for(
+                    self.context.send_message(
+                        scope.umo, MessageChain([Image.fromBytes(png)])
+                    ),
+                    timeout=30,
+                )
+                return "sent" if sent is not False else "failed"
+        except Exception as exc:
+            logger.warning(f"紫微斗数命盘重发失败：{type(exc).__name__}")
+            return "failed"
+        finally:
+            self.pending -= 1
 
     @filter.llm_tool(name="ziwei_get_chart")
     async def ziwei_get_chart(
-        self, event: AstrMessageEvent, chart_id: str = "", palace: str = ""
+        self,
+        event: AstrMessageEvent,
+        chart_id: str = "",
+        palace: str = "",
+        send_image: bool = False,
     ) -> str:
         """读取本人在当前群的命盘，可用永久档案ID查询历史快照。缓存15分钟，过期或重载后回查本人档案。只返回计算事实，默认不分析，不得跨成员或跨群查询。
 
@@ -305,6 +351,8 @@ class ZiweiPlugin(Star):
                 仅限当前用户在本群的盘；旧ID仍可查询对应归档快照。
             palace(string): 留空取十二宫，或填命宫、夫妻、财帛、官禄等本命宫名。
                 返回对应宫位、整体摘要及运限数据。
+            send_image(boolean): 用户要求重发已有盘时为true，使用默认图片主题。
+                重发完整已归档命盘，不重算、不新增档案、不消耗排盘或解盘次数。
         """
         if self.closed:
             return tool_error("unavailable", "插件正在重载，请稍后重试。")
@@ -320,8 +368,11 @@ class ZiweiPlugin(Star):
                 or not isinstance(palace, str)
                 or len(chart_id) > 64
                 or len(palace) > 16
+                or type(send_image) is not bool
             ):
-                return tool_error("invalid_input", "命盘ID和宫名须为有效文本。")
+                return tool_error(
+                    "invalid_input", "命盘ID和宫名须为有效文本，send_image须为布尔值。"
+                )
             row = self.chart_cache.get(scope, chart_id.strip())
             if row is None:
                 archived = self.archive.get_chart(scope, chart_id.strip())
@@ -341,6 +392,14 @@ class ZiweiPlugin(Star):
                 )
             )
             result["archive_status"] = "saved"
+            result["image_status"] = (
+                await self._resend_chart(scope, row.chart)
+                if send_image
+                else "not_requested"
+            )
+            rejection = await self._chart_access(scope)
+            if rejection:
+                return tool_error("denied", rejection)
             return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
         except ValueError as exc:
             return tool_error("invalid_input", str(exc))
