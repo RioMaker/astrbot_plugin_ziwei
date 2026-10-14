@@ -41,10 +41,12 @@ class ChartCache:
         for key in [key for key, row in self.entries.items() if row.expires_at <= now]:
             del self.entries[key]
 
-    def put(self, scope, chart):
+    def put(self, scope, chart, chart_id=None):
         self._expire()
         key = owner_key(scope)
-        row = CachedChart(uuid.uuid4().hex, deepcopy(chart), self.clock() + self.ttl)
+        row = CachedChart(
+            chart_id or uuid.uuid4().hex, deepcopy(chart), self.clock() + self.ttl
+        )
         self.entries.pop(key, None)
         self.entries[key] = row
         while len(self.entries) > self.capacity:

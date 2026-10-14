@@ -1,4 +1,10 @@
 {
+  "summary_provider_id": {
+    "description": "独立归档总结模型",
+    "type": "string",
+    "default": "",
+    "hint": "填 AstrBot 已配置的聊天模型供应商ID；留空使用该会话当前模型。仅反馈闭环后后台调用，使用独立空上下文。"
+  },
   "image_theme": {
     "description": "默认图片主题",
     "type": "string",

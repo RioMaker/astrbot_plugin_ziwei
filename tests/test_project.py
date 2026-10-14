@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_metadata_and_config_are_loadable_and_consistent():
     meta = yaml.safe_load((ROOT / "metadata.yaml").read_text("utf-8"))
     assert meta["name"] == ROOT.name == "astrbot_plugin_ziwei"
-    assert meta["version"] == "1.5.0"
+    assert meta["version"] == "1.6.0"
     assert meta["repo"] == "https://github.com/RioMaker/astrbot_plugin_ziwei"
     tree = ast.parse((ROOT / "main.py").read_text("utf-8"))
     registration = next(
@@ -37,7 +37,7 @@ def test_metadata_and_config_are_loadable_and_consistent():
 
 def test_repository_documents_have_valid_relative_links():
     for doc in ROOT.rglob("*.md"):
-        if ".dev" in doc.parts:
+        if any(p in doc.parts for p in (".dev", ".venv")):
             continue
         for target in re.findall(r"\]\(([^)]+)\)", doc.read_text("utf-8")):
             if "://" not in target and not target.startswith("#"):

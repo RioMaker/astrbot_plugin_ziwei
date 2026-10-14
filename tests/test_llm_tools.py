@@ -176,12 +176,12 @@ def test_close_revokes_tools_and_purges_group_cache_even_after_reopen():
         assert not p.chart_cache.entries
         assert json.loads(await p.ziwei_get_chart(Event()))["status"] == "denied"
         await invoke_command(p, "开启", Event(role="owner"))
-        assert json.loads(await p.ziwei_get_chart(Event()))["status"] == "not_found"
+        assert json.loads(await p.ziwei_get_chart(Event()))["status"] == "ok"
 
     asyncio.run(run())
 
 
-def test_cache_expires_without_read_refresh_and_latest_chart_replaces_old_id():
+def test_cache_expires_without_read_refresh_and_archives_retain_old_ids():
     now = [0.0]
     p = ZiweiPlugin(Context(), {})
     p.chart_cache = ChartCache(clock=lambda: now[0])
@@ -194,14 +194,14 @@ def test_cache_expires_without_read_refresh_and_latest_chart_replaces_old_id():
         now[0] = 901
         assert (
             json.loads(await p.ziwei_get_chart(Event(), first["chart_id"]))["status"]
-            == "not_found"
+            == "ok"
         )
         fresh = json.loads(await p.ziwei_paipan(Event(), DEMO_BIRTH))
         newest = json.loads(await p.ziwei_paipan(Event(), "1995-07-20 12:00 女"))
         assert newest["chart_id"] != fresh["chart_id"]
         assert (
             json.loads(await p.ziwei_get_chart(Event(), fresh["chart_id"]))["status"]
-            == "not_found"
+            == "ok"
         )
 
     asyncio.run(run())
@@ -270,10 +270,7 @@ def test_reload_clears_cache_and_kv_contains_only_group_authorization():
         assert not p.chart_cache.entries
         assert json.loads(await p.ziwei_get_chart(Event()))["status"] == "unavailable"
         replacement = ZiweiPlugin(context, {})
-        assert (
-            json.loads(await replacement.ziwei_get_chart(Event()))["status"]
-            == "not_found"
-        )
+        assert json.loads(await replacement.ziwei_get_chart(Event()))["status"] == "ok"
 
     asyncio.run(run())
 

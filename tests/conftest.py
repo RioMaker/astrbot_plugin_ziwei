@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
@@ -67,7 +69,12 @@ module(
     "astrbot.api.event",
     AstrMessageEvent=object,
     MessageChain=MessageChain,
-    filter=SimpleNamespace(command=command, llm_tool=llm_tool),
+    filter=SimpleNamespace(
+        command=command,
+        llm_tool=llm_tool,
+        on_llm_request=lambda: lambda fn: fn,
+        after_message_sent=lambda: lambda fn: fn,
+    ),
 )
 module("astrbot.api.message_components", Image=Image)
 module(
@@ -77,6 +84,40 @@ module("astrbot.core")
 module("astrbot.core.star")
 module("astrbot.core.star.filter")
 module("astrbot.core.star.filter.command", GreedyStr=GreedyStr)
+module("astrbot.core.utils")
+module("astrbot.core.utils.astrbot_path", get_astrbot_data_path=lambda: _data_path)
+module("astrbot.core.agent")
+
+
+class TextPart:
+    def __init__(self, text):
+        self.text = text
+
+    def mark_as_temp(self):
+        self.temporary = True
+        return self
+
+
+module("astrbot.core.agent.message", TextPart=TextPart)
+
+
+@pytest.fixture(autouse=True)
+def isolated_archive(tmp_path, monkeypatch):
+    global _data_path
+    _data_path = tmp_path
+    from astrbot_plugin_ziwei.archive_store import ArchiveStore
+
+    stores = []
+    original = ArchiveStore.__init__
+
+    def track(self, *args, **kwargs):
+        original(self, *args, **kwargs)
+        stores.append(self)
+
+    monkeypatch.setattr(ArchiveStore, "__init__", track)
+    yield
+    for store in stores:
+        store.close()
 
 
 class Event:
@@ -90,8 +131,11 @@ class Event:
         admin=False,
         platform_name="aiocqhttp",
         bot=None,
+        text="",
     ):
         self.platform, self.group, self.user = platform, group, user
+        self.message_str = text
+        self.result = None
         self.platform_name, self.admin, self.bot = platform_name, admin, bot
         self.message_obj = SimpleNamespace(raw_message={"sender": {"role": role}})
         self.unified_msg_origin = (
@@ -102,6 +146,19 @@ class Event:
 
     def get_platform_id(self):
         return self.platform
+
+    def get_message_str(self):
+        return self.message_str
+
+    def get_result(self):
+        return self.result
+
+    async def send(self, message):
+        self.result = message
+
+    async def send_streaming(self, generator, *args, **kwargs):
+        async for chunk in generator:
+            await self.send(chunk)
 
     def get_platform_name(self):
         return self.platform_name

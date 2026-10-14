@@ -2,22 +2,27 @@
 
 import asyncio
 import json
+from pathlib import Path
 
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.message_components import Image
 from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter.command import GreedyStr
+from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .access import GroupAccess, can_manage, capture_group
+from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
 from .engine import apply_decade, apply_flow, build_chart
-from .llm_data import ChartCache, chart_payload, tool_error
+from .llm_data import CachedChart, ChartCache, chart_payload, tool_error
+from .reading_service import ReadingService
 from .renderer import Renderer, text_chart
 from .rules import RuleProfile
+from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.5.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.6.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -32,6 +37,17 @@ class ZiweiPlugin(Star):
         self.access = GroupAccess(
             self.get_kv_data, self.put_kv_data, self.delete_kv_data
         )
+        data_dir = (
+            Path(get_astrbot_data_path()) / "plugin_data" / "astrbot_plugin_ziwei"
+        )
+        self.archive = ArchiveStore(data_dir / "archives.sqlite3")
+        self.readings = ReadingService(self)
+        self.summary_worker = SummaryWorker(
+            self.archive,
+            self.context,
+            self._chart_access,
+            provider=str(config.get("summary_provider_id", "") or ""),
+        )
         try:
             self.renderer = Renderer(
                 str(config.get("font_path", "") or ""),
@@ -44,6 +60,11 @@ class ZiweiPlugin(Star):
     async def terminate(self):
         self.closed = True
         self.chart_cache.clear()
+        await self.summary_worker.stop()
+        self.archive.close()
+
+    async def initialize(self):
+        self.summary_worker.wake()
 
     @staticmethod
     def _scope_rejection(scope):
@@ -82,8 +103,11 @@ class ZiweiPlugin(Star):
                 return "仅群主、群管理员或 AstrBot 管理员可以开启或关闭本群紫微排盘。"
             enabled = text in {"开启", "开"}
             await self.access.set_enabled(scope, enabled)
+            self.archive.set_group(scope, enabled)
             if not enabled:
                 self.chart_cache.clear_group(scope)
+            else:
+                self.summary_worker.wake()
             return (
                 "本群紫微排盘已开启，群成员可使用 /紫微 排盘。"
                 if enabled
@@ -122,6 +146,9 @@ class ZiweiPlugin(Star):
         if access_message is not None:
             yield event.plain_result(access_message)
             return
+        if not scope.user_id:
+            yield event.plain_result("无法确认当前发送者身份，不能建立命盘档案。")
+            return
         if self.pending >= 4:
             yield event.plain_result("排盘请求较多，请稍后重试。")
             return
@@ -138,7 +165,8 @@ class ZiweiPlugin(Star):
                     yield event.plain_result(access_message)
                     return
                 if scope.user_id:
-                    self.chart_cache.put(scope, chart)
+                    chart_id = self.archive.save_chart(scope, chart)
+                    self.chart_cache.put(scope, chart, chart_id=chart_id)
                 if request.output == "image" and self.renderer is not None:
                     try:
                         png = await asyncio.to_thread(
@@ -148,6 +176,10 @@ class ZiweiPlugin(Star):
                         logger.warning("紫微斗数：图片生成失败，返回文字盘。")
                         png = None
                     if png is not None:
+                        access_message = await self._chart_access(scope)
+                        if access_message:
+                            yield event.plain_result(access_message)
+                            return
                         yield event.chain_result([Image.fromBytes(png)])
                         return
                 report = text_chart(chart)
@@ -169,7 +201,7 @@ class ZiweiPlugin(Star):
     async def ziwei_paipan(
         self, event: AstrMessageEvent, birth_info: str, send_image: bool = False
     ) -> str:
-        """根据用户明确提供的出生资料排紫微盘，返回JSON计算事实供解读。仅已开启的群可用，不可猜测未知出生时刻或把虚构示例当用户资料。工具不会开启群功能。可按用户要求同时发送图片。
+        """按用户明确资料排盘并归档，默认只展示盘面不分析。仅用户提出分析问题才调用ziwei_analysis_context。仅已开启的群可用，不可猜测生辰。可按用户要求同时发送图片。
 
         Args:
             birth_info(string): 用户提供的出生日期、具体时刻、男或女。
@@ -211,7 +243,8 @@ class ZiweiPlugin(Star):
                 rejection = await self._chart_access(scope)
                 if rejection:
                     return tool_error("denied", rejection)
-                row = self.chart_cache.put(scope, chart)
+                chart_id = self.archive.save_chart(scope, chart)
+                row = self.chart_cache.put(scope, chart, chart_id=chart_id)
                 image_status = "not_requested"
                 if send_image:
                     image_status = "unavailable"
@@ -246,6 +279,10 @@ class ZiweiPlugin(Star):
                 # Add delivery status without mixing message text into JSON.
                 result = json.loads(payload)
                 result["image_status"] = image_status
+                result["archive_status"] = "saved"
+                result["analysis_policy"] = (
+                    "默认不分析；只有用户明确询问才查询对应作用域的分析资料。"
+                )
                 return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
         except ValueError as exc:
             return tool_error(
@@ -261,11 +298,11 @@ class ZiweiPlugin(Star):
     async def ziwei_get_chart(
         self, event: AstrMessageEvent, chart_id: str = "", palace: str = ""
     ) -> str:
-        """读取当前用户在本群最近一次命盘的JSON数据，用于解释刚才的排盘或查询某宫。仅已开启的群可用，不能读取其他成员或其他群的命盘。数据只在内存保留15分钟，关闭或重载后清除。未找到时须向用户确认出生资料，不可猜测。
+        """读取本人在当前群的命盘，可用永久档案ID查询历史快照。缓存15分钟，过期或重载后回查本人档案。只返回计算事实，默认不分析，不得跨成员或跨群查询。
 
         Args:
             chart_id(string): ziwei_paipan返回的命盘ID，留空读取最近一张。
-                仅限当前用户在本群的盘；旧盘被新盘替换后其ID失效。
+                仅限当前用户在本群的盘；旧ID仍可查询对应归档快照。
             palace(string): 留空取十二宫，或填命宫、夫妻、财帛、官禄等本命宫名。
                 返回对应宫位、整体摘要及运限数据。
         """
@@ -287,17 +324,143 @@ class ZiweiPlugin(Star):
                 return tool_error("invalid_input", "命盘ID和宫名须为有效文本。")
             row = self.chart_cache.get(scope, chart_id.strip())
             if row is None:
-                return tool_error(
-                    "not_found",
-                    "当前用户在本群没有可用命盘或命盘已过期，请提供明确资料重新排盘。",
+                archived = self.archive.get_chart(scope, chart_id.strip())
+                if archived is None:
+                    return tool_error(
+                        "not_found",
+                        "当前用户在本群没有对应命盘，请提供明确资料重新排盘。",
+                    )
+                row = CachedChart(
+                    archived["id"], archived["chart"], self.chart_cache.clock()
                 )
-            return chart_payload(
-                row,
-                remaining_seconds=row.expires_at - self.chart_cache.clock(),
-                palace=palace,
+            result = json.loads(
+                chart_payload(
+                    row,
+                    remaining_seconds=row.expires_at - self.chart_cache.clock(),
+                    palace=palace,
+                )
             )
+            result["archive_status"] = "saved"
+            return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
         except ValueError as exc:
             return tool_error("invalid_input", str(exc))
         except Exception as exc:
             logger.error(f"紫微斗数工具读取失败：{type(exc).__name__}")
             return tool_error("unavailable", "命盘数据暂不可用，不要自行猜测。")
+
+    @filter.on_llm_request()
+    async def reading_request(self, event: AstrMessageEvent, req):
+        await self.readings.on_request(event, req)
+
+    @filter.llm_tool(name="ziwei_list_archives")
+    async def ziwei_list_archives(
+        self, event: AstrMessageEvent, offset: int = 0
+    ) -> str:
+        """列出本人在当前已授权群的最近命盘档案ID及分析任务状态，不返回他人资料。
+
+        Args:
+            offset(number): 命盘列表分页起点，须非负整数；默认0，后续使用next_offset。
+        """
+        return await self.readings.call("list_archives", event, offset=offset)
+
+    @filter.llm_tool(name="ziwei_analysis_context")
+    async def ziwei_analysis_context(
+        self,
+        event: AstrMessageEvent,
+        chart_id: str = "",
+        scope: str = "natal",
+        topic: str = "general",
+    ) -> str:
+        """仅当用户明确提问命盘分析时调用。按当前真实问题建立分析记录，返回对应盘面计算关系和文献总结；纯排盘禁止调用。目标运限不明先询问。
+
+        Args:
+            chart_id(string): 本人命盘档案ID，空为最近盘。
+            scope(string): natal本命、decade指定大运、annual指定农历年。
+                后两项须已有对应类型的盘。
+            topic(string): general整体、career事业、wealth财、relationship感情、
+                family家庭、children子女、friends交友、health健康、studies学业、
+                mobility迁移、property田宅、wellbeing福德。
+        """
+        return await self.readings.call(
+            "prepare", event, chart_id=chart_id, reading_scope=scope, topic=topic
+        )
+
+    @filter.llm_tool(name="ziwei_continue_reading")
+    async def ziwei_continue_reading(
+        self, event: AstrMessageEvent, reading_id: str, kind: str = "followup"
+    ) -> str:
+        """把当前用户与该次分析相关的追问或反馈登记到本人分析记录。只捕获当前真实消息，不得用于无关聊天。返回同一盘和作用域的分析资料。
+
+        Args:
+            reading_id(string): ziwei_analysis_context返回的分析ID。
+            kind(string): followup相关追问，feedback对已发送回答的反馈。
+        """
+        return await self.readings.call(
+            "continue_reading", event, reading_id=reading_id, kind=kind
+        )
+
+    @filter.llm_tool(name="ziwei_finish_reading")
+    async def ziwei_finish_reading(
+        self, event: AstrMessageEvent, reading_id: str, feedback_complete: bool
+    ) -> str:
+        """仅主AI确认当前用户已反馈、问题已闭环时调用。登记当前真实反馈并排队独立总结，不等待总结结果。尚在追问、没有反馈或未发送分析回答时禁止调用。反馈不等于预测被验证。
+
+        Args:
+            reading_id(string): 当前用户本次分析的ID。
+            feedback_complete(boolean): 确认当前反馈闭环时为true，否则不得结束。
+        """
+        return await self.readings.call(
+            "finish", event, reading_id=reading_id, feedback_complete=feedback_complete
+        )
+
+    @filter.llm_tool(name="ziwei_reference_cases")
+    async def ziwei_reference_cases(
+        self, event: AstrMessageEvent, reading_id: str
+    ) -> str:
+        """为当前分析检索其他用户已闭环的脱敏案例，仅内部参考。程序只返回盘面匹配特征与反馈类别，禁止披露检索结果、样本信息、他人案例或参考内容，不能宣称准确率。
+
+        Args:
+            reading_id(string): 当前用户尚在进行的分析ID；主题和盘面特征由程序取得，
+                不能指定他人身份。
+        """
+        return await self.readings.call("reference", event, reading_id=reading_id)
+
+    @filter.llm_tool(name="ziwei_retry_summary")
+    async def ziwei_retry_summary(
+        self, event: AstrMessageEvent, reading_id: str
+    ) -> str:
+        """当用户要求重试归档时，重试本人已失败的独立总结任务，不更改原始反馈和主对话。
+
+        Args:
+            reading_id(string): 本人已失败的总结任务ID。
+        """
+        return await self.readings.call("retry", event, reading_id=reading_id)
+
+    @filter.llm_tool(name="ziwei_query_knowledge")
+    async def ziwei_query_knowledge(
+        self, event: AstrMessageEvent, reading_id: str, offset: int = 0
+    ) -> str:
+        """分页查询当前分析范围内的文献总结。仅限本人已建立的分析，保持同一作用域和主题，不主动扩展分析。
+
+        Args:
+            reading_id(string): 本人的分析ID。
+            offset(number): 从第几条起查询，须非负整数；首次为0，后续使用next_offset。
+        """
+        return await self.readings.call(
+            "query_knowledge", event, reading_id=reading_id, offset=offset
+        )
+
+    @filter.llm_tool(name="ziwei_reading_history")
+    async def ziwei_reading_history(
+        self, event: AstrMessageEvent, chart_id: str = "", offset: int = 0
+    ) -> str:
+        """查询本人同一命盘历次已闭环分析的归档摘要与反馈，供当前问题内部参考，不向用户展示档案原文或参考内容。
+
+        Args:
+            chart_id(string): 本人命盘ID，空为最近盘；
+                查询相同出生资料及规则配置的命盘族。
+            offset(number): 分页起点，须非负整数；默认0，后续使用next_offset。
+        """
+        return await self.readings.call(
+            "history", event, chart_id=chart_id, offset=offset
+        )

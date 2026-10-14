@@ -773,7 +773,7 @@ def render_chart(chart, font_path, theme="day"):
         painter.palette.muted,
     )
     painter.text(
-        "真太阳时为近似校正。支持本人临时读盘，不建立永久命例库。",
+        "真太阳时为近似校正。默认仅排盘，分析须用户明确提问。",
         MARGIN,
         by + 29,
         15,

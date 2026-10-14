@@ -1,0 +1,1769 @@
+[
+  {
+    "id": "qs-method",
+    "title": "全书分析顺序与组合条件",
+    "source": "quanshu",
+    "locator": "卷一太微赋¶106—122；卷三谈星要论及论人命入格¶1847—1866",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars",
+      "brightness",
+      "trines"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "先确定身命及所问宫位，再看主星得地与庙陷、同宫及三方四正的辅佐和冲破，最后区分本命结构与运限变化。书中同时讨论入格与破格，吉凶并见时须逐项保留条件，不能仅以格局名称代替分析。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 100
+  },
+  {
+    "id": "hl-method",
+    "title": "河洛宫位立极与气数位",
+    "source": "heluo",
+    "locator": "第1、7、33、35页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "以所问宫为第一宫，沿既定十二宫次序数第九宫为其官禄即气数位；第一、第六宫的关系称一六。需明确以哪一宫为中心再解释宫干飞化的来源与落点。财帛的气数位为命宫，官禄的气数位为财帛，命宫的气数位为官禄。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 90
+  },
+  {
+    "id": "hl-stems",
+    "title": "河洛层级宫干与四化来源",
+    "source": "heluo",
+    "locator": "第28、32页问题1与问题5—6",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "palace_stem_flights",
+      "layer_palaces"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "书中主张从本命至运限各层沿用原盘宫干。同一地支的宫干不变，但宫名随层级改变，须标明本命、大限、流年。该口径的宫干飞化与按流年年干起四化是不同来源；本书不用小限，只用十四主星与辅弼昌曲开展主要飞化分析。",
+    "exceptions": [
+      "当前插件可计算小限与年干四化，但不可把它们冒充本书宫干飞化。四化变体必须使用本盘配置。"
+    ],
+    "priority": 100
+  },
+  {
+    "id": "qs-natal",
+    "title": "本命结构只描述长期倾向",
+    "source": "quanshu",
+    "locator": "卷三论人命入格¶1860—1866；论命先贫后富¶1901—1903",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "本命分析先比较各项结构的支持与限制，不把先天结构等同于某一年事件。原文以先成后败、先贫后富说明行限会改变表现，应把本命倾向与之后大限、流年分层陈述。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 95
+  },
+  {
+    "id": "qs-decade",
+    "title": "十年大限的主局与修正",
+    "source": "quanshu",
+    "locator": "卷三论大限十年祸福何如¶1904—1905；论二限太岁吉凶¶1906—1907",
+    "school": "全书星情与三合",
+    "scopes": [
+      "decade"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "brightness",
+      "trines"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "围绕所选大限命宫及所问事项宫位，比较主星庙旺、辅星会照和煞忌。原文将吉曜与凶曜混合视为阶段内成败不一，并要求与原命及岁限交互参照，不能由一个煞星推出整个十年皆凶。未指定年份时不推定某年应事。",
+    "exceptions": [
+      "原文涉及独立流曜及月日时的推断，本期缺少对应数据不应用；不据古籍作生死或疾病诊断。童限取法与当前引擎不同，禁止照搬。"
+    ],
+    "priority": 100
+  },
+  {
+    "id": "qs-annual",
+    "title": "流年太岁与本命大限合参",
+    "source": "quanshu",
+    "locator": "卷三论二限太岁吉凶¶1906—1907；论流年太岁吉凶星杀¶1912—1913",
+    "school": "全书星情与三合",
+    "scopes": [
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "trines"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "以所选农历流年命宫为中心，看该年所问宫位的星曜、三方和对宫，再比较当年所属大限与本命。全书要求分别检查大限、小限、太岁及其重叠冲照，不能只见流年四化就称已完成全书全部条件。",
+    "exceptions": [
+      "当前小限可作辅助定位；独立流曜尚未实现，其相关条件保持未满足。农历年界与公历元旦不同。"
+    ],
+    "priority": 100
+  },
+  {
+    "id": "hl-decade",
+    "title": "大限内部关系与上应本命",
+    "source": "heluo",
+    "locator": "第35—38页，问题10—11",
+    "school": "方外人河洛",
+    "scopes": [
+      "decade"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "论十年先看大限内部宫名及飞化，说明这十年的关注与关系；再将同一落点对照本命宫名。书中以大命对本财、大财对本官、大官对本命作示例，须同时保留发出宫、目标星、落宫及所用层级，不能跳过中间关系。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 95
+  },
+  {
+    "id": "hl-annual",
+    "title": "本命大限流年的逐层关联",
+    "source": "heluo",
+    "locator": "第14—17、32、38、40、42页",
+    "school": "方外人河洛",
+    "scopes": [
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "先检查本命是否存在所讨论的结构，再核对大限是否承接，最后看流年落点如何与该结构交织。书中把大限作为本命与流年的中间层，并讨论上下层互相映照；使用时须逐层列出依据，避免把任何流年忌冲都扩大成重大事件。",
+    "exceptions": [
+      "同宫叠化并非概率或事件证明；本期不继续推至流月、流日、流时。"
+    ],
+    "priority": 95
+  },
+  {
+    "id": "hl-self",
+    "title": "自化与得失过程",
+    "source": "heluo",
+    "locator": "第30、40页问题4与问题14",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "self_hua",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "书中讨论自化对同一宫位祿权科忌表现的改变，并强调有些得失是先有后失，不能简单从盘上删除四化。应分别记录生年四化、宫干飞化和自化，解释其来源与可能矛盾。",
+    "exceptions": [
+      "本书自化论述不能自动套到现代向心自化标签；程序outward为本宫干，inward为对宫干，须另行标明。"
+    ],
+    "priority": 70
+  },
+  {
+    "id": "hl-context",
+    "title": "先明确实际情境再取象",
+    "source": "heluo",
+    "locator": "第5—8、29、41页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "进财、职业和婚姻不能靠一条公式套全部命盘。先了解受薪或经营、业务性质、谁收支、是否合作等用户已经提供的情境，再选择对应关系；职业、收入来源、进账时机与储蓄能力是不同问题。书中实例用于说明取法，不是通用必然事件。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 85
+  },
+  {
+    "id": "hl-relations",
+    "title": "我宫他宫随所问关系变化",
+    "source": "heluo",
+    "locator": "第42—43页问题19—20",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "论财官时，书中把命、兄、财、疾、官、田归为我宫；论夫妻等六亲对待时须以该对象另立中心。区分给予与接受的方向，不能把财官的我他分类用于所有主题。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-star-01",
+    "title": "紫微的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶286—295",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      1
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "统筹、组织与主导的象征。核对辅弼府相昌曲等支持以及煞曜冲破；原文强调有辅佐与孤立状态不同，不凭一颗紫微判断地位。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-02",
+    "title": "天机的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶296—305",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      2
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "筹划、变动、应对与技艺的象征。会梁辅弼昌曲与受煞忌制约分别讨论；在运限中关注调整方式，不预言必然换工作。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-03",
+    "title": "太阳的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶306—313",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      3
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "公开表现、付出、责任和外向事务的象征。位置与庙旺影响表达，并参照日月、辅弼及四化；劳碌和受到认可可能同时存在。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-04",
+    "title": "武曲的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶314—315",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      4
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "执行、资源管理与财务事务的象征。核对府相、禄马与破军、煞忌等条件，区分管理倾向、现金流和破耗，不能等同实际资产。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-05",
+    "title": "天同的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶316—318",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      5
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "协调、舒适和福德取向。原文虽多吉论，亦讨论庙陷与煞曜，因此需同时看支持条件及主动性，不能断定一生无困难。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-06",
+    "title": "廉贞的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶319—322",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      6
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "规则、边界、权责与人际吸引的象征。放在具体宫位与四化中解释约束、协调或冲突，不从单星推定违法和道德品行。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-07",
+    "title": "天府的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶323—328",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      7
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "保管、承接、资源积累与稳定组织的象征。需核对财田宫位、武曲禄存及空煞，禄库象征不等于保证富有。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-08",
+    "title": "太阴的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶329—331",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      8
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "积累、照顾、居住与内在感受的象征。以本盘庙旺与同会条件为据，不将原文性别和亲属断语当事实。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-09",
+    "title": "贪狼的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶332—334",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      9
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "交往、兴趣、欲求与多样发展的象征。火铃、武曲及其他组合须分开核对，不将桃花直接解释为不忠或道德缺陷。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-10",
+    "title": "巨门的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶335—337",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      10
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "表达、辨析、疑问与争议的象征。要看太阳、禄存等配合以及煞忌；可以讨论沟通成本，不能推定欺骗或诉讼必发生。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-11",
+    "title": "天相的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶338—343",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      11
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "协助、制度、协调与职责的象征。以所问宫位、同会及制约关系解释支持能力，不凭星名承诺职位。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-12",
+    "title": "天梁的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶344—350",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      12
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "照顾、庇护、原则与资历的象征。原文同时论与巨门、天机等交会后的变化；不作寿命保证。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-13",
+    "title": "七杀的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶351—356",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      13
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "决断、压力与独立行动的象征。紫微、禄、辅弼及庙旺是条件，煞忌亦须核对；不把行动强度推成灾难预告。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-14",
+    "title": "破军的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶357—358",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      14
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "重整、消耗、替换与开创的象征。区分投入成本、环境改变和实际损失，并核对禄与制约支持，不一概判凶。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-15",
+    "title": "文昌的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶359—363",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      15
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "学习、文字与规则表达的象征。结合所问学业或文书事务、庙旺与煞忌，不保证考试结果。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-16",
+    "title": "文曲的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶364—373",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      16
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "表达、文艺与沟通技巧的象征。原文涉及不同组合和文书作用，须查实际四化，不以单星推定学历。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-17",
+    "title": "左辅的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶374—375",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      17
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "协作、支援与组织辅助的象征。核对辅佐对象、同宫会照和火忌冲破，不能从辅星直接推多婚。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-star-18",
+    "title": "右弼的分析要点",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶376—382",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      18
+    ],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "协助、承接和人际支持的象征。与主星及四化合参，支持与牵累条件均保留。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 10
+  },
+  {
+    "id": "qs-hua-禄",
+    "title": "四化禄的使用条件",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶398—399",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "资源、机会及关联的增加，须说明由哪一层何干化出，落到哪颗星和哪一宫；不把禄直接换算成收入数额。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 45
+  },
+  {
+    "id": "qs-hua-权",
+    "title": "四化权的使用条件",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶400—401",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "主动性、职责、控制与压力，须区分用户能行使的权责和需要承担的负担，结合煞曜与宫位。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 45
+  },
+  {
+    "id": "qs-hua-科",
+    "title": "四化科的使用条件",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶402—403",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "可见度、表达、认可和支持的象征；结合文书学业等主题，不保证名次或社会身份。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 45
+  },
+  {
+    "id": "qs-hua-忌",
+    "title": "四化忌的使用条件",
+    "source": "quanshu",
+    "locator": "卷一诸星问答论¶404—406",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "牵挂、阻碍、成本和纠结的象征；同宫吉曜不能抹除，须讨论矛盾条件，不把忌当单一灾难符号。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 45
+  },
+  {
+    "id": "qs-palace-01",
+    "title": "命宫问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1152—1561",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "general"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "个人应对和主要结构，以命身、迁移及财官会照组成问题背景。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-02",
+    "title": "兄弟问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1562—1584",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "family"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "手足及平辈关系，核对实际家庭情况；不根据星曜断亲属人数与生死。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-03",
+    "title": "夫妻问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1585—1607",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "relationship"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "伴侣相处、期待和关系压力，区分用户本人的感受与对方未知事实。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-04",
+    "title": "子女问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1608—1633",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "children"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "亲子相处与照顾责任，不据古籍推生育数量、性别或健康结论。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-05",
+    "title": "财帛问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1634—1657",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wealth"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "获得与使用资源的方式，区分收入、支出、积累与经营风险。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-06",
+    "title": "疾厄问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1658—1680",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "health"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "作为传统身心负担象征整理，询问已知作息和压力；不据星曜诊病、断寿或替代医疗。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-07",
+    "title": "迁移问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1681—1705",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "mobility"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "外部环境、出行与适应，需结合命宫及用户实际迁移计划。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-08",
+    "title": "交友问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1706—1730奴仆宫",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "friends"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "合作支持与人际边界；古称奴仆的社会关系应谨慎转述，不给真实他人贴道德标签。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-09",
+    "title": "官禄问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1731—1765",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "career"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "工作角色、职责与发展方式，结合命财和实际行业，不断定唯一职业。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-10",
+    "title": "田宅问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1766—1788",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "property"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "居住、家庭资源与长期积累，结合财帛，不从星曜推现有房产或交易收益。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-11",
+    "title": "福德问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1789—1813",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wellbeing"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "精神满足、休息与内在取向，区别主观感受与客观经济条件。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "qs-palace-12",
+    "title": "父母问题的观察范围",
+    "source": "quanshu",
+    "locator": "卷二十二宫星论¶1814—1843",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "family"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "与长辈及支持环境的关系，原文亲属损伤断语不直接应用。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 55
+  },
+  {
+    "id": "hl-topic-career",
+    "title": "职业与事业的取法边界",
+    "source": "heluo",
+    "locator": "第1—5、35、41页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "career"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "本书以财帛宫干的飞化配合落点星情讨论职业，并把事业与具体职业区别。先核对财帛发出的忌禄权科及其落宫，再联系用户技能和真实工作；十八星行业例只是类比，不按星性指定唯一行业。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-cash",
+    "title": "收入来源进账与储蓄分开",
+    "source": "heluo",
+    "locator": "第5—8页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wealth",
+      "property"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "何宫化禄入财帛侧重来源；不同我他宫的祿入侧重关系；田宅与兄弟的库位取象不同。先明确谁经营、谁出纳、现金或账期，才解释收支及积累，不把一种进财路线泛化到所有人。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-promotion",
+    "title": "升迁与认可的条件",
+    "source": "heluo",
+    "locator": "第8—10页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "career",
+      "studies"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "本书把官祿飞化入父疾线用于文书和认可，把兄友线用于人际成就。大官对本父疾、流官对大父疾须分层观察；三吉并见仍要检查忌冲，不据此保证升迁或考试通过。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-partner",
+    "title": "合作关系与利益方向",
+    "source": "heluo",
+    "locator": "第10、42—43页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "friends",
+      "career"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "合作先审交友及其气数位的飞化，再讨论文书、支持与利益关系；需有具体合作情境。书中以五行局推人数等未经证实的细节不作程序事实。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-travel",
+    "title": "迁移问题先辨动机",
+    "source": "heluo",
+    "locator": "第11、29页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "mobility"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "书中区分深造、工作、观光、定居等不同迁移动机，以迁移宫飞化和地支类别作取象。先记录用户实际计划，再分本命倾向和运限条件；不能据此判定签证、移民或出行必成。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-study",
+    "title": "学习表达与考试结果分开",
+    "source": "heluo",
+    "locator": "第11—12页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "studies"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "昌曲、魁钺等星情讨论表达与学习，官祿向父疾线的四化用于阶段机会。学习能力、准备程度、考试制度与当次结果不可混为一谈。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-topic-marriage",
+    "title": "关系对象与对待层次",
+    "source": "heluo",
+    "locator": "第41—43、46页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "relationship",
+      "family",
+      "children"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "先分辨问缘分、双方对待还是对方自身情况；书中分别取夫妻本宫、双方宫干交织及夫妻气数位。须明确立极与角色，不能由本人的盘断言伴侣隐瞒或不忠。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-flow-stars",
+    "title": "流曜叠并暂不可应用",
+    "source": "quanshu",
+    "locator": "卷二安流禄流羊流陀诀；卷三¶1916—1920",
+    "school": "全书星情与三合",
+    "scopes": [
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "independent_flow_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "原文羊陀叠并要求原局和独立流羊流陀共同参与；当前只有本命星和运限四化，不能把本命羊陀重复使用来声称满足叠并。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 80
+  },
+  {
+    "id": "qs-limit-variant",
+    "title": "童限与大限起法保留差异",
+    "source": "quanshu",
+    "locator": "卷二安大限安小限安童限诀¶809—814",
+    "school": "全书星情与三合",
+    "scopes": [
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "natal_stars"
+    ],
+    "conditions": [
+      "仅在所问主题和所选层级中应用；必须核对实际宫位、庙旺、同宫与会照关系。"
+    ],
+    "summary": "该底本的大限、童限文字与本插件既定公式口径不完全一致。本期只引用阅读思路；安星年龄、童限位置和顺逆以程序实际快照为准，不让模型自行重排。",
+    "exceptions": [
+      "单星或单一四化不能独立定论；用户实际经历尚未反馈时保持待验证。"
+    ],
+    "priority": 85
+  },
+  {
+    "id": "hl-cash-source",
+    "title": "收入来源与收款时间分开判断",
+    "source": "heluo",
+    "locator": "第5—8页论进财",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wealth",
+      "career"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "先取得用户已说明的谋生方式，辨明所选层级的财帛、命宫以及化禄的发出宫。",
+      "空宫转气数位属于本书用法，须明确说明，不等同于三合借对宫。"
+    ],
+    "summary": "检查哪些宫干使财帛宫内的星化禄，用发出宫所代表的关系提出收入来源假设；财帛无主星时，书中例子转查财帛的气数位命宫。收入来源、何时进账、能否储蓄必须分开表达。子女发禄不能机械翻译为孩子给钱，需结合教学、下属、服务对象等实际情境。",
+    "exceptions": [
+      "书中以个人案例解释取象，不构成普遍公式或收入保证。",
+      "没有实际职业背景时只列可能方向和待问事项。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-cash-receipt",
+    "title": "营业场所、收款人和入库宫位",
+    "source": "heluo",
+    "locator": "第5—7页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wealth"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "确认用户经营还是受薪、是否上门交易、谁管理收支。",
+      "必须完整列出发出宫、化曜、落宫和宫位所属层级。"
+    ],
+    "summary": "同一层级中，疾厄是官禄的田宅，可象征营业场所；父母是财帛的交友，可象征收款接触。书中将疾厄发禄入父母作为上门交易的一种进账关系；若实际收支由配偶管理，则须以配偶重新定位收款关系。禄入兄弟偏向家庭可流动资金，禄入田宅偏向留存，两者都称库却不应混同。",
+    "exceptions": [
+      "入库关系不等于真实存款增加，不可推出金额。",
+      "他人财务事实未知时不能替其编造收款情境。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-cash-qi",
+    "title": "财帛气数位与文书成就线",
+    "source": "heluo",
+    "locator": "第7、35页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "wealth"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "所问为财务，并已计算财帛宫及其第九宫。",
+      "从宫干飞化实际落点判断入、照与冲，不用星曜名称臆造落点。"
+    ],
+    "summary": "财帛的气数位是命宫。以财帛另立中心，其父疾线对应原盘子田线，其兄友线对应原盘父疾线。书中用气数位发出的禄权科落入相对父疾线观察支持，用忌入或冲观察阻力；必须指出这些是相对宫名，不能把原盘父母与财帛的父母混写。",
+    "exceptions": [
+      "原文据此给出的终身职业或财富断语不沿用为确定结论。",
+      "只作为结构风险提示，仍需核对现实收支和其他组合。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-promotion-path",
+    "title": "晋升的本命大限流年路径",
+    "source": "heluo",
+    "locator": "第8—10、35—37页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "career",
+      "studies"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "career或studies主题，用户明确所问阶段。",
+      "只使用已有层级；本命盘不添加假想的大官或流官。",
+      "同时检查吉化落点的同宫忌与对宫忌冲。"
+    ],
+    "summary": "本官发禄权科入本父疾，是书中讨论文书、考试或制度晋升的路径；大官入本父疾用于十年与本命合参；流官入大父疾用于年度与大限合参。兄友线另用于赏识或提拔，不能与制度晋升混称。禄、权、科分别可作资源顺畅、主动努力与支持协助的条件解释。",
+    "exceptions": [
+      "不得把满足某一条路径写成保证晋升、录取或考试通过。",
+      "学校、行政机构、企业的背景不同，不沿用书中行业身份断言。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-cooperation-path",
+    "title": "合伙的宫位关系与例外",
+    "source": "heluo",
+    "locator": "第10页论合伙",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "friends",
+      "career",
+      "wealth"
+    ],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "用户明确询问合伙或协作，并区分出资、技术、经营职责。",
+      "列出子女作为交友第九宫的换位关系及实际飞化落点。"
+    ],
+    "summary": "先看交友星情，再看交友的官禄即子女宫的飞化。发吉化至所选层级的父疾线、兄友线或命财官三方，是本书的支持关系；忌入父疾偏向文书牵制，忌入兄友偏向合作成事阻力。书中也讨论子女忌入官禄的结合含义，因此不能统一把忌解释为禁止合作。",
+    "exceptions": [
+      "不以五行局推合伙人数，不以星曜推实际金额。",
+      "合作决定仍需实际合同与经营事实，盘面不替代审查。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-decade-inside",
+    "title": "大限内部优先、落点再映射本命",
+    "source": "heluo",
+    "locator": "第37—38页问题10—11",
+    "school": "方外人河洛",
+    "scopes": [
+      "decade"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "已选择具体大运，已知大限命宫与每宫本命、大限宫名。",
+      "使用本命固定宫干计算大限命宫的飞化。"
+    ],
+    "summary": "先用大限自己的宫名解释该限内部飞化，随后在同一地支查本命宫名。例：大限命宫发禄到大限夫妻，讨论这一阶段对关系的关注；同一落点若同时是本命福德，再补充其与本命福德相关的含义。两个宫名描述同一落点，不能当两次独立证据加权。",
+    "exceptions": [
+      "关注某宫不等于该宫必发生事件。",
+      "例子中的落点关系只有实际盘面满足时才可用，不能照抄到任意盘。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "hl-layer-mixed-hua",
+    "title": "不同来源的禄忌并见保留矛盾",
+    "source": "heluo",
+    "locator": "第36页",
+    "school": "方外人河洛",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [],
+    "requires": [
+      "layer_palaces",
+      "palace_stem_flights"
+    ],
+    "conditions": [
+      "已核对四化来源，确有同星或同宫重叠。",
+      "区分生年、宫干飞化、大限和流年来源。"
+    ],
+    "summary": "同一星或同一落宫出现生年禄与命宫干忌时，书中明确不把这种来源不同的禄忌直接合算为双忌，也不视为互相删除。应分别说明年干条件、宫干关系、落宫与运限承接，保留支持与牵制同时存在的解释。",
+    "exceptions": [
+      "本条不是所有禄忌组合的统一换算法。",
+      "不得据重复标志累计虚构风险分数或概率。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-empty-life",
+    "title": "命宫空宫与三方支持",
+    "source": "quanshu",
+    "locator": "卷三谈星要论¶1850—1859",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "general",
+      "career"
+    ],
+    "stars": [],
+    "requires": [
+      "natal_stars",
+      "trines",
+      "brightness"
+    ],
+    "conditions": [
+      "核对命宫是否缺少十四主星，并读取实际三方四正。"
+    ],
+    "summary": "命宫无正曜时，全书仍要求查看财官及三方吉曜拱照与煞忌冲照，不将空宫等同于缺乏能力或没有人生主题。有主星也必须看庙陷和三方支持，庙旺不自动免除受冲条件。",
+    "exceptions": [
+      "空宫不补造一颗主星，不复制对宫星曜成为实际落星。",
+      "原文贫贱、寿夭、身世断语不作为当代事实结论。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-support-kuiyue",
+    "title": "魁钺的支持关系",
+    "source": "quanshu",
+    "locator": "卷一问天魁天钺¶383—387",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      19,
+      20
+    ],
+    "requires": [
+      "natal_stars",
+      "trines",
+      "brightness"
+    ],
+    "conditions": [
+      "所问宫位或其三方四正实际有魁钺，需注明同宫、对宫或会照。"
+    ],
+    "summary": "魁钺与身命、左右昌曲及主星配合，在本书中用来讨论助力与被支持的条件；限步相逢仍须核对整组星情。可以询问现实中的师长、同事或制度支持，不凭星曜认定某个贵人的身份。",
+    "exceptions": [
+      "不推出婚配身份、子女性别、保证录取等原文断言。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-lucun",
+    "title": "禄存与四化禄分开",
+    "source": "quanshu",
+    "locator": "卷一问禄存¶388—395",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [],
+    "stars": [
+      21
+    ],
+    "requires": [
+      "natal_stars",
+      "trines",
+      "brightness"
+    ],
+    "conditions": [
+      "实际盘面存在禄存，核对其宫位和会照。"
+    ],
+    "summary": "禄存是一颗独立安置的星，不是任一来源的化禄。书中重视其在身命、财帛、田宅及迁移的组合，亦指出独守而无吉化与遇空劫火铃的表现不同。解释资源与留存条件时应同时列出支持及破耗关系。",
+    "exceptions": [
+      "不能将禄存与化禄重复计数得出金额或成功率。"
+    ],
+    "priority": 65
+  },
+  {
+    "id": "qs-tianma",
+    "title": "天马与禄马组合",
+    "source": "quanshu",
+    "locator": "卷一问天马¶396—397",
+    "school": "全书星情与三合",
+    "scopes": [
+      "natal",
+      "decade",
+      "annual"
+    ],
+    "topics": [
+      "career",
+      "wealth",
+      "mobility"
+    ],
+    "stars": [
+      22
+    ],
+    "requires": [
+      "natal_stars",
+      "trines",
+      "brightness"
+    ],
+    "conditions": [
+      "实际盘面有天马；说明是同宫还是会照。"
+    ],
+    "summary": "天马着重移动与往来；书中把与禄存同宫、与紫府昌曲相会及受空煞约束分别讨论。可结合用户的出行、调动或跨区域计划解释机会和成本，不只凭天马断定出国。",
+    "exceptions": [
+      "原文涉及流昌的限流条件本期不满足。",
+      "不照搬疾病灾难断语，宫位组合不保证搬迁或收入。"
+    ],
+    "priority": 65
+  }
+]
