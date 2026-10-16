@@ -7,6 +7,8 @@ from astrbot.api.message_components import Image
 
 from .access import capture_group
 from .commands import DEMO_BIRTH
+from .compact_commands import normalize_compact_arguments
+from .compact_filter import claim_command
 from .life_atlas import build_life_atlas
 from .life_atlas_commands import parse_life_atlas_request
 from .life_atlas_renderer import LifeAtlasRenderer
@@ -17,6 +19,7 @@ LIFE_ATLAS_HELP = f"""人生变动图谱
 /人生 19900615083045 男 主题=白天
 以上均为虚构演示资料，请替换为需要排盘的资料。
 支持12位或14位日期时间连写，也支持分开的日期、时刻与性别。
+可省略空格，如 /人生199006150830男；省空格格式有误时静默忽略，标准空格写法仍提示错误。
 默认深色星图，从出生画到60虚岁所在大运末年；只返回图片。
 可用经度、时区、真太阳时、农历等出生选项，不与流年、流盘或运限混用。
 /紫微 图谱：优先使用当前本人命盘；多份档案且无当前选择时列出选择。
@@ -51,9 +54,10 @@ class LifeAtlasService:
             raise ValueError("没有本人在本群的对应命盘，请填写出生日期、时刻和性别。")
         return row, None
 
-    async def run(self, event, args):
-        event.stop_event()
-        text = str(args).strip()
+    async def run(self, event, args, *, quiet=False):
+        normalized = normalize_compact_arguments(str(args).strip())
+        text, quiet = normalized.args, quiet or normalized.changed
+        claim_command(event, quiet)
         if text.lower() in {"帮助", "help", "?", "？"}:
             yield event.plain_result(LIFE_ATLAS_HELP)
             return
@@ -62,17 +66,23 @@ class LifeAtlasService:
             scope = capture_group(event)
             rejection = await plugin._chart_access(scope)
             if rejection:
-                yield event.plain_result(rejection)
+                if not quiet:
+                    yield event.plain_result(rejection)
                 return
             if not scope.user_id:
-                yield event.plain_result("无法确认当前发送者身份，不能建立图谱档案。")
+                if not quiet:
+                    yield event.plain_result(
+                        "无法确认当前发送者身份，不能建立图谱档案。"
+                    )
                 return
         except Exception as exc:
             logger.error(f"人生图谱授权检查失败：{type(exc).__name__}")
-            yield event.plain_result("群使用白名单暂不可用，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("群使用白名单暂不可用，请稍后重试。")
             return
         if plugin.pending >= 4:
-            yield event.plain_result("排盘请求较多，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("排盘请求较多，请稍后重试。")
             return
         plugin.pending += 1
         try:
@@ -81,7 +91,8 @@ class LifeAtlasService:
                 # A queued task must not start work after group closure or reload.
                 rejection = await plugin._chart_access(scope)
                 if rejection:
-                    yield event.plain_result(rejection)
+                    if not quiet:
+                        yield event.plain_result(rejection)
                     return
                 source_chart_id = ""
                 if request.chart_request is not None:
@@ -95,7 +106,8 @@ class LifeAtlasService:
                 atlas = await asyncio.to_thread(build_life_atlas, chart)
                 rejection = await plugin._chart_access(scope)
                 if rejection:
-                    yield event.plain_result(rejection)
+                    if not quiet:
+                        yield event.plain_result(rejection)
                     return
                 try:
                     renderer = LifeAtlasRenderer(
@@ -106,13 +118,15 @@ class LifeAtlasService:
                     )
                 except (OSError, ValueError) as exc:
                     logger.warning(f"人生图谱图片生成失败：{type(exc).__name__}")
-                    yield event.plain_result(
-                        "图谱图片暂不可用，请检查中文字体配置后重试。"
-                    )
+                    if not quiet:
+                        yield event.plain_result(
+                            "图谱图片暂不可用，请检查中文字体配置后重试。"
+                        )
                     return
                 rejection = await plugin._chart_access(scope)
                 if rejection:
-                    yield event.plain_result(rejection)
+                    if not quiet:
+                        yield event.plain_result(rejection)
                     return
                 # No await separates this final authorization, atomic save and yield.
                 _, chart_id = plugin.archive.save_life_atlas(
@@ -124,9 +138,13 @@ class LifeAtlasService:
                 plugin.chart_cache.put(scope, cached_chart, chart_id=chart_id)
                 yield event.chain_result([Image.fromBytes(png)])
         except ValueError as exc:
-            yield event.plain_result(f"图谱参数有误：{exc}\n发送 /人生 帮助 查看格式。")
+            if not quiet:
+                yield event.plain_result(
+                    f"图谱参数有误：{exc}\n发送 /人生 帮助 查看格式。"
+                )
         except Exception as exc:
             logger.error(f"人生图谱生成失败：{type(exc).__name__}")
-            yield event.plain_result("图谱暂时生成失败，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("图谱暂时生成失败，请稍后重试。")
         finally:
             plugin.pending -= 1

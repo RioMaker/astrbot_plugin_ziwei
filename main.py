@@ -15,6 +15,8 @@ from .access import GroupAccess, can_manage, capture_group
 from .ai_limits import QuotaExceeded
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
+from .compact_commands import normalize_compact_arguments, parse_compact_command
+from .compact_filter import CompactCommandFilter, claim_command
 from .engine import apply_decade, apply_flow, build_chart
 from .life_atlas_service import LifeAtlasService
 from .llm_data import CachedChart, ChartCache, chart_payload, tool_error
@@ -24,7 +26,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.1")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.2")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -131,36 +133,46 @@ class ZiweiPlugin(Star):
     @filter.command("紫微", alias={"紫薇", "紫微排盘", "紫薇排盘", "ziwei"})
     async def ziwei(self, event: AstrMessageEvent, args: GreedyStr):
         """按明确的出生资料生成紫微斗数十二宫命盘。"""
-        event.stop_event()
+        async for result in self._ziwei_command(event, args):
+            yield result
+
+    async def _ziwei_command(self, event, args, *, quiet=False):
         text = str(args).strip()
-        parts = text.split(maxsplit=1)
-        if parts and parts[0] == "图谱":
-            async for result in self.life_atlases.run(
-                event, parts[1] if len(parts) > 1 else ""
-            ):
+        if text.startswith("图谱"):
+            tail = text[2:]
+            quiet = quiet or bool(tail and not tail[0].isspace())
+            async for result in self.life_atlases.run(event, tail.strip(), quiet=quiet):
                 yield result
             return
+        normalized = normalize_compact_arguments(text)
+        text, quiet = normalized.args, quiet or normalized.changed
+        claim_command(event, quiet)
         if not text or text.lower() in {"帮助", "help", "?", "？"}:
             yield event.plain_result(HELP)
             return
         if self.closed:
-            yield event.plain_result("插件正在重载，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("插件正在重载，请稍后重试。")
             return
         try:
             scope = capture_group(event)
             access_message = await self._group_access(scope, text)
         except Exception as exc:
             logger.error(f"紫微斗数白名单读取或设置失败：{type(exc).__name__}")
-            yield event.plain_result("群使用白名单暂不可用，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("群使用白名单暂不可用，请稍后重试。")
             return
         if access_message is not None:
-            yield event.plain_result(access_message)
+            if not quiet or text in {"开启", "开", "关闭", "关", "状态"}:
+                yield event.plain_result(access_message)
             return
         if not scope.user_id:
-            yield event.plain_result("无法确认当前发送者身份，不能建立命盘档案。")
+            if not quiet:
+                yield event.plain_result("无法确认当前发送者身份，不能建立命盘档案。")
             return
         if self.pending >= 4:
-            yield event.plain_result("排盘请求较多，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("排盘请求较多，请稍后重试。")
             return
         self.pending += 1
         try:
@@ -168,11 +180,13 @@ class ZiweiPlugin(Star):
             async with self.gate:
                 chart = await self._compute_chart(request)
                 if self.closed:
-                    yield event.plain_result("插件正在重载，请稍后重试。")
+                    if not quiet:
+                        yield event.plain_result("插件正在重载，请稍后重试。")
                     return
                 access_message = await self._chart_access(scope)
                 if access_message:
-                    yield event.plain_result(access_message)
+                    if not quiet:
+                        yield event.plain_result(access_message)
                     return
                 if scope.user_id:
                     chart_id = self.archive.save_chart(scope, chart)
@@ -188,7 +202,8 @@ class ZiweiPlugin(Star):
                     if png is not None:
                         access_message = await self._chart_access(scope)
                         if access_message:
-                            yield event.plain_result(access_message)
+                            if not quiet:
+                                yield event.plain_result(access_message)
                             return
                         yield event.chain_result([Image.fromBytes(png)])
                         return
@@ -199,11 +214,15 @@ class ZiweiPlugin(Star):
                 for offset in range(0, len(report), 2800):
                     yield event.plain_result(report[offset : offset + 2800])
         except ValueError as exc:
-            yield event.plain_result(f"排盘参数有误：{exc}\n发送 /紫微 帮助 查看格式。")
+            if not quiet:
+                yield event.plain_result(
+                    f"排盘参数有误：{exc}\n发送 /紫微 帮助 查看格式。"
+                )
         except Exception as exc:
             # Birth data and message contents must not appear in error logs.
             logger.error(f"紫微斗数排盘失败：{type(exc).__name__}")
-            yield event.plain_result("排盘暂时失败，请稍后重试。")
+            if not quiet:
+                yield event.plain_result("排盘暂时失败，请稍后重试。")
         finally:
             self.pending -= 1
 
@@ -213,6 +232,19 @@ class ZiweiPlugin(Star):
         # GreedyStr joins even an empty remainder; a default would hide its type
         # from AstrBot's CommandFilter and consume only the first input token.
         async for result in self.life_atlases.run(event, args):
+            yield result
+
+    @filter.custom_filter(CompactCommandFilter)
+    async def compact_command(self, event: AstrMessageEvent):
+        """Handle only awakened commands missing the name/argument separator."""
+        if not CompactCommandFilter().filter(event, self.config):
+            return
+        command = parse_compact_command(event.get_message_str().strip())
+        if command.target == "atlas":
+            results = self.life_atlases.run(event, command.args, quiet=True)
+        else:
+            results = self._ziwei_command(event, command.args, quiet=True)
+        async for result in results:
             yield result
 
     @filter.llm_tool(name="ziwei_paipan")

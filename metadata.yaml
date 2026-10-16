@@ -1,7 +1,7 @@
 name: astrbot_plugin_ziwei
 display_name: 紫微斗数排盘
 desc: 群白名单控制的紫微排盘、人生变动图谱、按需读盘与永久归档。
-version: "1.7.1"
+version: "1.7.2"
 author: Rio
 repo: "https://github.com/RioMaker/astrbot_plugin_ziwei"
 astrbot_version: ">=4.24.0"

@@ -33,6 +33,19 @@ def llm_tool(name):
     return decorate
 
 
+def custom_filter(filter_class, **kwargs):
+    def decorate(fn):
+        fn.custom_filter_class = filter_class
+        return fn
+
+    return decorate
+
+
+class CustomFilter:
+    def __init__(self, raise_error=True, **kwargs):
+        self.raise_error = raise_error
+
+
 class MessageChain:
     def __init__(self, chain):
         self.chain = chain
@@ -71,6 +84,8 @@ module(
     MessageChain=MessageChain,
     filter=SimpleNamespace(
         command=command,
+        custom_filter=custom_filter,
+        CustomFilter=CustomFilter,
         llm_tool=llm_tool,
         on_llm_request=lambda: lambda fn: fn,
         after_message_sent=lambda: lambda fn: fn,
@@ -132,9 +147,12 @@ class Event:
         platform_name="aiocqhttp",
         bot=None,
         text="",
+        wake=True,
     ):
         self.platform, self.group, self.user = platform, group, user
         self.message_str = text
+        self.is_at_or_wake_command = wake
+        self.call_llm = False
         self.result = None
         self.platform_name, self.admin, self.bot = platform_name, admin, bot
         self.message_obj = SimpleNamespace(raw_message={"sender": {"role": role}})
@@ -174,6 +192,9 @@ class Event:
 
     def stop_event(self):
         self.stopped = True
+
+    def should_call_llm(self, call_llm):
+        self.call_llm = call_llm
 
     def plain_result(self, text):
         return text
