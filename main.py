@@ -24,7 +24,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.1")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -208,8 +208,10 @@ class ZiweiPlugin(Star):
             self.pending -= 1
 
     @filter.command("人生")
-    async def life_atlas(self, event: AstrMessageEvent, args: GreedyStr = ""):
+    async def life_atlas(self, event: AstrMessageEvent, args: GreedyStr):
         """按出生资料或本人命盘生成从出生至60岁所在大运末年的人生图谱。"""
+        # GreedyStr joins even an empty remainder; a default would hide its type
+        # from AstrBot's CommandFilter and consume only the first input token.
         async for result in self.life_atlases.run(event, args):
             yield result
 
