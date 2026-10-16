@@ -70,7 +70,7 @@ def self_hua_arrow_layout(stars, branch, x, y, height):
                     x + _horizontal_arrow_slot(index, len(marks)),
                     y if side == "top" else y + height,
                 )
-                label = (anchor[0] + 18, y + 2 if side == "top" else y + height - 15)
+                label = (anchor[0] + 18, y + 2 if side == "top" else y + height - 17)
             else:
                 anchor = (
                     x if side == "left" else x + CELL_WIDTH,
@@ -276,35 +276,35 @@ class Painter:
 
 def _vertical_star(painter, star, x, y, color, step):
     major = star["group"] == "major"
-    name_size = min(26 if major else 23, int(step) - 5)
+    name_size = min(32 if major else 29, int(step) - 2)
     for index, character in enumerate(star["name"]):
         painter.text(
             character,
             x + (step - name_size) / 2,
-            y + index * 28,
+            y + index * 34,
             name_size,
             color,
         )
     if star["secondary"]:
-        painter.text("副", x + step - 13, y - 15, 12, painter.palette.muted)
+        painter.text("副", x + step - 17, y - 18, 16, painter.palette.muted)
     if star["brightness"]:
-        width = painter.font(14).getlength(star["brightness"]) + 8
+        width = painter.font(18).getlength(star["brightness"]) + 8
         painter.pill(
             star["brightness"],
             x + (step - width) / 2,
-            y + 65,
-            size=14,
-            height=22,
+            y + 73,
+            size=18,
+            height=24,
             padding=8,
         )
-    size = 14
+    size = 18
     for mark in star["marks"]:
         color, fill = painter.palette.layer_style(mark["source"])
         width = painter.font(size).getlength(mark["label"]) + 8
         painter.pill(
             mark["label"],
             x + (step - width) / 2,
-            y + 91 + mark["row"] * 24,
+            y + 99 + mark["row"] * 24,
             color,
             fill,
             size=size,
@@ -323,13 +323,13 @@ def _draw_palace(painter, item, chart, x, y, height):
     banks = math.ceil(len(stars) / 12)
     for bank in range(banks):
         row = stars[bank * 12 : (bank + 1) * 12]
-        step = min(36, (CELL_WIDTH - 40) / len(row))
+        step = min(34, (CELL_WIDTH - 40) / len(row))
         for col, (star, color) in enumerate(row):
             _vertical_star(
                 painter,
                 star,
                 x + 16 + col * step,
-                y + 30 + bank * 190,
+                y + 36 + bank * 190,
                 color,
                 step,
             )
@@ -347,14 +347,14 @@ def _draw_palace(painter, item, chart, x, y, height):
                     y + height - 156,
                     foreground,
                     fill,
-                    size=14,
-                    height=25,
+                    size=18,
+                    height=28,
                     padding=12,
                 )
                 + 8
             )
-    painter.text("流年", x + 70, y + height - 120, 15, painter.palette.muted)
-    year_x = x + 110
+    painter.text("流年", x + 70, y + height - 120, 18, painter.palette.muted)
+    year_x = x + 112
     year_foreground, year_fill = painter.palette.layer_style("流年")
     for year in item["annual_years"]:
         active = bool(chart["flow"] and chart["flow"]["year"] == year)
@@ -365,8 +365,8 @@ def _draw_palace(painter, item, chart, x, y, height):
                 y + height - 124,
                 year_foreground if active else painter.palette.ink,
                 year_fill if active else painter.palette.paper,
-                size=15,
-                height=25,
+                size=18,
+                height=27,
                 padding=4,
             )
             + 1
@@ -375,7 +375,7 @@ def _draw_palace(painter, item, chart, x, y, height):
         "虚岁 " + "、".join(map(str, item["annual_ages"])),
         x + 70,
         y + height - 92,
-        14,
+        18,
         painter.palette.muted,
         CELL_WIDTH - 123,
     )
@@ -383,9 +383,9 @@ def _draw_palace(painter, item, chart, x, y, height):
     age = f"{d['age_start']}—{d['age_end']}岁"
     painter.text(
         age,
-        x + (CELL_WIDTH - painter.font(21).getlength(age)) / 2,
+        x + (CELL_WIDTH - painter.font(25).getlength(age)) / 2,
         y + height - 64,
-        21,
+        25,
         painter.palette.ink,
     )
     name_color = (
@@ -395,17 +395,17 @@ def _draw_palace(painter, item, chart, x, y, height):
         if selected
         else painter.palette.ink
     )
-    px = x + (CELL_WIDTH - painter.font(26).getlength(palace["name"])) / 2
-    painter.text(palace["name"], px, y + height - 33, 26, name_color)
+    px = x + (CELL_WIDTH - painter.font(30).getlength(palace["name"])) / 2
+    painter.text(palace["name"], px, y + height - 33, 30, name_color)
     if palace["body"]:
         painter.pill(
             "身",
-            px + painter.font(26).getlength(palace["name"]) + 9,
+            px + painter.font(30).getlength(palace["name"]) + 9,
             y + height - 34,
             painter.palette.accent,
             painter.palette.center,
-            size=15,
-            height=24,
+            size=18,
+            height=26,
             padding=8,
         )
     sequences = palace["sequences"]
@@ -414,29 +414,29 @@ def _draw_palace(painter, item, chart, x, y, height):
             sequences[key],
             x + 12,
             y + height - 81 + index * 24,
-            15,
+            18,
             painter.palette.accent if index == 0 else painter.palette.muted,
         )
     for index, character in enumerate(sequences["长生"]):
         painter.text(
             character,
             x + CELL_WIDTH - 30,
-            y + height - 121 + index * 18,
-            15,
+            y + height - 121 + index * 20,
+            18,
             painter.palette.muted,
         )
     painter.text(
         palace["stem_name"],
         x + CELL_WIDTH - 34,
         y + height - 65,
-        24,
+        26,
         painter.palette.element_color(palace["stem_name"]),
     )
     painter.text(
         palace["branch_name"],
         x + CELL_WIDTH - 34,
         y + height - 36,
-        24,
+        26,
         painter.palette.element_color(palace["branch_name"]),
     )
     if selected or item["decade_selected"] or natal_life:
@@ -543,8 +543,8 @@ def _draw_center(painter, chart, x, y, width, height):
         ),
     ]
     for index, (label, value) in enumerate(fields):
-        painter.text(label, x + 28, y + 165 + index * 32, 17, painter.palette.muted)
-        painter.text(value, x + 135, y + 162 + index * 32, 21, width=width - 163)
+        painter.text(label, x + 28, y + 165 + index * 32, 20, painter.palette.muted)
+        painter.text(value, x + 135, y + 162 + index * 32, 26, width=width - 163)
     _draw_compact_pillars(painter, n["pillars"], x + 28, y + 292)
     profile_rules = RuleProfile(**profile)
     flow = chart["flow"]
@@ -746,7 +746,7 @@ def render_chart(chart, font_path, theme="day"):
                 ):
                     color, _ = painter.palette.hua_color(arrow["hua"])
                     painter.arrow(arrow["start"], arrow["end"], color)
-                    painter.text(arrow["hua"], *arrow["label_position"], 13, color)
+                    painter.text(arrow["hua"], *arrow["label_position"], 15, color)
     if layers:
         painter.text("运限四化", MARGIN, footer_y, 21, painter.palette.accent)
         for i, (label, layer) in enumerate(layers):
