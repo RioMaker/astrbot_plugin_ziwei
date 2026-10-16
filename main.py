@@ -16,6 +16,7 @@ from .ai_limits import QuotaExceeded
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
 from .engine import apply_decade, apply_flow, build_chart
+from .life_atlas_service import LifeAtlasService
 from .llm_data import CachedChart, ChartCache, chart_payload, tool_error
 from .reading_service import ReadingService
 from .renderer import Renderer, text_chart
@@ -23,7 +24,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.6.1")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -43,6 +44,7 @@ class ZiweiPlugin(Star):
         )
         self.archive = ArchiveStore(data_dir / "archives.sqlite3")
         self.readings = ReadingService(self)
+        self.life_atlases = LifeAtlasService(self)
         self.summary_worker = SummaryWorker(
             self.archive,
             self.context,
@@ -131,6 +133,13 @@ class ZiweiPlugin(Star):
         """按明确的出生资料生成紫微斗数十二宫命盘。"""
         event.stop_event()
         text = str(args).strip()
+        parts = text.split(maxsplit=1)
+        if parts and parts[0] == "图谱":
+            async for result in self.life_atlases.run(
+                event, parts[1] if len(parts) > 1 else ""
+            ):
+                yield result
+            return
         if not text or text.lower() in {"帮助", "help", "?", "？"}:
             yield event.plain_result(HELP)
             return
@@ -197,6 +206,12 @@ class ZiweiPlugin(Star):
             yield event.plain_result("排盘暂时失败，请稍后重试。")
         finally:
             self.pending -= 1
+
+    @filter.command("人生")
+    async def life_atlas(self, event: AstrMessageEvent, args: GreedyStr = ""):
+        """按出生资料或本人命盘生成从出生至60岁所在大运末年的人生图谱。"""
+        async for result in self.life_atlases.run(event, args):
+            yield result
 
     @filter.llm_tool(name="ziwei_paipan")
     async def ziwei_paipan(

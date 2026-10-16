@@ -55,6 +55,14 @@
 
 ## 可复现命令
 
+1.7.0 人生图谱验证：`/人生` 与 `/紫微 图谱` 复用严格出生解析，覆盖 12／14 位连写、分开时间、农历、主题、本人档案选择及非法范围选项。P1 虚构固定样例为 19 条年度命中、15 个窗口；五行局终点覆盖 61—65 虚岁，验证春节和晚子时边界、2100 年完整扫描上限、配置隔离及输入不变。旧流盘通过 JSON 归档后仍完整剥离大限、流年与日期层，只在图谱副本中使用本命；原档案及缓存内容保持一致。
+
+图谱图片检查覆盖深色／白天、36 个同龄与相邻窗口的合成密集场景、长依据与连续年度来源、零窗口、61—65 岁末端文字及并发主题隔离。布局检查核对文字不重叠、不越界及窗口编号完整。人工查看真实计算路径生成的虚构示例昼夜 PNG（2400×2615），依据与节点对应，常规中文字体可读。离线脚本只接受明确出生资料，无法读取运行档案。
+
+归档升级到版本 3，回归验证版本 2 的原命盘及已确认 AI 额度保留、按命盘族去重、真实事件身份隔离、新来源盘与图谱证据共同提交或回滚。适配层仍使用本地 AstrBot 替身，不能据此宣称真实 QQ／OneBot 收发已经验收。
+
+两个图谱入口检查授权先于解析和查档，直接调用不改变 AI 额度；排队中以及排盘、逐年筛选、渲染阶段关闭群功能或重载时，均不发送图片、不写图谱档案。渲染错误不泄露输入、不回退为无关文字盘。1.7.0 最终结果：584 项测试全部通过，55 个 Python 文件 Ruff 格式与静态检查通过。
+
 ```sh
 python -m ruff format --check .
 python -m ruff check .
@@ -64,6 +72,9 @@ python scripts/preview.py "1990-06-15 08:30 男 运限=1" --output .dev/decade-p
 python scripts/preview.py "1990-06-15 08:30 男 流年=2026 主题=夜间" --output .dev/annual-preview.png
 python scripts/preview.py "1990-06-15 08:30 男 流盘=2026-10-06 流时=10:00" --output .dev/flow-preview.png
 python scripts/preview.py "1990-06-15 08:30 男" --json --output .dev/chart.json
+python scripts/preview_life_atlas.py "199006150830 男" --output .dev/life-atlas.png
+python scripts/preview_life_atlas.py "199006150830 男 主题=白天" --output .dev/life-atlas-day.png
+python scripts/preview_life_atlas.py "199006150830 男" --json --output .dev/life-atlas.json
 ```
 
 1.5.0 最终结果：385 项测试全部通过，Ruff 格式与静态检查通过。文档预览采用虚构演示资料 `1990-06-15 08:30 男`。适配层和图片发送测试使用 AstrBot 的本地替身，没有启动真实 AstrBot，没有调用在线模型，也没有连接 OneBot 或线上消息平台。未完成原 AIR GUI 全盘比对；本地回归通过不等于线上验证或原软件完整兼容。

@@ -30,7 +30,7 @@ class ArchiveStore:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2):
+        if version not in (0, 1, 2, 3):
             self.db.close()
             raise ValueError("命盘档案版本较新，拒绝降级打开")
         self.db.executescript("""
@@ -60,7 +60,13 @@ class ArchiveStore:
                 created REAL NOT NULL, pending INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY(owner,kind,token));
             CREATE INDEX IF NOT EXISTS ai_usage_created ON ai_usage(created);
-            PRAGMA user_version=2;
+            CREATE TABLE IF NOT EXISTS life_atlases (
+                id TEXT PRIMARY KEY, chart_id TEXT NOT NULL REFERENCES charts(id),
+                owner TEXT NOT NULL, group_key TEXT NOT NULL, created REAL NOT NULL,
+                theme TEXT NOT NULL, data TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS life_atlases_owner
+                ON life_atlases(owner, created);
+            PRAGMA user_version=3;
         """)
         with self.transaction() as db:
             db.execute("UPDATE readings SET status='queued' WHERE status='running'")
@@ -98,6 +104,15 @@ class ArchiveStore:
             db.execute("DELETE FROM ai_usage WHERE token=? AND pending=1", (token,))
 
     def save_chart(self, scope, chart, quota_token=None):
+        with self.transaction() as db:
+            chart_id = self._insert_chart(db, scope, chart)
+            if quota_token:
+                db.execute(
+                    "UPDATE ai_usage SET pending=0 WHERE token=?", (quota_token,)
+                )
+        return chart_id
+
+    def _insert_chart(self, db, scope, chart):
         owner = owner_id(scope)
         chart_id = uuid.uuid4().hex
         family = hashlib.sha256(
@@ -110,17 +125,62 @@ class ArchiveStore:
                 ]
             ).encode()
         ).hexdigest()
-        with self.transaction() as db:
-            db.execute(
-                "INSERT INTO charts VALUES (?,?,?,?,?,?)",
-                (chart_id, owner, scope.key, family, self.clock(), encode(chart)),
-            )
-            db.execute("INSERT OR REPLACE INTO groups_state VALUES (?,1)", (scope.key,))
-            if quota_token:
-                db.execute(
-                    "UPDATE ai_usage SET pending=0 WHERE token=?", (quota_token,)
-                )
+        db.execute(
+            "INSERT INTO charts VALUES (?,?,?,?,?,?)",
+            (chart_id, owner, scope.key, family, self.clock(), encode(chart)),
+        )
+        db.execute("INSERT OR REPLACE INTO groups_state VALUES (?,1)", (scope.key,))
         return chart_id
+
+    def save_life_atlas(self, scope, atlas, theme, source_chart_id=""):
+        """Atomically save the chart and atlas evidence, without AI quota."""
+        owner = owner_id(scope)
+        atlas_id = uuid.uuid4().hex
+        with self.transaction() as db:
+            if source_chart_id:
+                found = db.execute(
+                    "SELECT id FROM charts WHERE id=? AND owner=?",
+                    (source_chart_id, owner),
+                ).fetchone()
+                if found is None:
+                    raise ValueError("找不到当前用户在本群的对应命盘")
+                chart_id = source_chart_id
+            else:
+                chart_id = self._insert_chart(db, scope, atlas["natal"])
+            db.execute(
+                "INSERT INTO life_atlases VALUES (?,?,?,?,?,?,?)",
+                (
+                    atlas_id,
+                    chart_id,
+                    owner,
+                    scope.key,
+                    self.clock(),
+                    theme,
+                    encode(atlas),
+                ),
+            )
+        return atlas_id, chart_id
+
+    def get_life_atlas(self, scope, atlas_id):
+        with self.lock:
+            row = self.db.execute(
+                "SELECT * FROM life_atlases WHERE id=? AND owner=?",
+                (atlas_id, owner_id(scope)),
+            ).fetchone()
+        return dict(row, data=json.loads(row["data"])) if row else None
+
+    def chart_choices(self, scope):
+        """Latest snapshot per birth/profile, without free-text birth labels."""
+        with self.lock:
+            rows = self.db.execute(
+                "SELECT c.id, c.family, c.created FROM charts c "
+                "WHERE c.owner=? AND c.rowid=("
+                "SELECT d.rowid FROM charts d WHERE d.owner=c.owner "
+                "AND d.family=c.family ORDER BY d.created DESC,d.rowid DESC LIMIT 1) "
+                "ORDER BY c.created DESC,c.rowid DESC LIMIT 6",
+                (owner_id(scope),),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     def get_chart(self, scope, chart_id=""):
         with self.lock:
