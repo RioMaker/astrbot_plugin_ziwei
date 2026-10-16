@@ -128,7 +128,7 @@ class ZiweiPlugin(Star):
             )
         return chart
 
-    @filter.command("紫微", alias={"紫微排盘", "ziwei"})
+    @filter.command("紫微", alias={"紫薇", "紫微排盘", "紫薇排盘", "ziwei"})
     async def ziwei(self, event: AstrMessageEvent, args: GreedyStr):
         """按明确的出生资料生成紫微斗数十二宫命盘。"""
         event.stop_event()

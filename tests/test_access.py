@@ -16,6 +16,30 @@ async def invoke(plugin, text, event=None):
     return [reply async for reply in plugin.ziwei(event or Event(), text)]
 
 
+@pytest.mark.parametrize("name", ["紫微", "紫薇", "紫微排盘", "紫薇排盘", "ziwei"])
+@pytest.mark.parametrize("enable,disable", [("开", "关"), ("开启", "关闭")])
+def test_registered_command_names_share_group_switches(name, enable, disable):
+    # Direct handler calls alone cannot detect an unregistered command alias.
+    metadata = ZiweiPlugin.ziwei.command_metadata
+    assert name in {metadata["name"], *metadata["alias"]}
+    p = ZiweiPlugin(object(), {})
+
+    async def run():
+        assert "仅群主" in (await invoke(p, enable))[0]
+        assert "群聊" in (await invoke(p, enable, Event(group="", admin=True)))[0]
+        assert p.db == {}
+        assert "已开启" in (await invoke(p, enable, Event(role="admin")))[0]
+        assert "已开启" in (await invoke(p, "状态"))[0]
+        assert await p.access.enabled(capture_group(Event(user="other-member")))
+        assert not await p.access.enabled(capture_group(Event(group="20002")))
+        assert "仅群主" in (await invoke(p, disable))[0]
+        assert "已关闭" in (await invoke(p, disable, Event(role="admin")))[0]
+        assert "未开启" in (await invoke(p, "状态"))[0]
+        assert p.db == {}
+
+    asyncio.run(run())
+
+
 def test_unopened_group_stops_before_parsing_computing_or_rendering(monkeypatch):
     from astrbot_plugin_ziwei import main
 

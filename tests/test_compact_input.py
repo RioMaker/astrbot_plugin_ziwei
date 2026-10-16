@@ -67,7 +67,12 @@ def test_compact_birth_produces_the_same_chart():
 
 def test_command_aliases_and_llm_share_compact_parser_and_authorization():
     p = ZiweiPlugin(Context(), {"output_mode": "text"})
-    assert p.ziwei.command_metadata["alias"] == {"紫微排盘", "ziwei"}
+    assert p.ziwei.command_metadata["alias"] == {
+        "紫薇",
+        "紫微排盘",
+        "紫薇排盘",
+        "ziwei",
+    }
 
     async def run():
         denied = await invoke_command(p, "199006150830 男")
