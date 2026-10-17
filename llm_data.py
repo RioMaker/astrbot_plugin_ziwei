@@ -105,6 +105,7 @@ def chart_payload(row, *, remaining_seconds, palace=""):
         "chart_id": row.chart_id,
         "expires_in_seconds": max(0, math.ceil(remaining_seconds)),
         "data": {
+            "rectification": deepcopy(chart.get("rectification")),
             "rules_version": chart["rules_version"],
             "rule_profile": deepcopy(chart["profile"]),
             "normalized_birth": deepcopy(n),

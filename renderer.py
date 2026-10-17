@@ -67,6 +67,8 @@ def text_chart(chart):
                 f"{label}命宫：{BRANCHES[layer['life'] - 1]}；"
                 f"四化：{' '.join(layer['four_hua'])}"
             )
+    if chart.get("rectification", {}).get("representative_only"):
+        lines.insert(1, "定盘范围代表盘：所示时刻不代表已确认精确出生时间。")
     for palace in sorted(
         chart["palaces"], key=lambda item: (chart["life"] - item["branch"]) % 12
     ):

@@ -54,9 +54,12 @@ def validate_summary(text, job):
 
 
 class SummaryWorker:
-    def __init__(self, store, context, access, provider="", timeout=90):
+    def __init__(
+        self, store, context, access, provider="", timeout=90, *, system=SYSTEM
+    ):
         self.store, self.context, self.access = store, context, access
         self.provider, self.timeout = provider, timeout
+        self.system = system
         self.task = None
         self.wake_event = asyncio.Event()
         self.closed = False
@@ -119,7 +122,7 @@ class SummaryWorker:
                 self.context.llm_generate(
                     chat_provider_id=provider,
                     prompt=prompt,
-                    system_prompt=SYSTEM,
+                    system_prompt=self.system,
                     contexts=[],
                 ),
                 timeout=self.timeout,

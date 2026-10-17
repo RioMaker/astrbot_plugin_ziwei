@@ -63,6 +63,11 @@ class ReadingService:
     async def call(self, action, event, **kwargs):
         try:
             scope = await self.authorize(event)
+            if (
+                getattr(event, "_ziwei_rectification_delivery", None)
+                and action != "list_archives"
+            ):
+                raise ValueError("本轮已关联定盘，请分轮进行普通读盘")
             result = await getattr(self, action)(scope, event, **kwargs)
             return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
         except PermissionError as exc:
@@ -86,6 +91,8 @@ class ReadingService:
         }
 
     async def prepare(self, scope, event, chart_id, reading_scope, topic):
+        if getattr(event, "_ziwei_rectification_delivery", None):
+            raise ValueError("本轮已关联定盘，请分轮进行普通读盘")
         chart_id = self._identifier(chart_id, optional=True)
         row = self.plugin.archive.get_chart(scope, chart_id)
         if row is None:
@@ -163,6 +170,8 @@ class ReadingService:
         return {"status": "ok", "knowledge": knowledge}
 
     async def continue_reading(self, scope, event, reading_id, kind):
+        if getattr(event, "_ziwei_rectification_delivery", None):
+            raise ValueError("本轮已关联定盘，请分轮进行普通读盘")
         reading_id = self._identifier(reading_id)
         if kind not in {"followup", "feedback"}:
             raise ValueError("消息类型须为followup或feedback")

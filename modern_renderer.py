@@ -773,7 +773,9 @@ def render_chart(chart, font_path, theme="day"):
         painter.palette.muted,
     )
     painter.text(
-        "真太阳时为近似校正。默认仅排盘，分析须用户明确提问。",
+        "定盘范围代表盘：所示时刻不代表已确认精确出生时间。"
+        if chart.get("rectification", {}).get("representative_only")
+        else "真太阳时为近似校正。默认仅排盘，分析须用户明确提问。",
         MARGIN,
         by + 29,
         15,

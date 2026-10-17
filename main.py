@@ -21,12 +21,13 @@ from .engine import apply_decade, apply_flow, build_chart
 from .life_atlas_service import LifeAtlasService
 from .llm_data import CachedChart, ChartCache, chart_payload, tool_error
 from .reading_service import ReadingService
+from .rectification_service import RectificationService
 from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.7.2")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.8.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -46,6 +47,7 @@ class ZiweiPlugin(Star):
         )
         self.archive = ArchiveStore(data_dir / "archives.sqlite3")
         self.readings = ReadingService(self)
+        self.rectifications = RectificationService(self)
         self.life_atlases = LifeAtlasService(self)
         self.summary_worker = SummaryWorker(
             self.archive,
@@ -65,11 +67,13 @@ class ZiweiPlugin(Star):
     async def terminate(self):
         self.closed = True
         self.chart_cache.clear()
+        await self.rectifications.worker.stop()
         await self.summary_worker.stop()
         self.archive.close()
 
     async def initialize(self):
         self.summary_worker.wake()
+        self.rectifications.worker.wake()
 
     @staticmethod
     def _scope_rejection(scope):
@@ -113,6 +117,7 @@ class ZiweiPlugin(Star):
                 self.chart_cache.clear_group(scope)
             else:
                 self.summary_worker.wake()
+                self.rectifications.worker.wake()
             return (
                 "本群紫微排盘已开启，群成员可使用 /紫微 排盘。"
                 if enabled
@@ -138,6 +143,10 @@ class ZiweiPlugin(Star):
 
     async def _ziwei_command(self, event, args, *, quiet=False):
         text = str(args).strip()
+        if text == "定盘" or text.startswith("定盘 "):
+            async for result in self.rectifications.run(event, text[2:].strip()):
+                yield result
+            return
         if text.startswith("图谱"):
             tail = text[2:]
             quiet = quiet or bool(tail and not tail[0].isspace())
@@ -459,6 +468,99 @@ class ZiweiPlugin(Star):
     @filter.on_llm_request()
     async def reading_request(self, event: AstrMessageEvent, req):
         await self.readings.on_request(event, req)
+        await self.rectifications.on_request(event, req)
+
+    @filter.llm_tool(name="ziwei_rectification_get")
+    async def ziwei_rectification_get(
+        self, event: AstrMessageEvent, session_id: str = ""
+    ) -> str:
+        """仅AstrBot管理员读取本人本群的已建定盘会话。候选必须先由管理员显式指令创建，不自动排盘，不扣次数；资料仅内部参考。
+
+        Args:
+            session_id(string): 本人定盘会话ID，空为唯一进行中的会话；有多个时先询问。
+        """
+        return await self.rectifications.call("get", event, session_id=session_id)
+
+    @filter.llm_tool(name="ziwei_rectification_context")
+    async def ziwei_rectification_context(
+        self,
+        event: AstrMessageEvent,
+        session_id: str = "",
+        candidate_ids: str = "",
+        topic: str = "general",
+        year: int = 0,
+        decade: int = -1,
+        offset: int = 0,
+    ) -> str:
+        """管理员明确请求定盘分析时，按本轮真实问题分批读取真实候选事实与来源知识，并计入每小时6次提问。每批最多2盘，同一消息分批只计一次；不是候选生成入口。
+
+        Args:
+            session_id(string): 本人本群定盘会话ID，空为唯一进行中的会话。
+            candidate_ids(string): 至多2个候选ID，逗号分隔；空取前2个。
+                须继续分批读取其他候选。
+            topic(string): general整体、career事业、wealth财、relationship感情、
+                family家庭、children子女、friends交友、health健康、studies学业、
+                mobility迁移、property田宅、wellbeing福德。
+            year(number): 明确的农历流年，0不选流年。
+                公历经历须先核实日期，不能直接当农历年。
+            decade(number): 明确的大运序号0至12，0童限，-1不选大运；与year互斥。
+            offset(number): 知识分页起点，0起，后续用对应知识的next_offset。
+        """
+        return await self.rectifications.call(
+            "context",
+            event,
+            session_id=session_id,
+            candidate_ids=candidate_ids,
+            topic=topic,
+            year=year,
+            decade=decade,
+            offset=offset,
+        )
+
+    @filter.llm_tool(name="ziwei_rectification_feedback")
+    async def ziwei_rectification_feedback(
+        self, event: AstrMessageEvent, session_id: str, kind: str = "feedback"
+    ) -> str:
+        """记录管理员本次定盘的真实反馈或相关追问，不接受模型代写反馈。纯反馈不扣次数，只校正已取得的资料；包含新问题须followup。
+
+        Args:
+            session_id(string): 本人当前定盘会话ID。
+            kind(string): feedback纯反馈，followup新增分析问题或相关追问。
+        """
+        return await self.rectifications.call(
+            "feedback", event, session_id=session_id, kind=kind
+        )
+
+    @filter.llm_tool(name="ziwei_rectification_assess")
+    async def ziwei_rectification_assess(
+        self, event: AstrMessageEvent, session_id: str, assessment_json: str
+    ) -> str:
+        """在登记真实问题或反馈后保存候选对比，保留支持、冲突和未知项。只引用已读候选知识及实际反馈，不产生概率，不确认命盘。需先用get取得真实反馈seq。
+
+        Args:
+            session_id(string): 本人当前定盘会话ID。
+            assessment_json(string): JSON对象，以候选ID为键。
+                每项严格含support、conflict、unknown三个字符串数组，
+                evidence_sequences反馈seq整数数组、knowledge_ids已用知识ID数组。
+                支持或冲突必须带真实反馈与知识引用。
+        """
+        return await self.rectifications.call(
+            "assess", event, session_id=session_id, assessment_json=assessment_json
+        )
+
+    @filter.llm_tool(name="ziwei_rectification_finish")
+    async def ziwei_rectification_finish(
+        self, event: AstrMessageEvent, session_id: str, feedback_complete: bool
+    ) -> str:
+        """仅主AI判断管理员已反馈且定盘问答闭环后调用，排队独立归档总结。无反馈、仍在追问或未发送回答时禁止结束。可保留多个候选，不代管理员确认出生时间。
+
+        Args:
+            session_id(string): 本人本群定盘会话ID。
+            feedback_complete(boolean): 仅确认真实反馈闭环时为true。
+        """
+        return await self.rectifications.call(
+            "finish", event, session_id=session_id, feedback_complete=feedback_complete
+        )
 
     @filter.llm_tool(name="ziwei_list_archives")
     async def ziwei_list_archives(

@@ -11,7 +11,11 @@ def plain_text(message):
     )
 
 
-def install_capture(event, capture, failed):
+def install_capture(event, capture, failed, *, key="reading"):
+    callbacks = getattr(event, "_ziwei_capture_callbacks", None)
+    if callbacks is None:
+        callbacks = event._ziwei_capture_callbacks = {}
+    callbacks[key] = (capture, failed)
     if getattr(event, "_ziwei_send_capture", False):
         return
     send = getattr(event, "send", None)
@@ -20,17 +24,25 @@ def install_capture(event, capture, failed):
     streaming = getattr(event, "send_streaming", None)
     stream_depth = 0
 
+    def capture_failed():
+        for _, callback in tuple(callbacks.values()):
+            callback()
+
+    async def capture_text(text):
+        for callback, _ in tuple(callbacks.values()):
+            await callback(text)
+
     async def observed_send(message, *args, **kwargs):
         try:
             result = await send(message, *args, **kwargs)
         except (Exception, asyncio.CancelledError):
-            failed()
+            capture_failed()
             raise
         if not stream_depth:
             if result is False:
-                failed()
+                capture_failed()
             else:
-                await capture(plain_text(message))
+                await capture_text(plain_text(message))
         return result
 
     async def observed_stream(generator, *args, **kwargs):
@@ -43,7 +55,9 @@ def install_capture(event, capture, failed):
             nonlocal size, overflow
             async for chunk in generator:
                 text = plain_text(chunk)
-                if getattr(event, "_ziwei_delivery", None):
+                if getattr(event, "_ziwei_delivery", None) or getattr(
+                    event, "_ziwei_rectification_delivery", None
+                ):
                     size += len(text)
                     if size <= 12000:
                         pieces.append(text)
@@ -55,12 +69,12 @@ def install_capture(event, capture, failed):
         try:
             result = await streaming(tapped(), *args, **kwargs)
             if result is False or overflow:
-                failed()
+                capture_failed()
             else:
-                await capture("".join(pieces))
+                await capture_text("".join(pieces))
             return result
         except (Exception, asyncio.CancelledError):
-            failed()
+            capture_failed()
             raise
         finally:
             stream_depth -= 1

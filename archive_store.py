@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 from .ai_limits import question_token, take
 from .llm_data import owner_key
+from .rectification_store import RectificationStore
 
 
 def encode(value):
@@ -30,7 +31,7 @@ class ArchiveStore:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2, 3):
+        if version not in (0, 1, 2, 3, 4):
             self.db.close()
             raise ValueError("命盘档案版本较新，拒绝降级打开")
         self.db.executescript("""
@@ -71,6 +72,7 @@ class ArchiveStore:
         with self.transaction() as db:
             db.execute("UPDATE readings SET status='queued' WHERE status='running'")
             db.execute("DELETE FROM ai_usage WHERE pending=1")
+        self.rectifications = RectificationStore(self)
 
     @contextmanager
     def transaction(self):

@@ -301,7 +301,7 @@ def test_v1_database_upgrades_without_changing_charts_and_discards_pending(tmp_p
         db.execute("PRAGMA user_version=1")
         db.execute("INSERT INTO groups_state VALUES ('unchanged',1)")
     upgraded = ArchiveStore(path)
-    assert upgraded.db.execute("PRAGMA user_version").fetchone()[0] == 3
+    assert upgraded.db.execute("PRAGMA user_version").fetchone()[0] == 4
     assert (
         upgraded.db.execute(
             "SELECT enabled FROM groups_state WHERE group_key='unchanged'"
