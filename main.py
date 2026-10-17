@@ -27,7 +27,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.8.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.8.1")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -470,16 +470,36 @@ class ZiweiPlugin(Star):
         await self.readings.on_request(event, req)
         await self.rectifications.on_request(event, req)
 
+    @filter.llm_tool(name="ziwei_rectification_create")
+    async def ziwei_rectification_create(
+        self, event: AstrMessageEvent, birth_info: str, send_image: bool = False
+    ) -> str:
+        """仅已开启群的AstrBot管理员明确请求定盘时，根据用户提供的日期和性别直接创建全天或指定时辰的全部真实候选。整批计1次生年排盘额度，图片只发送一张总拼图；不自动选定候选或分析。
+
+        Args:
+            birth_info(string): 用户明确提供的出生资料，[公历/农历] YYYY-MM-DD 男或女，
+                可加时辰=子,丑等候选；不填时辰表示全天。支持经度、时区、真太阳时、
+                闰月、子时、主题选项；缺失日期或性别及历法不明确时先询问，不能猜测。
+            send_image(boolean): 用户需要图片时为true，把全部候选拼成一张总图发送；
+                默认false只返回候选概览，已有批次用get读取或重发。
+        """
+        return await self.rectifications.call(
+            "create", event, birth_info=birth_info, send_image=send_image
+        )
+
     @filter.llm_tool(name="ziwei_rectification_get")
     async def ziwei_rectification_get(
-        self, event: AstrMessageEvent, session_id: str = ""
+        self, event: AstrMessageEvent, session_id: str = "", send_image: bool = False
     ) -> str:
-        """仅AstrBot管理员读取本人本群的已建定盘会话。候选必须先由管理员显式指令创建，不自动排盘，不扣次数；资料仅内部参考。
+        """仅AstrBot管理员读取本人本群的已有定盘会话，按需发送一张全部候选总拼图。不重新生成候选，不扣次数；资料仅内部参考。
 
         Args:
             session_id(string): 本人定盘会话ID，空为唯一进行中的会话；有多个时先询问。
+            send_image(boolean): 用户请求图片时为true，只发一张完整总图；默认false。
         """
-        return await self.rectifications.call("get", event, session_id=session_id)
+        return await self.rectifications.call(
+            "get", event, session_id=session_id, send_image=send_image
+        )
 
     @filter.llm_tool(name="ziwei_rectification_context")
     async def ziwei_rectification_context(

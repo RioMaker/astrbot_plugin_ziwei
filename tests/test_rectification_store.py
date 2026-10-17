@@ -297,6 +297,7 @@ def test_v3_upgrade_keeps_existing_chart_quota_and_archive(tmp_path, candidates)
     archive.close()
     with sqlite3.connect(path) as db:
         for table in (
+            "rectification_deliveries",
             "rectification_assessments",
             "rectification_contexts",
             "rectification_turns",
@@ -305,7 +306,7 @@ def test_v3_upgrade_keeps_existing_chart_quota_and_archive(tmp_path, candidates)
             db.execute(f"DROP TABLE {table}")
         db.execute("PRAGMA user_version=3")
     archive = ArchiveStore(path)
-    assert archive.db.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert archive.db.execute("PRAGMA user_version").fetchone()[0] == 5
     assert archive.get_chart(scope, chart_id)["chart"] == candidates[0]["chart"]
     assert tuple(
         archive.db.execute("SELECT token,pending FROM ai_usage").fetchone()
@@ -392,3 +393,197 @@ def test_feedback_assessment_keeps_other_candidates_and_immutable_history(
         store.enqueue(scope, sid, "f1")
     store.add_turn(scope, sid, "f2", "feedback", "新的最终反馈")
     assert store.enqueue(scope, sid, "f2") == "queued"
+
+
+def test_ai_batch_consumes_one_natal_slot_and_replay_does_not_charge_again(
+    tmp_path, candidates
+):
+    archive = ArchiveStore(tmp_path / "archives.sqlite3")
+    scope = capture_group(Event())
+    store = archive.rectifications
+    token = archive.reserve_chart(scope, "natal")
+    sid = store.create(scope, "batch", {}, candidates, quota_token=token)
+    assert store.get(scope, sid)["candidates"] == candidates
+    assert archive.get_chart(scope) is None
+    assert [
+        tuple(row) for row in archive.db.execute("SELECT kind,pending FROM ai_usage")
+    ] == [("natal", 0)]
+    unused = archive.reserve_chart(scope, "natal")
+    assert store.create(scope, "batch", {}, candidates, quota_token=unused) == sid
+    assert (
+        archive.db.execute(
+            "SELECT pending FROM ai_usage WHERE token=?", (unused,)
+        ).fetchone()[0]
+        == 1
+    )
+    archive.release_chart(unused)
+    ordinary = archive.reserve_chart(scope, "natal")
+    archive.save_chart(scope, candidates[0]["chart"], ordinary)
+    with pytest.raises(QuotaExceeded):
+        archive.reserve_chart(scope, "natal")
+    with pytest.raises(QuotaExceeded):
+        archive.reserve_chart(capture_group(Event(group="another")), "natal")
+    assert archive.db.execute("SELECT count(*) FROM ai_usage").fetchone()[0] == 2
+
+
+def test_batch_creation_failure_keeps_reservation_pending_and_rolls_back_session(
+    tmp_path, candidates
+):
+    archive = ArchiveStore(tmp_path / "archives.sqlite3")
+    scope = capture_group(Event())
+    token = archive.reserve_chart(scope, "natal")
+    archive.db.execute(
+        "CREATE TRIGGER reject_batch_charge BEFORE UPDATE OF pending ON ai_usage "
+        "BEGIN SELECT RAISE(ABORT,'failure'); END"
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        archive.rectifications.create(scope, "batch", {}, candidates, quota_token=token)
+    assert archive.rectifications.get(scope) is None
+    assert archive.db.execute("SELECT count(*) FROM groups_state").fetchone()[0] == 0
+    assert archive.db.execute("SELECT pending FROM ai_usage").fetchone()[0] == 1
+    archive.release_chart(token)
+    assert archive.db.execute("SELECT count(*) FROM ai_usage").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize(
+    "reservation", ["other_user", "other_platform", "decade", "used", "missing"]
+)
+def test_new_batch_rejects_wrong_or_already_consumed_quota_token(
+    tmp_path, candidates, reservation
+):
+    archive = ArchiveStore(tmp_path / "archives.sqlite3")
+    scope = capture_group(Event())
+    token_scope = capture_group(
+        Event(user="other")
+        if reservation == "other_user"
+        else Event(platform="other")
+        if reservation == "other_platform"
+        else Event()
+    )
+    token = archive.reserve_chart(
+        token_scope, "decade" if reservation == "decade" else "natal"
+    )
+    if reservation == "used":
+        archive.save_chart(scope, candidates[0]["chart"], token)
+    if reservation == "missing":
+        archive.release_chart(token)
+    with pytest.raises(ValueError, match="预留额度无效"):
+        archive.rectifications.create(scope, "batch", {}, candidates, quota_token=token)
+    assert archive.rectifications.get(scope) is None
+    assert archive.db.execute("SELECT count(*) FROM rectifications").fetchone()[0] == 0
+
+
+def test_delivery_claim_is_atomic_per_actual_message_and_sent_state_is_durable(
+    tmp_path, candidates
+):
+    path = tmp_path / "archives.sqlite3"
+    archive = ArchiveStore(path)
+    scope, sid = create(archive, candidates)
+    store = archive.rectifications
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        claims = list(
+            pool.map(lambda _: store.begin_delivery(scope, sid, "delivery"), range(4))
+        )
+    assert claims.count(True) == 1
+    store.finish_delivery(scope, sid, "delivery", True)
+    store.finish_delivery(scope, sid, "delivery", False)
+    assert not store.begin_delivery(scope, sid, "delivery")
+    _, other_sid = create(archive, candidates, event_id="another-session")
+    assert not store.begin_delivery(scope, other_sid, "delivery")
+    archive.close()
+    archive = ArchiveStore(path)
+    store = archive.rectifications
+    assert not store.begin_delivery(scope, sid, "delivery")
+    assert store.begin_delivery(scope, sid, "explicit-resend")
+    assert [
+        row[0]
+        for row in archive.db.execute(
+            "SELECT status FROM rectification_deliveries ORDER BY rowid"
+        )
+    ] == ["sent", "sending"]
+
+
+def test_failed_and_interrupted_delivery_can_retry_without_new_batch_charge(
+    tmp_path, candidates
+):
+    path = tmp_path / "archives.sqlite3"
+    archive = ArchiveStore(path)
+    scope, sid = create(archive, candidates)
+    store = archive.rectifications
+    assert store.begin_delivery(scope, sid, "delivery")
+    store.finish_delivery(scope, sid, "delivery", False)
+    assert store.begin_delivery(scope, sid, "delivery")
+    archive.close()
+    archive = ArchiveStore(path)
+    store = archive.rectifications
+    assert (
+        archive.db.execute("SELECT status FROM rectification_deliveries").fetchone()[0]
+        == "failed"
+    )
+    assert store.begin_delivery(scope, sid, "delivery")
+    store.finish_delivery(scope, sid, "delivery", True)
+    assert not store.begin_delivery(scope, sid, "delivery")
+    assert archive.db.execute("SELECT count(*) FROM ai_usage").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize(
+    "outsider", [Event(user="other"), Event(group="other"), Event(platform="other")]
+)
+def test_delivery_cannot_claim_or_complete_another_owners_session(
+    tmp_path, candidates, outsider
+):
+    archive = ArchiveStore(tmp_path / "archives.sqlite3")
+    scope, sid = create(archive, candidates)
+    other = capture_group(outsider)
+    store = archive.rectifications
+    assert store.begin_delivery(scope, sid, "delivery")
+    with pytest.raises(ValueError, match="找不到"):
+        store.begin_delivery(other, sid, "delivery")
+    with pytest.raises(ValueError, match="找不到"):
+        store.finish_delivery(other, sid, "delivery", True)
+    assert (
+        archive.db.execute("SELECT status FROM rectification_deliveries").fetchone()[0]
+        == "sending"
+    )
+    store.finish_delivery(scope, sid, "unclaimed-event", True)
+    assert (
+        archive.db.execute("SELECT count(*) FROM rectification_deliveries").fetchone()[
+            0
+        ]
+        == 1
+    )
+    _, cancelled = create(archive, candidates, event_id="cancelled")
+    store.cancel(scope, cancelled)
+    with pytest.raises(ValueError, match="已取消"):
+        store.begin_delivery(scope, cancelled, "new-delivery")
+
+
+def test_v4_migration_preserves_candidates_history_and_confirmed_batch_quota(
+    tmp_path, candidates
+):
+    path = tmp_path / "archives.sqlite3"
+    archive = ArchiveStore(path)
+    scope = capture_group(Event())
+    token = archive.reserve_chart(scope, "natal")
+    sid = archive.rectifications.create(
+        scope, "batch", {}, candidates, quota_token=token
+    )
+    closed_loop(archive.rectifications, scope, sid)
+    archive.rectifications.save_assessment(
+        scope, sid, "f1", {"c01": {"unknown": ["待核实"]}}
+    )
+    before = archive.rectifications.get(scope, sid)
+    archive.close()
+    with sqlite3.connect(path) as db:
+        db.execute("DROP TABLE rectification_deliveries")
+        db.execute("PRAGMA user_version=4")
+    archive = ArchiveStore(path)
+    assert archive.db.execute("PRAGMA user_version").fetchone()[0] == 5
+    after = archive.rectifications.get(scope, sid)
+    assert after == before
+    assert tuple(
+        archive.db.execute(
+            "SELECT token,pending FROM ai_usage WHERE kind='natal'"
+        ).fetchone()
+    ) == (token, 0)
+    assert archive.rectifications.begin_delivery(scope, sid, "delivery")

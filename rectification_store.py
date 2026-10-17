@@ -6,7 +6,7 @@ import re
 import uuid
 from copy import deepcopy
 
-from .ai_limits import question_token, take
+from .ai_limits import identity, question_token, take
 from .llm_data import owner_key
 
 MAX_CANDIDATES = 32
@@ -81,19 +81,31 @@ class RectificationStore:
                 event_id TEXT NOT NULL, fingerprint TEXT NOT NULL,
                 assessment TEXT NOT NULL, created REAL NOT NULL,
                 UNIQUE(session_id,event_id,fingerprint));
+            CREATE TABLE IF NOT EXISTS rectification_deliveries (
+                session_id TEXT NOT NULL REFERENCES rectifications(id),
+                owner TEXT NOT NULL, event_id TEXT NOT NULL,
+                status TEXT NOT NULL, updated REAL NOT NULL,
+                PRIMARY KEY(owner,event_id));
         """)
         with self.transaction() as db:
             db.execute(
                 "UPDATE rectifications SET summary_status='queued' "
                 "WHERE summary_status='running'"
             )
-            db.execute("PRAGMA user_version=4")
+            db.execute(
+                "UPDATE rectification_deliveries SET status='failed',updated=? "
+                "WHERE status='sending'",
+                (self.clock(),),
+            )
+            db.execute("PRAGMA user_version=5")
 
     @property
     def clock(self):
         return self.archive.clock
 
-    def create(self, scope, event_id, request_metadata, candidates):
+    def create(
+        self, scope, event_id, request_metadata, candidates, *, quota_token=None
+    ):
         identifier(event_id)
         owner = owner_id(scope)
         if not isinstance(request_metadata, dict):
@@ -146,7 +158,67 @@ class RectificationStore:
             )
             # Authorization is checked by the event-bound service before this call.
             db.execute("INSERT OR REPLACE INTO groups_state VALUES (?,1)", (scope.key,))
+            if quota_token is not None:
+                identifier(quota_token)
+                charged = db.execute(
+                    "UPDATE ai_usage SET pending=0 WHERE owner=? AND kind='natal' "
+                    "AND token=? AND pending=1",
+                    (identity(scope), quota_token),
+                )
+                if charged.rowcount != 1:
+                    raise ValueError("当前定盘批次的AI排盘预留额度无效，请重试")
         return sid
+
+    def begin_delivery(self, scope, session_id, event_id):
+        """Claim at most one mosaic for this owner's actual incoming message."""
+        identifier(event_id)
+        owner = owner_id(scope)
+        with self.transaction() as db:
+            row = self._required(scope, session_id)
+            if row["status"] == "cancelled":
+                raise ValueError("定盘记录已取消，不能发送拼接图")
+            delivery = db.execute(
+                "SELECT session_id,status FROM rectification_deliveries "
+                "WHERE owner=? AND event_id=?",
+                (owner, event_id),
+            ).fetchone()
+            if delivery:
+                if delivery["session_id"] != session_id or delivery["status"] in {
+                    "sending",
+                    "sent",
+                }:
+                    return False
+                db.execute(
+                    "UPDATE rectification_deliveries SET status='sending',updated=? "
+                    "WHERE owner=? AND event_id=? AND session_id=? AND status='failed'",
+                    (self.clock(), owner, event_id, session_id),
+                )
+            else:
+                db.execute(
+                    "INSERT INTO rectification_deliveries "
+                    "(session_id,owner,event_id,status,updated) "
+                    "VALUES (?,?,?,'sending',?)",
+                    (session_id, owner, event_id, self.clock()),
+                )
+        return True
+
+    def finish_delivery(self, scope, session_id, event_id, success):
+        identifier(event_id)
+        if type(success) is not bool:
+            raise ValueError("拼接图投递状态须为布尔值")
+        with self.transaction() as db:
+            self._required(scope, session_id)
+            db.execute(
+                "UPDATE rectification_deliveries SET status=?,updated=? "
+                "WHERE owner=? AND session_id=? AND event_id=? AND status='sending'",
+                (
+                    "sent" if success else "failed",
+                    self.clock(),
+                    owner_id(scope),
+                    session_id,
+                    event_id,
+                ),
+            )
 
     def get(self, scope, session_id=""):
         identifier(session_id, optional=True)

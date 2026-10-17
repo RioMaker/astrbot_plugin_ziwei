@@ -28,7 +28,7 @@ def test_v2_upgrade_preserves_chart_and_confirmed_quota(tmp_path, atlas):
         db.execute("DROP TABLE life_atlases")
         db.execute("PRAGMA user_version=2")
     resumed = ArchiveStore(path)
-    assert resumed.db.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert resumed.db.execute("PRAGMA user_version").fetchone()[0] == 5
     assert resumed.get_chart(scope, chart_id)["chart"] == atlas["natal"]
     quota = resumed.db.execute("SELECT token,pending FROM ai_usage").fetchone()
     assert tuple(quota) == (token, 0)

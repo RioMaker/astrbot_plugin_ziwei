@@ -11,6 +11,9 @@ from astrbot_plugin_ziwei.rectification import build_candidates  # noqa: E402
 from astrbot_plugin_ziwei.rectification_commands import (  # noqa: E402
     parse_rectification_request,
 )
+from astrbot_plugin_ziwei.rectification_renderer import (  # noqa: E402
+    render_candidate_collage,
+)
 from astrbot_plugin_ziwei.renderer import Renderer  # noqa: E402
 
 
@@ -19,7 +22,13 @@ def main():
     parser.add_argument("command", help="日期 性别 [时辰=辰,巳] 及历法选项")
     parser.add_argument("--candidate", default="c01")
     parser.add_argument("--output", default="rectification.png")
-    parser.add_argument("--json", action="store_true", help="导出全部候选与原始范围")
+    output_mode = parser.add_mutually_exclusive_group()
+    output_mode.add_argument(
+        "--json", action="store_true", help="导出全部候选与原始范围"
+    )
+    output_mode.add_argument(
+        "--collage", action="store_true", help="把全部候选完整拼成单张总图"
+    )
     args = parser.parse_args()
     try:
         parsed = parse_rectification_request(args.command)
@@ -36,6 +45,12 @@ def main():
                 + "\n",
                 encoding="utf-8",
             )
+        elif args.collage:
+            png = render_candidate_collage(
+                candidates, Renderer(), parsed.request.image_theme
+            )
+            target.write_bytes(png)
+            print(f"全部候选已拼为单张PNG，文件大小：{len(png):,} 字节")
         else:
             candidate = next((c for c in candidates if c["id"] == args.candidate), None)
             if candidate is None:

@@ -1,10 +1,13 @@
 """Administrator-only, event-bound comparison of archived candidate charts."""
 
 import asyncio
+import hashlib
 import json
 import re
+from dataclasses import asdict
 
 from astrbot.api import logger
+from astrbot.api.event import MessageChain
 from astrbot.api.message_components import Image
 from astrbot.core.agent.message import TextPart
 
@@ -19,6 +22,7 @@ from .llm_data import tool_error
 from .reading_service import event_key, event_text
 from .rectification import build_candidates
 from .rectification_commands import parse_rectification_request
+from .rectification_renderer import render_candidate_collage
 from .summary_worker import SYSTEM, SummaryWorker
 
 HELP = """管理员 AI 辅助定盘（逐轮问答）
@@ -29,19 +33,27 @@ HELP = """管理员 AI 辅助定盘（逐轮问答）
 程序按历法和校正边界拆分候选；显示的时刻仅是候选范围代表，不是确定的出生时刻。
 创建后 @机器人说“开始定盘”，再按 AI 提问提供已发生的经历及日期。
 /紫微 定盘 状态 [会话ID]
+/紫微 定盘 总图 [会话ID]：将全部候选纵向拼成一张图片，标题横条分隔
 /紫微 定盘 查看 c01 [会话ID]
 /紫微 定盘 确认 c01 [会话ID]：明确选择后才设为当前命盘
 /紫微 定盘 取消 [会话ID]
 /紫微 定盘 重试总结 [会话ID]
 仅当前已开启群的 AstrBot 管理员可用，群主或群管理员身份不能单独授权。
-候选创建属显式指令排盘；AI 新问题仍计入每小时6次，纯反馈和读取不扣次数。
+也可直接告诉 AI 出生日期、性别和候选时辰，要求定盘；要图片时只发一张完整总图。
+AI 创建整批按1次生年排盘计，与普通排盘共享每小时2次；直接指令创建不扣额度。
+AI 新问题仍计入每小时6次，纯反馈、读取和总图重发不扣次数。
 定盘为传统规则下的辅助比较，支持证据不足时保留多个候选。"""
 
 POLICY = """管理员定盘工具规则：
 定盘只对当前真实事件的 AstrBot 管理员和其本人本群会话开放。
-必须由管理员显式发送 /紫微 定盘 创建候选，不能调用指令或普通排盘工具绕过额度建立批次。
+用户明确要求定盘并给出出生日期和性别时，
+可用 ziwei_rectification_create 直接生成全天候选。
+用户指定几个候选时辰时传入时辰选项；缺少日期、性别或历法不明确时先询问，不推测。
+整批消耗1次生年排盘额度，与普通AI排盘共享每小时2次；不能逐张调用普通工具绕过限制。
+需要图片时仅用create或get的send_image=true，全部候选拼成一张总图，不逐张发送。
+已创建的批次使用get读取或重发，不能为了重发而另建；同一真实消息重复调用只发一次。
 仅用户明确要求定盘或回复本次定盘问题时处理，不将管理员的其他聊天自动登记。
-先用 ziwei_rectification_get 读取会话；未指定会话且有多个进行中会话时先询问选择。
+已有会话先用 ziwei_rectification_get 读取；未指定会话且有多个进行中会话时先询问选择。
 初次定盘或新的分析问题用 ziwei_rectification_context 按主题分批读取候选，每批至多2个；
 同一真实消息可分批读完整候选集合，只算一次问题。保留每个候选，不凭首次两张代表全部。
 优先问少量能够区分候选的既往经历（如迁居、学业、职业和关系变化及年月），避免暗示答案。
@@ -100,6 +112,8 @@ class RectificationService:
         self.plugin = plugin
         self.store = plugin.archive.rectifications
         self.knowledge = KnowledgeBase()
+        self.creation_lock = asyncio.Lock()
+        self.image_lock = asyncio.Lock()
         self.worker = SummaryWorker(
             self.store,
             plugin.context,
@@ -133,7 +147,7 @@ class RectificationService:
                 session_id = active[0]["id"]
         row = self.store.get(scope, session_id)
         if row is None:
-            raise ValueError("找不到本人在本群的定盘会话，请先发送 /紫微 定盘 创建")
+            raise ValueError("找不到本人在本群的定盘会话，请提供出生日期和性别创建候选")
         return row
 
     @staticmethod
@@ -166,11 +180,146 @@ class RectificationService:
             logger.warning(f"定盘工具暂不可用：{type(exc).__name__}")
             return tool_error("unavailable", "定盘资料暂不可用，请勿猜测计算结果")
 
-    async def get(self, scope, event, key, text, session_id):
+    async def create_session(self, scope, event, key, birth_info, *, ai=False):
+        if not isinstance(birth_info, str):
+            raise ValueError("出生资料须为文本")
+        async with self.creation_lock:
+            await self.check(scope)
+            parsed = parse_rectification_request(birth_info, self.plugin.config)
+            fingerprint = hashlib.sha256(
+                json.dumps(
+                    {
+                        "birth": asdict(parsed.request.birth),
+                        "profile": parsed.request.profile.snapshot(),
+                        "intervals": parsed.intervals,
+                        "theme": parsed.request.image_theme,
+                    },
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ).encode()
+            ).hexdigest()
+            row = self.store.find_event(scope, key)
+            self.check_binding(event, row["id"] if row else "")
+            if row is not None:
+                if row["metadata"].get("request_fingerprint") != fingerprint:
+                    raise ValueError(
+                        "同一真实消息已创建不同候选，请另发消息修改出生资料"
+                    )
+                return row
+            token = None
+            try:
+                if ai:
+                    token = self.plugin.archive.reserve_chart(scope, "natal")
+                candidates = await asyncio.to_thread(build_candidates, parsed)
+                await self.check(scope)
+                self.check_binding(event, "")
+                metadata = dict(parsed.metadata, request_fingerprint=fingerprint)
+                sid = self.store.create(
+                    scope, key, metadata, candidates, quota_token=token
+                )
+                return self.store.get(scope, sid)
+            finally:
+                if token and not self.plugin.closed:
+                    self.plugin.archive.release_chart(token)
+
+    async def send_collage(self, scope, row, key):
+        # One large canvas at a time, in addition to the shared bounded work queue.
+        async with self.image_lock:
+            await self.check(scope)
+            if self.plugin.renderer is None:
+                return "failed"
+            if not self.store.begin_delivery(scope, row["id"], key):
+                return "already_requested"
+            success = False
+            try:
+                theme = row["metadata"].get("image_theme", "day")
+                render_task = asyncio.create_task(
+                    asyncio.to_thread(
+                        render_candidate_collage,
+                        row["candidates"],
+                        self.plugin.renderer,
+                        theme,
+                    )
+                )
+                try:
+                    png = await asyncio.shield(render_task)
+                except asyncio.CancelledError:
+                    # A running Pillow thread cannot be cancelled. Keep the large
+                    # canvas lock until it exits, including repeated cancellation.
+                    while not render_task.done():
+                        try:
+                            await asyncio.shield(render_task)
+                        except asyncio.CancelledError:
+                            continue
+                        except Exception:
+                            break
+                    if not render_task.cancelled():
+                        render_task.exception()
+                    raise
+                await self.check(scope)
+                if self.store.get(scope, row["id"])["status"] == "cancelled":
+                    raise ValueError("定盘会话已取消，未发送总图")
+                sent = await asyncio.wait_for(
+                    self.plugin.context.send_message(
+                        scope.umo, MessageChain([Image.fromBytes(png)])
+                    ),
+                    timeout=30,
+                )
+                success = sent is not False
+                return "sent" if success else "failed"
+            except PermissionError:
+                raise
+            except Exception as exc:
+                logger.warning(f"定盘总图暂不可用：{type(exc).__name__}")
+                return "failed"
+            finally:
+                if not self.plugin.closed:
+                    self.store.finish_delivery(scope, row["id"], key, success)
+
+    async def create(self, scope, event, key, text, birth_info, send_image=False):
+        if type(send_image) is not bool:
+            raise ValueError("send_image须为布尔值")
+        if self.plugin.pending >= 4:
+            return {"status": "busy", "message": "排盘请求较多，请稍后重试"}
+        self.plugin.pending += 1
+        try:
+            async with self.plugin.gate:
+                row = await self.create_session(scope, event, key, birth_info, ai=True)
+                image_status = (
+                    await self.send_collage(scope, row, key)
+                    if send_image
+                    else "not_requested"
+                )
+            return {
+                "status": "ok",
+                "session_id": row["id"],
+                "session_status": row["status"],
+                "candidates": overview(row),
+                "archive_status": "saved",
+                "image_status": image_status,
+                "response_guidance": POLICY,
+            }
+        finally:
+            self.plugin.pending -= 1
+
+    async def get(self, scope, event, key, text, session_id, send_image=False):
+        if type(send_image) is not bool:
+            raise ValueError("send_image须为布尔值")
         row = self.row(scope, session_id)
+        image_status = "not_requested"
+        if send_image:
+            if self.plugin.pending >= 4:
+                return {"status": "busy", "message": "排盘请求较多，请稍后重试"}
+            self.plugin.pending += 1
+            try:
+                async with self.plugin.gate:
+                    image_status = await self.send_collage(scope, row, key)
+            finally:
+                self.plugin.pending -= 1
         return {
             "status": "ok",
             "session_id": row["id"],
+            "image_status": image_status,
             "session_status": row["status"],
             "summary_status": row["summary_status"],
             "selected": row["selected"],
@@ -450,7 +599,7 @@ class RectificationService:
             await self.check(scope)
             parts = text.split()
             action = parts[0] if parts else "状态"
-            if action in {"状态", "查看", "确认", "取消", "重试总结"}:
+            if action in {"状态", "总图", "查看", "确认", "取消", "重试总结"}:
                 has_candidate = action in {"查看", "确认"}
                 minimum = 2 if has_candidate else 1
                 if parts and not minimum <= len(parts) <= minimum + 1:
@@ -458,6 +607,20 @@ class RectificationService:
                 cid = identifier(parts[1]) if has_candidate else ""
                 sid = parts[minimum] if len(parts) > minimum else ""
                 row = self.row(scope, sid)
+                if action == "总图":
+                    if plugin.pending >= 4:
+                        raise ValueError("排盘请求较多，请稍后重试")
+                    plugin.pending += 1
+                    counted = True
+                    async with plugin.gate:
+                        state = await self.send_collage(scope, row, key)
+                    if state == "failed":
+                        yield event.plain_result(
+                            "总图暂未发送，请稍后重试；候选档案仍保留。"
+                        )
+                    elif state == "already_requested":
+                        yield event.plain_result("本条消息已请求过总图，无需重复发送。")
+                    return
                 if action == "取消":
                     self.store.cancel(scope, row["id"])
                     yield event.plain_result("定盘会话已取消，永久档案保留。")
@@ -510,14 +673,7 @@ class RectificationService:
                 plugin.pending += 1
                 counted = True
                 async with plugin.gate:
-                    await self.check(scope)
-                    row = self.store.find_event(scope, key)
-                    if row is None:
-                        parsed = parse_rectification_request(text, plugin.config)
-                        candidates = await asyncio.to_thread(build_candidates, parsed)
-                        await self.check(scope)
-                        sid = self.store.create(scope, key, parsed.metadata, candidates)
-                        row = self.store.get(scope, sid)
+                    row = await self.create_session(scope, event, key, text)
             lines = [
                 f"定盘会话：{row['id']}",
                 f"状态：{STATE_LABELS[row['status']]}；"
@@ -528,6 +684,7 @@ class RectificationService:
                 "候选按钟表范围和历法边界展开，图片中的时间仅为范围代表。",
                 "请 @机器人说“开始定盘”，随后按提问提供已发生的经历和年月。",
                 "查看或确认：/紫微 定盘 查看 c01；/紫微 定盘 确认 c01。",
+                "全部候选拼图：/紫微 定盘 总图。",
             ]
             await self.check(scope)
             report = "\n".join(lines)
