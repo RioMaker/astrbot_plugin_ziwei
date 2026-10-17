@@ -12,7 +12,7 @@ from astrbot.core.star.filter.command import GreedyStr
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .access import GroupAccess, can_manage, capture_group
-from .ai_limits import QuotaExceeded
+from .ai_limits import QuotaExceeded, QuotaPolicy
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
 from .compact_commands import normalize_compact_arguments, parse_compact_command
@@ -27,7 +27,7 @@ from .rules import RuleProfile
 from .summary_worker import SummaryWorker
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.8.1")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "1.8.2")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -35,6 +35,7 @@ class ZiweiPlugin(Star):
         # Validate global configuration at load, rather than fail for every user.
         RuleProfile.from_config(self.config)
         parse_request(DEMO_BIRTH, self.config)
+        ai_policy = QuotaPolicy.from_config(self.config)
         self.gate = asyncio.Semaphore(2)
         self.pending = 0
         self.closed = False
@@ -45,7 +46,7 @@ class ZiweiPlugin(Star):
         data_dir = (
             Path(get_astrbot_data_path()) / "plugin_data" / "astrbot_plugin_ziwei"
         )
-        self.archive = ArchiveStore(data_dir / "archives.sqlite3")
+        self.archive = ArchiveStore(data_dir / "archives.sqlite3", ai_policy=ai_policy)
         self.readings = ReadingService(self)
         self.rectifications = RectificationService(self)
         self.life_atlases = LifeAtlasService(self)
@@ -157,7 +158,7 @@ class ZiweiPlugin(Star):
         text, quiet = normalized.args, quiet or normalized.changed
         claim_command(event, quiet)
         if not text or text.lower() in {"帮助", "help", "?", "？"}:
-            yield event.plain_result(HELP)
+            yield event.plain_result(HELP + "\n" + self.archive.ai_policy.description())
             return
         if self.closed:
             if not quiet:
@@ -512,7 +513,7 @@ class ZiweiPlugin(Star):
         decade: int = -1,
         offset: int = 0,
     ) -> str:
-        """管理员明确请求定盘分析时，按本轮真实问题分批读取真实候选事实与来源知识，并计入每小时6次提问。每批最多2盘，同一消息分批只计一次；不是候选生成入口。
+        """管理员明确请求定盘分析时，按本轮真实问题分批读取真实候选事实与来源知识，并计入配置的AI提问额度。每批最多2盘，同一消息分批只计一次；不是候选生成入口。
 
         Args:
             session_id(string): 本人本群定盘会话ID，空为唯一进行中的会话。

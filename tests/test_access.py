@@ -98,8 +98,14 @@ def test_private_chat_cannot_use_or_manage_whitelist(text):
 
 def test_help_available_without_group_authorization():
     p = ZiweiPlugin(object(), {})
-    assert asyncio.run(invoke(p, "帮助", Event(group=""))) == [HELP]
-    assert asyncio.run(invoke(p, "")) == [HELP]
+    for replies in (
+        asyncio.run(invoke(p, "帮助", Event(group=""))),
+        asyncio.run(invoke(p, "")),
+    ):
+        assert len(replies) == 1 and replies[0].startswith(HELP + "\n")
+        assert (
+            "滚动3600秒内解盘提问6次、生年排盘2张、大运排盘（含童限）3张" in replies[0]
+        )
     assert p.db == {}
 
 

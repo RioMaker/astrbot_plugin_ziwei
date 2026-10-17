@@ -8,7 +8,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
-from .ai_limits import question_token, take
+from .ai_limits import DEFAULT_POLICY, question_token, take
 from .llm_data import owner_key
 from .rectification_store import RectificationStore
 
@@ -22,9 +22,10 @@ def owner_id(scope):
 
 
 class ArchiveStore:
-    def __init__(self, path, clock=time.time):
+    def __init__(self, path, clock=time.time, *, ai_policy=None):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.clock = clock
+        self.ai_policy = ai_policy if ai_policy is not None else DEFAULT_POLICY
         self.lock = threading.RLock()
         self.db = sqlite3.connect(path, check_same_thread=False, timeout=1)
         self.db.row_factory = sqlite3.Row
@@ -94,12 +95,27 @@ class ArchiveStore:
     def reserve_chart(self, scope, kind):
         token = uuid.uuid4().hex
         with self.transaction() as db:
-            take(db, scope, kind, token, self.clock(), pending=True)
+            take(
+                db,
+                scope,
+                kind,
+                token,
+                self.clock(),
+                pending=True,
+                policy=self.ai_policy,
+            )
         return token
 
     def charge_question(self, scope, event_id):
         with self.transaction() as db:
-            take(db, scope, "question", question_token(scope, event_id), self.clock())
+            take(
+                db,
+                scope,
+                "question",
+                question_token(scope, event_id),
+                self.clock(),
+                policy=self.ai_policy,
+            )
 
     def release_chart(self, token):
         with self.transaction() as db:
@@ -264,7 +280,12 @@ class ArchiveStore:
                 raise ValueError("知识版本已变化，请结束原分析后重新建立分析")
             if event_id is not None:
                 take(
-                    db, scope, "question", question_token(scope, event_id), self.clock()
+                    db,
+                    scope,
+                    "question",
+                    question_token(scope, event_id),
+                    self.clock(),
+                    policy=self.ai_policy,
                 )
             cards = {c["id"]: c for c in stored["cards"]}
             cards.update({c["id"]: c for c in knowledge["cards"]})
@@ -300,7 +321,14 @@ class ArchiveStore:
             ).fetchone()
             if old:
                 return old["id"]
-            take(db, scope, "question", question_token(scope, event_id), self.clock())
+            take(
+                db,
+                scope,
+                "question",
+                question_token(scope, event_id),
+                self.clock(),
+                policy=self.ai_policy,
+            )
             now = self.clock()
             db.execute(
                 "INSERT INTO readings(id,chart_id,owner,group_key,scope,topic,status,"
@@ -376,7 +404,12 @@ class ArchiveStore:
                 raise ValueError("同一用户消息不能作为其后回答的反馈")
             if kind == "followup":
                 take(
-                    db, scope, "question", question_token(scope, event_id), self.clock()
+                    db,
+                    scope,
+                    "question",
+                    question_token(scope, event_id),
+                    self.clock(),
+                    policy=self.ai_policy,
                 )
             self._turn(db, reading_id, event_id, kind, text)
 

@@ -1,4 +1,28 @@
 {
+  "ai_quota_window_seconds": {
+    "description": "AI 冷却计数窗口（秒）",
+    "type": "int",
+    "default": 3600,
+    "hint": "滚动窗口，范围1～86400秒。以下三项次数分别计数；每条已用额度在窗口到期后恢复，非固定整点清零。保存并重载插件生效，已有计数保留。"
+  },
+  "ai_question_limit": {
+    "description": "AI 解盘提问次数上限",
+    "type": "int",
+    "default": 6,
+    "hint": "每个冷却窗口内的正整数次数，不能填0。普通解盘与定盘新问题共享；同一真实消息只计一次，纯反馈不扣次数。"
+  },
+  "ai_natal_limit": {
+    "description": "AI 生年排盘次数上限",
+    "type": "int",
+    "default": 2,
+    "hint": "每个冷却窗口内的正整数次数，不能填0。AI 定盘整批候选计1次，与普通AI生年排盘共享；直接指令排盘不扣次数。"
+  },
+  "ai_decade_limit": {
+    "description": "AI 大运排盘次数上限（含童限）",
+    "type": "int",
+    "default": 3,
+    "hint": "每个冷却窗口内的正整数次数，不能填0。同一平台实例的同一账号跨群共享；已有命盘读取、重发及直接指令排盘不扣次数。"
+  },
   "summary_provider_id": {
     "description": "独立归档总结模型",
     "type": "string",

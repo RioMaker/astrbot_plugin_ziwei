@@ -337,7 +337,12 @@ class RectificationStore:
                 raise ValueError("本次定盘已达60条记录，请结束后开启新定盘")
             if kind == "question":
                 take(
-                    db, scope, "question", question_token(scope, event_id), self.clock()
+                    db,
+                    scope,
+                    "question",
+                    question_token(scope, event_id),
+                    self.clock(),
+                    policy=self.archive.ai_policy,
                 )
             db.execute(
                 "INSERT INTO rectification_turns(session_id,event_id,kind,text,created)"

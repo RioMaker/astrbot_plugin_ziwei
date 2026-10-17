@@ -76,7 +76,9 @@ async def collect(plugin, args):
 
 def test_help_text_error_and_fallback():
     p = ZiweiPlugin(object(), {"font_path": "/missing/ziwei-font.ttf"})
-    assert asyncio.run(collect(p, "")) == [HELP]
+    help_replies = asyncio.run(collect(p, ""))
+    assert len(help_replies) == 1 and help_replies[0].startswith(HELP + "\n")
+    assert "滚动3600秒内解盘提问6次" in help_replies[0]
     error = asyncio.run(collect(p, "1991-02-29 10:00 男"))
     assert "日期不存在" in error[0]
     results = asyncio.run(collect(p, "1990-06-15 08:30 男"))

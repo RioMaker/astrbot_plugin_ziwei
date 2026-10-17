@@ -23,7 +23,7 @@ ziwei_reference_cases只供内部参考，不得在回复展示参考案例、�
 不得将古籍断语当事实，不作死亡预言、医疗诊断或必然收益承诺。"""
 
 POLICY += """
-AI限额：每人滚动一小时解盘提问6次、生年排盘2张、大运排盘3张。
+AI限额按插件当前配置执行，同一平台实例的同一用户跨群共享额度。
 新问题和相关追问必须先登记分析工具；同一真实消息重复调用只计一次提问。
 收到rate_limited必须告知剩余等待秒数并停止本次分析，不能改用读盘或历史资料绕过。
 纯反馈不算问题；反馈中含新问题须作为followup登记，不能假报feedback绕过。
@@ -52,6 +52,10 @@ class ReadingService:
     def __init__(self, plugin):
         self.plugin = plugin
         self.knowledge = KnowledgeBase()
+
+    @property
+    def policy(self):
+        return POLICY + "\n" + self.plugin.archive.ai_policy.description()
 
     async def authorize(self, event):
         scope = capture_group(event)
@@ -124,7 +128,7 @@ class ReadingService:
             "chart_id": row["id"],
             "facts": facts,
             "knowledge": knowledge,
-            "response_guidance": POLICY,
+            "response_guidance": self.policy,
         }
 
     @staticmethod
@@ -254,7 +258,7 @@ class ReadingService:
                 lambda: self.capture_failed(event),
             )
             active = self.plugin.archive.active_readings(scope)
-            request.system_prompt = (request.system_prompt or "") + "\n" + POLICY
+            request.system_prompt = (request.system_prompt or "") + "\n" + self.policy
             if active:
                 request.extra_user_content_parts.append(
                     TextPart(

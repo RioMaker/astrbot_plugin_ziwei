@@ -40,8 +40,8 @@ HELP = """管理员 AI 辅助定盘（逐轮问答）
 /紫微 定盘 重试总结 [会话ID]
 仅当前已开启群的 AstrBot 管理员可用，群主或群管理员身份不能单独授权。
 也可直接告诉 AI 出生日期、性别和候选时辰，要求定盘；要图片时只发一张完整总图。
-AI 创建整批按1次生年排盘计，与普通排盘共享每小时2次；直接指令创建不扣额度。
-AI 新问题仍计入每小时6次，纯反馈、读取和总图重发不扣次数。
+AI 创建整批按1次生年排盘计，与普通排盘共享配置额度；直接指令创建不扣额度。
+AI 新问题与普通解盘共享配置额度，纯反馈、读取和总图重发不扣次数。
 定盘为传统规则下的辅助比较，支持证据不足时保留多个候选。"""
 
 POLICY = """管理员定盘工具规则：
@@ -49,7 +49,7 @@ POLICY = """管理员定盘工具规则：
 用户明确要求定盘并给出出生日期和性别时，
 可用 ziwei_rectification_create 直接生成全天候选。
 用户指定几个候选时辰时传入时辰选项；缺少日期、性别或历法不明确时先询问，不推测。
-整批消耗1次生年排盘额度，与普通AI排盘共享每小时2次；不能逐张调用普通工具绕过限制。
+整批消耗1次生年排盘额度，与普通AI排盘共享配置额度；不能逐张调用普通工具绕过限制。
 需要图片时仅用create或get的send_image=true，全部候选拼成一张总图，不逐张发送。
 已创建的批次使用get读取或重发，不能为了重发而另建；同一真实消息重复调用只发一次。
 仅用户明确要求定盘或回复本次定盘问题时处理，不将管理员的其他聊天自动登记。
@@ -122,6 +122,10 @@ class RectificationService:
             system=SYSTEM + "\n本次是一个定盘会话；chart为该会话候选的计算摘要。"
             "保留多候选、冲突与未知项；管理员选定仅代表其选择，不代表出生时间已获证实。",
         )
+
+    @property
+    def policy(self):
+        return POLICY + "\n" + self.plugin.archive.ai_policy.description()
 
     async def authorize(self, event):
         scope = capture_group(event)
@@ -297,7 +301,7 @@ class RectificationService:
                 "candidates": overview(row),
                 "archive_status": "saved",
                 "image_status": image_status,
-                "response_guidance": POLICY,
+                "response_guidance": self.policy,
             }
         finally:
             self.plugin.pending -= 1
@@ -328,7 +332,7 @@ class RectificationService:
             "recent_turns": row["turns"][-12:],
             "turn_count": len(row["turns"]),
             "history_note": "仅返回最近12条记录，原始过程完整归档；仅内部参考。",
-            "response_guidance": POLICY,
+            "response_guidance": self.policy,
         }
 
     async def context(
@@ -416,7 +420,7 @@ class RectificationService:
                     "session_id": row["id"],
                     "candidates": data,
                     "all_candidate_ids": list(candidates),
-                    "response_guidance": POLICY,
+                    "response_guidance": self.policy,
                 }
         finally:
             self.plugin.pending -= 1
@@ -574,7 +578,7 @@ class RectificationService:
         try:
             scope = await self.authorize(event)
             active = self.store.active(scope)
-            request.system_prompt = (request.system_prompt or "") + "\n" + POLICY
+            request.system_prompt = (request.system_prompt or "") + "\n" + self.policy
             if active:
                 request.extra_user_content_parts.append(
                     TextPart(
@@ -589,7 +593,9 @@ class RectificationService:
         claim_command(event, False)
         text = str(args).strip()
         if text.lower() in {"帮助", "help", "?", "？"}:
-            yield event.plain_result(HELP)
+            yield event.plain_result(
+                HELP + "\n" + self.plugin.archive.ai_policy.description()
+            )
             return
         plugin = self.plugin
         counted = False
