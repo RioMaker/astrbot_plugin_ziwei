@@ -6,6 +6,8 @@ from .help_content import (
     HELP_BIRTH_FIELDS,
     HELP_BIRTH_NOTE,
     HELP_BIRTH_TITLE,
+    HELP_COMMANDS,
+    HELP_COMPACT_COMMANDS,
     HELP_IMAGE_NOTES,
     HELP_INTRO,
     HELP_MORE_COMMAND,
@@ -22,7 +24,7 @@ class HelpRenderer:
 
     def render(self, theme="night"):
         width, margin = 1080, 48
-        painter = Painter(width, 944, self.font_path, theme)
+        painter = Painter(width, 1144, self.font_path, theme)
         p = painter.palette
         left, content_width = margin + 30, width - margin * 2 - 60
 
@@ -77,19 +79,25 @@ class HelpRenderer:
             x += field_width + gap
         painter.text(HELP_BIRTH_NOTE, left, 366, 26, p.ink)
 
-        section("02", "常用选项", 426, 300)
+        section("02", "常用选项", 426, 420)
         painter.text(HELP_OPTIONS_NOTE, left, 494, 26, p.muted)
-        for index, (label, position, option) in enumerate(HELP_OPTIONS):
-            y = 546 + index * 58
+        for index, (label, hint, example) in enumerate(HELP_OPTIONS):
+            y = 544 + index * 100
             painter.text(label, left, y, 30, p.ink)
-            painter.text(position, left + 240, y + 3, 26, p.muted)
-            painter.text(option, left + 402, y, 32, p.accent)
+            painter.text(hint, left + 240, y + 3, 26, p.muted)
+            painter.text(example, left, y + 42, 32, p.accent)
+            if index < len(HELP_OPTIONS) - 1:
+                painter.rule(left, y + 86, content_width)
 
-        painter.card(margin, 744, width - margin * 2, 94, fill=p.center)
-        painter.text("更多用法", left, 777, 26, p.ink)
-        painter.text(HELP_MORE_COMMAND, left + 240, 773, 34, p.accent)
+        painter.card(margin, 864, width - margin * 2, 174, fill=p.center)
+        painter.text("查看帮助", left, 894, 26, p.ink)
+        painter.text(" 或 ".join(HELP_COMMANDS), left + 240, 890, 30, p.accent)
+        painter.text("省略空格", left, 944, 24, p.muted)
+        painter.text(" 或 ".join(HELP_COMPACT_COMMANDS), left + 240, 940, 28, p.accent)
+        painter.text("完整参数", left, 990, 24, p.muted)
+        painter.text(HELP_MORE_COMMAND, left + 240, 986, 28, p.accent)
         for index, note in enumerate(HELP_IMAGE_NOTES):
-            painter.text(note, margin, 862 + index * 36, 22, p.muted)
+            painter.text(note, margin, 1062 + index * 36, 22, p.muted)
 
         stream = io.BytesIO()
         painter.image.save(stream, format="PNG", optimize=True)

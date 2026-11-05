@@ -39,6 +39,18 @@ class CompactCommand:
     compact: bool = False
 
 
+def normalize_help_arguments(text: str) -> str | None:
+    """Match whole help requests, including an omitted text-mode separator."""
+    value = text.strip().lower()
+    if value in _HELP:
+        return value
+    if re.fullmatch(r"帮助\s*文字", value):
+        return "帮助 文字"
+    if re.fullmatch(r"help\s*text", value):
+        return "help text"
+    return None
+
+
 def _unquoted(text: str) -> str:
     """Keep positions while hiding quoted/escaped contents from boundary scans."""
     masked = list(text)
@@ -123,7 +135,7 @@ def _explicit_atlas_subcommand(text: str) -> bool:
         not tail
         or tail[0].isspace()
         or _explicit_argument_start(tail)
-        or tail.lower() in _HELP
+        or normalize_help_arguments(tail) is not None
     )
 
 
@@ -143,7 +155,7 @@ def parse_compact_command(text: str) -> CompactCommand | None:
     compact = bool(remainder and not remainder[0].isspace())
     if compact and not (
         _explicit_argument_start(remainder)
-        or remainder.lower() in _HELP
+        or normalize_help_arguments(remainder) is not None
         or command in _NATAL_COMMANDS
         and (remainder in _MANAGEMENT or _explicit_atlas_subcommand(remainder))
     ):
@@ -157,7 +169,7 @@ def parse_compact_command(text: str) -> CompactCommand | None:
         target = "atlas"
     elif target == "natal" and args in _MANAGEMENT:
         target = "manage"
-    elif target == "natal" and (not args or args.lower() in _HELP):
+    elif target == "natal" and (not args or normalize_help_arguments(args) is not None):
         target = "help"
     normalized = normalize_compact_arguments(args)
     return CompactCommand(

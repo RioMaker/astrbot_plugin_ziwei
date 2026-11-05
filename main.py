@@ -13,7 +13,11 @@ from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 from .access import GroupAccess, can_manage, capture_group
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
-from .compact_commands import normalize_compact_arguments, parse_compact_command
+from .compact_commands import (
+    normalize_compact_arguments,
+    normalize_help_arguments,
+    parse_compact_command,
+)
 from .compact_filter import CompactCommandFilter, claim_command
 from .engine import apply_decade, apply_flow, build_chart
 from .help_renderer import HelpRenderer
@@ -23,7 +27,7 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.0.5")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.0.6")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -132,7 +136,7 @@ class ZiweiPlugin(Star):
             claim_command(event, quiet)
             yield event.plain_result(
                 "当前仅支持指令排盘，暂不提供 AI 辅助定盘。"
-                "请用 /紫微 帮助 查看排盘格式。"
+                "请用 /紫薇 help 或 /紫薇 帮助 查看排盘格式。"
             )
             return
         if text.startswith("图谱"):
@@ -144,16 +148,10 @@ class ZiweiPlugin(Star):
         normalized = normalize_compact_arguments(text)
         text, quiet = normalized.args, quiet or normalized.changed
         claim_command(event, quiet)
-        if not text or text.lower() in {
-            "帮助",
-            "help",
-            "?",
-            "？",
-            "帮助 文字",
-            "help text",
-        }:
+        help_args = normalize_help_arguments(text)
+        if not text or help_args is not None:
             async for result in self._help_reply(
-                event, text.lower().endswith(("文字", "text"))
+                event, bool(help_args and help_args.endswith(("文字", "text")))
             ):
                 yield result
             return
@@ -236,7 +234,7 @@ class ZiweiPlugin(Star):
         except ValueError as exc:
             if not quiet:
                 yield event.plain_result(
-                    f"排盘参数有误：{exc}\n发送 /紫微 帮助 查看格式。"
+                    f"排盘参数有误：{exc}\n发送 /紫薇 help 或 /紫薇 帮助 查看格式。"
                 )
         except Exception as exc:
             # Birth data and message contents must not appear in error logs.

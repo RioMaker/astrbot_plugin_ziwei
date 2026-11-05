@@ -7,7 +7,7 @@ from astrbot.api.message_components import Image
 
 from .access import capture_group
 from .commands import DEMO_BIRTH
-from .compact_commands import normalize_compact_arguments
+from .compact_commands import normalize_compact_arguments, normalize_help_arguments
 from .compact_filter import claim_command
 from .life_atlas import build_life_atlas
 from .life_atlas_commands import parse_life_atlas_request
@@ -58,7 +58,7 @@ class LifeAtlasService:
         normalized = normalize_compact_arguments(str(args).strip())
         text, quiet = normalized.args, quiet or normalized.changed
         claim_command(event, quiet)
-        if text.lower() in {"帮助", "help", "?", "？"}:
+        if normalize_help_arguments(text) is not None:
             yield event.plain_result(LIFE_ATLAS_HELP)
             return
         plugin = self.plugin

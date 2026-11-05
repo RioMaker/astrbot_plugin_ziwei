@@ -13,12 +13,14 @@ HELP_BIRTH_FIELDS = (
 )
 HELP_BIRTH_NOTE = "年月日时分连写12位，时间用24小时制；性别前空一格。"
 HELP_OPTIONS = (
-    ("农历生日", "日期前加", "农历"),
-    ("看某一年", "末尾加", "流年=2026"),
-    ("换成白底", "末尾加", "主题=白天"),
+    ("农历生日", "日期前加“农历”", "/紫微 农历 199005230830 男"),
+    ("看某一年", "末尾加流年", f"/紫微 {DEMO_BIRTH} 流年=2026"),
+    ("换成白底", "末尾加主题", f"/紫微 {DEMO_BIRTH} 主题=白天"),
 )
-HELP_OPTIONS_NOTE = "按需添加；选项与出生资料之间留空格。"
-HELP_MORE_COMMAND = "/紫微 帮助 文字"
+HELP_OPTIONS_NOTE = "完整示例，照着填写；出生资料换成要排盘的资料。"
+HELP_COMMANDS = ("/紫薇 help", "/紫薇 帮助")
+HELP_COMPACT_COMMANDS = ("/紫薇help", "/紫薇帮助")
+HELP_MORE_COMMAND = "/紫薇帮助文字"
 HELP_IMAGE_NOTES = (
     "虚构示例，请换成出生资料 · 仅已开启的群可用。",
     "目前只排盘，暂不提供 AI 解读。",
@@ -30,9 +32,7 @@ HELP_SECTIONS = (
     ),
     (
         "常用选项",
-        tuple(
-            (label, f"{position} {option}") for label, position, option in HELP_OPTIONS
-        ),
+        tuple((example, f"{label}；{hint}") for label, hint, example in HELP_OPTIONS),
     ),
     (
         "更多写法",
@@ -69,9 +69,10 @@ HELP_SECTIONS = (
                 "也可用 /人生；返回已有规则计算的人生图谱，无 AI 解读。",
             ),
             (
-                f"/紫微 帮助  /  {HELP_MORE_COMMAND}",
-                "查看帮助图片，或获取可复制的完整文字说明。",
+                " 或 ".join(HELP_COMMANDS),
+                "查看帮助图片；也可连写为 " + " 或 ".join(HELP_COMPACT_COMMANDS) + "。",
             ),
+            (HELP_MORE_COMMAND, "完整参数和可复制示例；也可用 /紫薇helptext。"),
         ),
     ),
     (
