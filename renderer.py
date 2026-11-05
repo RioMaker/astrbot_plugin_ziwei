@@ -133,7 +133,7 @@ def find_font(configured=""):
 
 
 class Renderer:
-    def __init__(self, font_path="", theme="day"):
+    def __init__(self, font_path="", theme="night"):
         self.font_path = find_font(font_path)
         self.theme = normalize_theme(theme)
         # Check readability at construction, before accepting image requests.

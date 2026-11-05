@@ -99,7 +99,7 @@ def test_parallel_day_night_rendering_cannot_mix_colors_or_mutate_chart(font_pat
             assert im.getpixel((0, 0)) == tuple(
                 int(palette.bg[i : i + 2], 16) for i in (1, 3, 5)
             )
-    assert chart == before and renderer.theme == "day"
+    assert chart == before and renderer.theme == "night"
 
 
 @pytest.mark.parametrize("theme", ["day", "night"])

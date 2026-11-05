@@ -1,4 +1,4 @@
-"""Modern Eastern chart layout with independent star and transformation cues."""
+"""Celestial twelve-palace layout with independent star and Hua cues."""
 
 import io
 import math
@@ -6,6 +6,7 @@ import math
 from PIL import Image, ImageDraw, ImageFont
 
 from .rules import BRANCHES, HUA, STAR_NAMES, STEMS, RuleProfile
+from .starfield import constellation, orbit, starfield
 from .themes import get_theme
 
 STAR_CATEGORIES = (
@@ -184,9 +185,13 @@ def make_chart_view(chart, theme="day"):
 
 
 class Painter:
-    def __init__(self, width, height, font_path, theme="day"):
+    def __init__(self, width, height, font_path, theme="day", *, background=True):
         self.palette = get_theme(theme)
-        self.image = Image.new("RGB", (width, height), self.palette.bg)
+        self.image = (
+            starfield(width, height, self.palette)
+            if background
+            else Image.new("RGB", (width, height), self.palette.bg)
+        )
         self.draw = ImageDraw.Draw(self.image)
         self.font_path = font_path
         self.fonts = {}
@@ -319,6 +324,12 @@ def _draw_palace(painter, item, chart, x, y, height):
     selected = item["annual_selected"]
     natal_life = palace["branch"] == chart["life"]
     painter.card(x, y, CELL_WIDTH, height, radius=0)
+    # Small corner sights evoke a celestial chart without sitting behind stars.
+    for sx, direction in ((x + 8, 1), (x + CELL_WIDTH - 8, -1)):
+        painter.draw.line(
+            (sx, y + 9, sx + 12 * direction, y + 9),
+            fill=painter.palette.border,
+        )
     stars = [(s, g["color"]) for g in item["groups"] for s in g["stars"]]
     banks = math.ceil(len(stars) / 12)
     for bank in range(banks):
@@ -506,12 +517,13 @@ def _draw_center(painter, chart, x, y, width, height):
         radius=0,
     )
     n, profile = chart["normalized"], chart["profile"]
-    painter.text("本命概览", x + 28, y + 23, 18, painter.palette.accent)
+    painter.text("本命星图", x + 28, y + 23, 18, painter.palette.accent)
+    orbit(painter.draw, x + width - 84, y + 72, 45, painter.palette)
     yg = STEMS[n["year_stem"] - 1] + BRANCHES[n["year_branch"] - 1]
     painter.text(f"{yg}年 · {chart['bureau_name']}", x + 28, y + 56, 34)
     painter.pill(
         chart["sex"],
-        x + width - 67,
+        x + width - 209,
         y + 61,
         painter.palette.accent,
         painter.palette.center,
@@ -686,11 +698,10 @@ def render_chart(chart, font_path, theme="day"):
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
     painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
-    painter.draw.line(
-        (MARGIN, 30, MARGIN + 4, 93), fill=painter.palette.accent, width=4
-    )
-    painter.text("紫微斗数", MARGIN + 21, 30, 40)
-    painter.text("十二宫命盘", MARGIN + 213, 54, 20, painter.palette.muted)
+    orbit(painter.draw, MARGIN + 33, 57, 28, painter.palette)
+    painter.text("紫微斗数", MARGIN + 84, 27, 40)
+    painter.text("十二宫星曜命盘", MARGIN + 86, 80, 18, painter.palette.muted)
+    constellation(painter.draw, MARGIN + 540, 30, 490, 55, painter.palette)
     if chart["flow"] and chart["flow"].get("kind") == "decade":
         decade = chart["flow"]["decade"]
         label = (
@@ -775,7 +786,7 @@ def render_chart(chart, font_path, theme="day"):
     painter.text(
         "定盘范围代表盘：所示时刻不代表已确认精确出生时间。"
         if chart.get("rectification", {}).get("representative_only")
-        else "真太阳时为近似校正。默认仅排盘，分析须用户明确提问。",
+        else "真太阳时为近似校正。仅指令排盘，暂不提供 AI 解读。",
         MARGIN,
         by + 29,
         15,

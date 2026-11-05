@@ -46,7 +46,7 @@ def identifier(value, *, optional=False):
 class RectificationStore:
     """Share ArchiveStore's connection and transaction; never own another cache."""
 
-    def __init__(self, archive):
+    def __init__(self, archive, *, resume_ai_jobs=True):
         self.archive = archive
         self.db, self.lock = archive.db, archive.lock
         self.transaction = archive.transaction
@@ -88,15 +88,16 @@ class RectificationStore:
                 PRIMARY KEY(owner,event_id));
         """)
         with self.transaction() as db:
-            db.execute(
-                "UPDATE rectifications SET summary_status='queued' "
-                "WHERE summary_status='running'"
-            )
-            db.execute(
-                "UPDATE rectification_deliveries SET status='failed',updated=? "
-                "WHERE status='sending'",
-                (self.clock(),),
-            )
+            if resume_ai_jobs:
+                db.execute(
+                    "UPDATE rectifications SET summary_status='queued' "
+                    "WHERE summary_status='running'"
+                )
+                db.execute(
+                    "UPDATE rectification_deliveries SET status='failed',updated=? "
+                    "WHERE status='sending'",
+                    (self.clock(),),
+                )
             db.execute("PRAGMA user_version=5")
 
     @property

@@ -6,51 +6,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 
 from .calendar_core import BirthInput, equation_of_time
+from .help_content import DEMO_BIRTH, HELP  # noqa: F401 - public command help
 from .rules import RuleProfile
 from .themes import normalize_theme
-
-DEMO_BIRTH = "1990-06-15 08:30 男"
-
-HELP = f"""紫微斗数排盘
-/紫微 开启：群主、群管理员或 AstrBot 管理员在目标群内授权使用。
-/紫微 关闭：移除本群使用授权。
-/紫微 状态：查看本群是否已开启。
-所有群默认未开启，排盘仅限已开启的群聊；帮助可直接查看。
-开启后可让LLM按明确资料排盘，或读取本人在本群最近一张盘进行解读。
-最近命盘缓存有效期15分钟，仅保留于内存，关闭本群功能或重载后清除。
-/紫微 {DEMO_BIRTH}
-/ziwei 199006150830 男
-/紫微 农历 2023-闰02-16 12:00 女 真太阳时=关
-/紫微 {DEMO_BIRTH} 经度=116.4 时区=8
-/紫微 {DEMO_BIRTH} 流年=2026
-/紫微 {DEMO_BIRTH} 运限=2
-/紫微 {DEMO_BIRTH} 主题=夜间
-/紫微 图谱 {DEMO_BIRTH}
-/人生 199006150830 男
-/紫微 定盘 1990-06-15 男
-/紫微 定盘 1990-06-15 男 时辰=辰,巳,午
-/紫微 {DEMO_BIRTH} 流盘=2026-10-06 流时=10:00
-以上日期均为虚构演示数据，请替换为需要排盘的出生资料。
-末尾加「文字」返回完整文字盘；默认发送图片。别名 /紫薇、/紫微排盘、/紫薇排盘、/ziwei。
-所有别名均支持「开／开启」「关／关闭」「状态」及排盘，例如 /紫薇 开启。
-支持日期时间连写 YYYYMMDDHHMM 或 YYYYMMDDHHMMSS，之后填写性别。
-也可省略空格，如 /紫微199006150830男、/人生199006150830男；省空格格式有误时静默忽略。
-支持 1900—2100 年，普通单盘时间须明确填写，可用 HH:MM:SS、HHMM、HHMMSS 或十二时辰。
-默认公历、UTC+8、东经120度，启用真太阳时近似校正。
-可选：闰月=current|next|split，子时=next_day|midnight。
-图片主题：主题=白天|夜间（或 day|night）；留空使用插件默认主题。
-运限=0 选择童限，运限=1—12 选择第几个大限；也支持大限=、大运=。
-运限与流年／流盘／流时不能同时选择，流年盘会自动包含对应大限。
-人生图谱支持同样的12位／14位连写格式，默认深色图片，范围为出生至60虚岁所在大运结束。
-图谱为P1结构候选，简短依据随图展示；发送 /人生 帮助 查看用法。
-定盘仅限已开启群的 AstrBot 管理员，普通群主或群管理员身份不足；使用常规空格格式。
-定盘不填时辰表示全天；时辰按钟表范围比较，子含早子与晚子，盘中时刻仅代表范围。
-创建后 @机器人说“开始定盘”，按 AI 提问逐轮反馈；AI 新问题与普通解盘共享配置额度。
-候选独立归档，仅显式确认才设为当前盘。
-也可让AI按明确日期和性别直接生成全天或指定时辰候选，整批计1次生年排盘额度。
-请求候选图片时发送一张总拼图；重发用 /紫微 定盘 总图，不扣AI额度。
-状态、查看、总图、确认、取消及重试总结见 /紫微 定盘 帮助。
-默认闰月十五／十六分界、晚子时换日。命盘自动归档，默认不分析；提问才读盘。"""
 
 
 @dataclass(frozen=True)
@@ -60,7 +18,7 @@ class ChartRequest:
     output: str
     flow_year: int | None = None
     flow_target: datetime | None = None
-    image_theme: str = "day"
+    image_theme: str = "night"
     decade_index: int | None = None
 
 
@@ -152,7 +110,9 @@ def parse_request(text: str, config=None) -> ChartRequest:
         output = {"文字": "text", "图片": "image"}.get(options["输出"], options["输出"])
     if output not in {"image", "text"}:
         raise ValueError("输出须为 image／图片或 text／文字")
-    image_theme = normalize_theme(options.get("主题", config.get("image_theme", "day")))
+    image_theme = normalize_theme(
+        options.get("主题", config.get("image_theme", "night"))
+    )
     solar_option = options.get("真太阳时")
     if solar_option is None:
         true_solar = config.get("true_solar", True)

@@ -13,7 +13,7 @@ from astrbot_plugin_ziwei.engine import build_chart
 from astrbot_plugin_ziwei.main import ZiweiPlugin
 
 from .conftest import Event
-from .test_llm_tools import Context, allow
+from .helpers import Context, allow
 
 DEMO = "199006150830男"
 ALIASES = ("紫微", "紫薇", "紫微排盘", "紫薇排盘", "ziwei")
@@ -24,6 +24,8 @@ def rendered(monkeypatch):
     calls = []
 
     class NatalRenderer:
+        font_path = "test-font.ttf"
+
         def __init__(self, *args):
             pass
 

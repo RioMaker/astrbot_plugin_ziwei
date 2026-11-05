@@ -23,8 +23,7 @@ class CompactCommandFilter(filter.CustomFilter):
 
 
 def claim_command(event, quiet):
-    if quiet:
-        # AstrBot's method name is misleading: True disables its default LLM
-        # fallback, even if another stage later clears the stopped result.
-        event.should_call_llm(True)
+    # Every explicit command belongs to this plugin, including errors/help.
+    # AstrBot's True flag disables its automatic default-model fallback.
+    event.should_call_llm(True)
     event.stop_event()

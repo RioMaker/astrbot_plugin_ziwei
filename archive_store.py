@@ -22,7 +22,7 @@ def owner_id(scope):
 
 
 class ArchiveStore:
-    def __init__(self, path, clock=time.time, *, ai_policy=None):
+    def __init__(self, path, clock=time.time, *, ai_policy=None, resume_ai_jobs=True):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.clock = clock
         self.ai_policy = ai_policy if ai_policy is not None else DEFAULT_POLICY
@@ -70,10 +70,11 @@ class ArchiveStore:
                 ON life_atlases(owner, created);
             PRAGMA user_version=3;
         """)
-        with self.transaction() as db:
-            db.execute("UPDATE readings SET status='queued' WHERE status='running'")
-            db.execute("DELETE FROM ai_usage WHERE pending=1")
-        self.rectifications = RectificationStore(self)
+        if resume_ai_jobs:
+            with self.transaction() as db:
+                db.execute("UPDATE readings SET status='queued' WHERE status='running'")
+                db.execute("DELETE FROM ai_usage WHERE pending=1")
+        self.rectifications = RectificationStore(self, resume_ai_jobs=resume_ai_jobs)
 
     @contextmanager
     def transaction(self):

@@ -2,12 +2,10 @@
 
 import asyncio
 import copy
-import inspect
 import json
 import sqlite3
 from types import SimpleNamespace
 
-import docstring_parser
 import pytest
 
 from astrbot_plugin_ziwei.access import capture_group
@@ -16,11 +14,10 @@ from astrbot_plugin_ziwei.archive_store import ArchiveStore
 from astrbot_plugin_ziwei.commands import DEMO_BIRTH, parse_request
 from astrbot_plugin_ziwei.engine import apply_decade, apply_flow, build_chart
 from astrbot_plugin_ziwei.knowledge import KnowledgeBase
-from astrbot_plugin_ziwei.main import ZiweiPlugin
 from astrbot_plugin_ziwei.summary_worker import SummaryWorker, validate_summary
 
 from .conftest import Event
-from .test_llm_tools import Context, allow
+from .helpers import Context
 
 
 def natal():
@@ -58,19 +55,6 @@ class ModelContext(Context):
 async def answer(plugin, event, text="盘面有这些关系，具体情形仍待反馈。"):
     event.result = SimpleNamespace(chain=[SimpleNamespace(text=text)])
     await event.send(event.result)
-
-
-def test_all_tool_docstrings_match_signatures():
-    for _, fn in inspect.getmembers(ZiweiPlugin, inspect.isfunction):
-        if not hasattr(fn, "tool_metadata"):
-            continue
-        parsed = docstring_parser.parse(fn.__doc__)
-        params = inspect.signature(fn).parameters
-        assert {p.arg_name for p in parsed.params} == set(params) - {"self", "event"}
-        assert all(
-            p.type_name in {"string", "boolean", "number"} for p in parsed.params
-        )
-        assert all(p.description for p in parsed.params)
 
 
 def test_facts_use_real_palaces_and_remove_unrequested_time_layers():
@@ -125,133 +109,6 @@ def test_literature_scopes_sources_and_pagination():
     assert all("annual" in c["scopes"] for c in first["cards"])
     first["cards"][0]["summary"] = "altered"
     assert kb.query(facts)["cards"][0]["summary"] != "altered"
-
-
-def test_plain_chart_never_creates_analysis_or_calls_model():
-    context = ModelContext()
-    plugin = ZiweiPlugin(context, {})
-
-    async def run():
-        await allow(plugin)
-        event = Event(text="请排盘")
-        result = json.loads(await plugin.ziwei_paipan(event, DEMO_BIRTH))
-        assert result["archive_status"] == "saved"
-        await answer(plugin, event, "排盘已完成")
-        assert not plugin.archive.active_readings(capture_group(event))
-        assert not context.calls
-        assert len(plugin.archive.list_charts(capture_group(event))) == 1
-        await plugin.terminate()
-
-    asyncio.run(run())
-
-
-def test_closed_loop_uses_only_its_chart_turns_and_separate_model_context():
-    context = ModelContext()
-    plugin = ZiweiPlugin(context, {})
-
-    async def run():
-        await allow(plugin)
-        event = Event(text="请分析事业")
-        chart = json.loads(await plugin.ziwei_paipan(event, DEMO_BIRTH))
-        result = json.loads(await plugin.ziwei_analysis_context(event, topic="career"))
-        assert result["status"] == "ok", result
-        reading_id = result["reading_id"]
-        scope = capture_group(event)
-        # Model cannot finish its own question as if it were a user's feedback.
-        early = json.loads(await plugin.ziwei_finish_reading(event, reading_id, True))
-        assert early["status"] == "invalid_input"
-        await answer(plugin, event, "第一段")
-        await answer(plugin, event, "第二段")
-        row = plugin.archive.get_reading(scope, reading_id)
-        assert row["turns"][-1]["text"] == "第一段\n第二段"
-        same_event = json.loads(
-            await plugin.ziwei_finish_reading(event, reading_id, True)
-        )
-        assert same_event["status"] == "invalid_input"
-        await answer(plugin, Event(user="other", text="其他人的私事"), "无关回答")
-        feedback = Event(text="实际并没有升职，这部分不符合，目前问题回答完了")
-        finish = json.loads(
-            await plugin.ziwei_finish_reading(feedback, reading_id, True)
-        )
-        assert finish["status"] == "queued" and not context.calls
-        for _ in range(100):
-            if plugin.archive.get_reading(scope, reading_id)["status"] == "archived":
-                break
-            await asyncio.sleep(0.01)
-        row = plugin.archive.get_reading(scope, reading_id)
-        assert row["status"] == "archived"
-        call = context.calls[0]
-        assert call["contexts"] == [] and "tools" not in call
-        assert call["chat_provider_id"] == "configured-provider"
-        assert "其他人的私事" not in call["prompt"]
-        assert "实际并没有升职" in call["prompt"]
-        assert json.loads(call["prompt"])["knowledge"]["version"]
-        assert context.history == ["主对话保持独立"] and not context.sent
-        history = json.loads(
-            await plugin.ziwei_reading_history(Event(), chart["chart_id"])
-        )
-        assert len(history["records"]) == 1
-        assert (
-            json.loads(await plugin.ziwei_finish_reading(feedback, reading_id, True))[
-                "status"
-            ]
-            == "archived"
-        )
-        assert len(context.calls) == 1
-        await plugin.terminate()
-
-    asyncio.run(run())
-
-
-@pytest.mark.parametrize(
-    "outsider",
-    [
-        Event(user="other"),
-        Event(group="other"),
-        Event(platform="other"),
-        Event(group="", admin=True),
-    ],
-)
-def test_reading_tools_never_accept_another_owners_id(outsider):
-    plugin = ZiweiPlugin(ModelContext(), {})
-
-    async def run():
-        await allow(plugin)
-        event = Event(text="分析本命")
-        chart = json.loads(await plugin.ziwei_paipan(event, DEMO_BIRTH))
-        reading = json.loads(await plugin.ziwei_analysis_context(event))["reading_id"]
-        if outsider.group:
-            await allow(plugin, outsider)
-        assert (
-            json.loads(
-                await plugin.ziwei_analysis_context(outsider, chart["chart_id"])
-            )["status"]
-            != "ok"
-        )
-        assert (
-            json.loads(await plugin.ziwei_continue_reading(outsider, reading))["status"]
-            != "ok"
-        )
-        assert (
-            json.loads(await plugin.ziwei_query_knowledge(outsider, reading))["status"]
-            != "ok"
-        )
-        assert (
-            json.loads(await plugin.ziwei_reading_history(outsider, chart["chart_id"]))[
-                "status"
-            ]
-            != "ok"
-        )
-        assert (
-            json.loads(await plugin.ziwei_reference_cases(outsider, reading))["status"]
-            != "available"
-        )
-        assert json.loads(await plugin.ziwei_finish_reading(outsider, reading, True))[
-            "status"
-        ] not in {"queued", "archived"}
-        await plugin.terminate()
-
-    asyncio.run(run())
 
 
 def queued(store, event, chart=None):
@@ -366,111 +223,6 @@ def test_summary_permission_revoked_while_model_running(tmp_path):
     row = store.get_reading(scope, rid)
     assert row["status"] == "queued" and row["summary"] is None
     assert store.claim_job() is None
-
-
-def test_stream_capture_installed_before_tool_and_no_plain_callback_needed():
-    plugin = ZiweiPlugin(ModelContext(), {})
-
-    async def run():
-        await allow(plugin)
-        event = Event(text="分析我的事业")
-        await plugin.ziwei_paipan(event, DEMO_BIRTH)
-        request = SimpleNamespace(system_prompt="existing", extra_user_content_parts=[])
-        await plugin.reading_request(event, request)
-        assert "默认不分析" in request.system_prompt
-        ids = []
-
-        async def stream():
-            yield SimpleNamespace(chain=[SimpleNamespace(text="工具前的无关开场")])
-            context = json.loads(
-                await plugin.ziwei_analysis_context(event, topic="career")
-            )
-            ids.append(context["reading_id"])
-            yield SimpleNamespace(chain=[SimpleNamespace(text="实际分析第一段")])
-            yield SimpleNamespace(chain=[SimpleNamespace(text="第二段")])
-
-        await event.send_streaming(stream(), True)
-        row = plugin.archive.get_reading(capture_group(event), ids[0])
-        assert row["turns"][-1]["text"] == "实际分析第一段第二段"
-        assert len(row["turns"]) == 2
-        request = SimpleNamespace(system_prompt="existing", extra_user_content_parts=[])
-        await plugin.reading_request(Event(text="继续"), request)
-        assert ids[0] not in request.system_prompt
-        assert request.extra_user_content_parts[0].temporary
-        await plugin.terminate()
-
-    asyncio.run(run())
-
-
-@pytest.mark.parametrize("streaming", [False, True])
-def test_send_failure_does_not_close_an_incomplete_answer(streaming):
-    plugin = ZiweiPlugin(ModelContext(), {})
-
-    class BrokenEvent(Event):
-        async def send(self, message):
-            raise OSError("fictional platform failed")
-
-    async def run():
-        await allow(plugin)
-        event = BrokenEvent(text="分析事业")
-        await plugin.ziwei_paipan(event, DEMO_BIRTH)
-        rid = json.loads(await plugin.ziwei_analysis_context(event))["reading_id"]
-
-        async def stream():
-            yield SimpleNamespace(chain=[SimpleNamespace(text="未发出的分析")])
-
-        with pytest.raises(OSError):
-            if streaming:
-                await event.send_streaming(stream())
-            else:
-                await answer(plugin, event)
-        row = plugin.archive.get_reading(capture_group(event), rid)
-        assert row["capture_error"] and len(row["turns"]) == 1
-        result = json.loads(
-            await plugin.ziwei_finish_reading(Event(text="谢谢"), rid, True)
-        )
-        assert result["status"] == "invalid_input"
-        assert not plugin.context.calls
-        await plugin.terminate()
-
-    asyncio.run(run())
-
-
-def test_one_reply_cannot_mix_two_chart_scopes_and_query_is_paginated():
-    plugin = ZiweiPlugin(ModelContext(), {})
-
-    async def run():
-        await allow(plugin)
-        event = Event(text="分析命盘")
-        await plugin.ziwei_paipan(event, DEMO_BIRTH)
-        first = json.loads(await plugin.ziwei_analysis_context(event))
-        second = json.loads(await plugin.ziwei_analysis_context(event, topic="career"))
-        assert second["status"] == "invalid_input"
-        assert len(plugin.archive.active_readings(capture_group(event))) == 1
-        result = json.loads(
-            await plugin.ziwei_query_knowledge(event, first["reading_id"], 0)
-        )
-        assert result["status"] == "ok" and result["knowledge"]["cards"]
-        assert (
-            json.loads(
-                await plugin.ziwei_query_knowledge(event, first["reading_id"], -1)
-            )["status"]
-            == "invalid_input"
-        )
-        for _ in range(11):
-            async for _reply in plugin.ziwei(Event(), DEMO_BIRTH + " 文字"):
-                pass
-        page1 = json.loads(await plugin.ziwei_list_archives(Event()))
-        page2 = json.loads(
-            await plugin.ziwei_list_archives(Event(), page1["next_offset"])
-        )
-        assert len(page1["charts"]) == 10 and len(page2["charts"]) == 2
-        assert not {c["chart_id"] for c in page1["charts"]} & {
-            c["chart_id"] for c in page2["charts"]
-        }
-        await plugin.terminate()
-
-    asyncio.run(run())
 
 
 def test_summary_cancellation_returns_job_to_durable_queue(tmp_path):

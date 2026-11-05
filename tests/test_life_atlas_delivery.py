@@ -14,7 +14,7 @@ from astrbot_plugin_ziwei.engine import apply_decade, apply_flow, build_chart
 from astrbot_plugin_ziwei.main import ZiweiPlugin
 
 from .conftest import Event
-from .test_llm_tools import Context, allow, invoke_command
+from .helpers import Context, allow, invoke_command
 
 DEMO = "199006150830 男"
 OTHER_DEMO = "1995-07-20 12:00 女"

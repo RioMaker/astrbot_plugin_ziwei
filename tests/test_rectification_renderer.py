@@ -234,7 +234,7 @@ def test_real_dense_candidate_charts_and_themes_stay_independent(font_path):
         outputs[theme] = png
         assert len(png) < 4_000_000
     assert outputs["day"] != outputs["night"]
-    assert candidates == before and renderer.theme == "day"
+    assert candidates == before and renderer.theme == "night"
 
 
 def test_unsupported_huge_layout_rejects_whole_image_instead_of_dropping_tiles(
