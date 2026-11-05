@@ -1,12 +1,44 @@
 """One source of command help for the image and its plain-text fallback."""
 
 DEMO_BIRTH = "1990-06-15 08:30 男"
-HELP_INTRO = "填写出生资料，生成十二宫星曜命盘"
+HELP_INTRO = "群里发指令，自动返回命盘图片"
+HELP_START = (
+    "管理员先开启",
+    "/紫微 开启",
+    "在要排盘的群里发送一次；已开启可跳过。",
+)
+HELP_BIRTH_TITLE = "照着发，就能排盘"
+HELP_BIRTH_FIELDS = (
+    ("/紫微", "排盘指令"),
+    *zip(DEMO_BIRTH.split(), ("公历生日", "出生时间", "男 / 女"), strict=True),
+)
+HELP_BIRTH_NOTE = "换成要排盘的资料；时间用24小时制，每项空一格。"
+HELP_OPTIONS = (
+    ("农历生日", "日期前加", "农历"),
+    ("看某一年", "末尾加", "流年=2026"),
+    ("换成白底", "末尾加", "主题=白天"),
+)
+HELP_OPTIONS_NOTE = "按需添加；选项与出生资料之间留空格。"
+HELP_MORE_COMMAND = "/紫微 帮助 文字"
+HELP_IMAGE_NOTES = (
+    "虚构示例 · 排盘仅限已开启的群，私聊不可用。",
+    "目前只排盘，暂不提供 AI 解读。",
+)
 HELP_SECTIONS = (
+    (HELP_START[0], ((HELP_START[1], HELP_START[2]),)),
     (
-        "开始排盘",
+        HELP_BIRTH_TITLE,
+        ((f"/紫微 {DEMO_BIRTH}", HELP_BIRTH_NOTE),),
+    ),
+    (
+        "常用选项",
+        tuple(
+            (label, f"{position} {option}") for label, position, option in HELP_OPTIONS
+        ),
+    ),
+    (
+        "更多写法",
         (
-            (f"/紫微 {DEMO_BIRTH}", "出生日期 · 明确时刻 · 性别，默认返回星空命盘。"),
             (
                 "/ziwei 199006150830 男",
                 "支持日期时间连写；也可用 /紫微199006150830男。",
@@ -39,7 +71,7 @@ HELP_SECTIONS = (
                 "也可用 /人生；返回已有规则计算的人生图谱，无 AI 解读。",
             ),
             (
-                "/紫微 帮助  /  /紫微 帮助 文字",
+                f"/紫微 帮助  /  {HELP_MORE_COMMAND}",
                 "查看帮助图片，或获取可复制的完整文字说明。",
             ),
         ),
@@ -48,7 +80,7 @@ HELP_SECTIONS = (
         "群内授权",
         (
             (
-                "/紫微 开启  /  /紫微 关闭",
+                "/紫微 关闭",
                 "由群主、群管理员或 AstrBot 管理员在本群操作。",
             ),
             ("/紫微 状态", "所有群默认未开启；仅已授权群能排盘，私聊仅能看帮助。"),
@@ -71,10 +103,14 @@ HELP = "\n".join(
         "紫微斗数排盘",
         HELP_INTRO,
         *(
-            f"{command}：{description}"
-            for _, rows in HELP_SECTIONS
-            for command, description in rows
+            line
+            for title, rows in HELP_SECTIONS
+            for line in (
+                f"【{title}】",
+                *(f"{command}：{description}" for command, description in rows),
+            )
         ),
+        HELP_OPTIONS_NOTE,
         *HELP_NOTES,
     ]
 )
