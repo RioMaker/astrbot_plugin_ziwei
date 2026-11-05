@@ -114,9 +114,12 @@ def test_palace_arrows_do_not_cover_any_text_or_neighbor(
     )
     chart = apply_flow(build_chart(r.birth, r.profile), year=2026)
     if case == "crowded":
-        # Stress both side strips with four arrows each, independent of rules.
-        for star, hua in zip(chart["palaces"][4]["stars"], "禄权科忌", strict=False):
-            star["self_hua"] = {"outward": hua, "inward": hua}
+        # Stress inner and outer edges on both sides, independent of rules.
+        for palace_index in (4, 9):
+            for star, hua in zip(
+                chart["palaces"][palace_index]["stars"], "禄权科忌", strict=False
+            ):
+                star["self_hua"] = {"outward": hua, "inward": hua}
     texts, arrows = [], []
     real_text, real_arrow = Painter.text, Painter.arrow
 

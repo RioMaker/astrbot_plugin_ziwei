@@ -82,16 +82,12 @@ def self_hua_arrow_layout(stars, branch, x, y, height):
                     x if side == "left" else x + CELL_WIDTH,
                     y + 24 + (height - 128) * lane,
                 )
-                if source == "outward":
-                    label = (
-                        x - 23 if side == "left" else x + CELL_WIDTH + 9,
-                        anchor[1] + 14,
-                    )
-                else:
-                    label = (
-                        x + 7 if side == "left" else x + CELL_WIDTH - 21,
-                        anchor[1] + 14,
-                    )
+                # Put inner-frame labels on the center side of the boundary,
+                # leaving the palace edge available for its star columns.
+                label = (
+                    x - 23 if side == "left" else x + CELL_WIDTH + 9,
+                    anchor[1] + 14,
+                )
             dx, dy = self_hua_vector(branch, source, cell_height=height)
             arrows.append(
                 {
@@ -301,10 +297,13 @@ def _vertical_star(painter, star, x, y, color, step):
         )
     if star["secondary"]:
         box = painter.font(18).getbbox("副", anchor="lt")
+        # Keep the palace's top edge compact; secondary voids are identified
+        # in the annotation area below brightness, on the same column center.
+        mark_rows = max((mark["row"] + 1 for mark in star["marks"]), default=0)
         painter.text(
             "副",
             center_x - (box[0] + box[2]) / 2,
-            y - 20,
+            y + 118 + mark_rows * 28,
             18,
             painter.palette.muted,
         )
@@ -354,8 +353,8 @@ def _draw_palace(painter, item, chart, x, y, height):
             _vertical_star(
                 painter,
                 star,
-                x + 20 + col * STAR_COLUMN_STEP,
-                y + 40 + bank * STAR_BANK_HEIGHT,
+                x + 12 + col * STAR_COLUMN_STEP,
+                y + 20 + bank * STAR_BANK_HEIGHT,
                 color,
                 STAR_COLUMN_STEP,
             )
