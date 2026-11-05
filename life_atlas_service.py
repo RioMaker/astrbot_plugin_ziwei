@@ -87,6 +87,7 @@ class LifeAtlasService:
         plugin.pending += 1
         try:
             request = parse_life_atlas_request(text, plugin.config)
+            font_path = str(plugin.config.get("font_path", "") or "")
             async with plugin.gate:
                 # A queued task must not start work after group closure or reload.
                 rejection = await plugin._chart_access(scope)
@@ -110,9 +111,7 @@ class LifeAtlasService:
                         yield event.plain_result(rejection)
                     return
                 try:
-                    renderer = LifeAtlasRenderer(
-                        str(plugin.config.get("font_path", "") or "")
-                    )
+                    renderer = LifeAtlasRenderer(font_path)
                     png = await asyncio.to_thread(
                         renderer.render, atlas, request.image_theme
                     )

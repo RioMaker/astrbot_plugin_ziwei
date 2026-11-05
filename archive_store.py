@@ -8,6 +8,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
+from .admin_records import AdminRecords
 from .ai_limits import DEFAULT_POLICY, question_token, take
 from .llm_data import owner_key
 from .rectification_store import RectificationStore
@@ -75,6 +76,7 @@ class ArchiveStore:
                 db.execute("UPDATE readings SET status='queued' WHERE status='running'")
                 db.execute("DELETE FROM ai_usage WHERE pending=1")
         self.rectifications = RectificationStore(self, resume_ai_jobs=resume_ai_jobs)
+        self.records = AdminRecords(self)
 
     @contextmanager
     def transaction(self):
@@ -122,9 +124,12 @@ class ArchiveStore:
         with self.transaction() as db:
             db.execute("DELETE FROM ai_usage WHERE token=? AND pending=1", (token,))
 
-    def save_chart(self, scope, chart, quota_token=None):
+    def save_chart(self, scope, chart, quota_token=None, *, theme="night"):
         with self.transaction() as db:
             chart_id = self._insert_chart(db, scope, chart)
+            self.records.add(
+                db, chart, chart_id, scope=scope, chart_id=chart_id, theme=theme
+            )
             if quota_token:
                 db.execute(
                     "UPDATE ai_usage SET pending=0 WHERE token=?", (quota_token,)
@@ -177,6 +182,15 @@ class ArchiveStore:
                     theme,
                     encode(atlas),
                 ),
+            )
+            self.records.add(
+                db,
+                atlas["natal"],
+                atlas_id,
+                scope=scope,
+                chart_id=chart_id,
+                atlas_id=atlas_id,
+                theme=theme,
             )
         return atlas_id, chart_id
 

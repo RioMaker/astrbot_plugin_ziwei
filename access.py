@@ -24,6 +24,7 @@ class GroupScope:
     role: str
     bot: object
     umo: str = ""
+    user_name: str = ""
 
     @property
     def key(self):
@@ -48,6 +49,12 @@ def capture_group(event) -> GroupScope:
         role=str(field(sender, "role", "") or "").lower(),
         bot=getattr(event, "bot", None),
         umo=str(getattr(event, "unified_msg_origin", "") or ""),
+        user_name=str(
+            field(sender, "card")
+            or field(sender, "nickname")
+            or field(field(event.message_obj, "sender"), "nickname", "")
+            or ""
+        )[:256],
     )
 
 

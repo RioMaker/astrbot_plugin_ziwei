@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>紫微排盘控制台</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="masthead">
+        <div class="brand">
+          <span class="orbit" aria-hidden="true">✦</span>
+          <div>
+            <p class="eyebrow">紫微斗数 · 管理页面</p>
+            <h1>紫微排盘控制台</h1>
+            <p class="subtitle">配置插件，在线排盘，回看每一次起盘。</p>
+          </div>
+        </div>
+        <button id="refresh" class="secondary" type="button">刷新数据</button>
+      </header>
+      <p id="notice" class="notice" role="status" aria-live="polite">
+        正在连接 AstrBot…
+      </p>
+      <section class="stats" aria-label="记录概览">
+        <div>
+          <span>群友起盘</span><strong id="stat-group">—</strong
+          ><small>本次升级后记录</small>
+        </div>
+        <div>
+          <span>参与群友</span><strong id="stat-users">—</strong
+          ><small>按平台与群分别统计</small>
+        </div>
+        <div>
+          <span>后台排盘</span><strong id="stat-web">—</strong
+          ><small>通过本页面创建</small>
+        </div>
+        <div>
+          <span>历史档案</span><strong id="stat-legacy">—</strong
+          ><small>升级前的已有命盘</small>
+        </div>
+      </section>
+      <nav class="tabs" aria-label="控制台功能">
+        <button type="button" data-tab="chart" aria-pressed="true">
+          页面排盘
+        </button>
+        <button type="button" data-tab="records" aria-pressed="false">
+          起盘记录
+        </button>
+        <button type="button" data-tab="settings" aria-pressed="false">
+          插件配置
+        </button>
+      </nav>
+
+      <section id="tab-chart" class="tab-content">
+        <div class="chart-layout">
+          <form id="chart-form" class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">01 / 出生资料</p>
+                <h2>生成一张命盘</h2>
+              </div>
+              <span class="badge">星空图片</span>
+            </div>
+            <label
+              >出生日期时间<input
+                id="birth"
+                required
+                maxlength="32"
+                placeholder="例如 199006150830"
+                autocomplete="off"
+              /><small>年月日时分连写 12 位，使用 24 小时制。</small></label
+            >
+            <div class="two-columns">
+              <label
+                >性别<select id="sex">
+                  <option value="男">男</option>
+                  <option value="女">女</option>
+                </select></label
+              >
+              <label
+                >历法<select id="calendar">
+                  <option value="公历">公历</option>
+                  <option value="农历">农历</option>
+                </select></label
+              >
+            </div>
+            <p id="lunar-hint" class="help-text" hidden>
+              闰月可写为 2023闰02161200，表示闰二月十六日 12:00。
+            </p>
+            <div class="two-columns">
+              <label
+                >盘型<select id="mode">
+                  <option value="natal">本命盘</option>
+                  <option value="decade">大运 / 童限</option>
+                  <option value="year">流年盘</option>
+                  <option value="date">日期流盘</option>
+                </select></label
+              >
+              <label
+                >图片主题<select id="theme">
+                  <option value="">跟随插件配置</option>
+                  <option value="夜间">夜间星空</option>
+                  <option value="白天">白天星图</option>
+                </select></label
+              >
+            </div>
+            <label id="decade-field" hidden
+              >大运序号<select id="decade">
+                <option value="0">童限</option>
+                <option value="1">第 1 大运</option>
+                <option value="2">第 2 大运</option>
+                <option value="3">第 3 大运</option>
+                <option value="4">第 4 大运</option>
+                <option value="5">第 5 大运</option>
+                <option value="6">第 6 大运</option>
+                <option value="7">第 7 大运</option>
+                <option value="8">第 8 大运</option>
+                <option value="9">第 9 大运</option>
+                <option value="10">第 10 大运</option>
+                <option value="11">第 11 大运</option>
+                <option value="12">第 12 大运</option>
+              </select></label
+            >
+            <label id="year-field" hidden
+              >目标农历年<input
+                id="flow-year"
+                type="number"
+                min="1900"
+                max="2100"
+                placeholder="例如 2026"
+            /></label>
+            <label id="date-field" hidden
+              >目标公历日期时间<input
+                id="flow-date"
+                maxlength="12"
+                placeholder="例如 202610061000"
+              /><small>同样连写 12 位。</small></label
+            >
+            <details class="advanced">
+              <summary>更多选项</summary>
+              <label
+                >附加参数<input
+                  id="extra"
+                  maxlength="700"
+                  placeholder="经度=116.4 时区=8 真太阳时=关"
+                  autocomplete="off"
+                /><small>与指令参数相同，多个选项之间留空格。</small></label
+              >
+            </details>
+            <div class="command-preview">
+              <span>对应指令</span
+              ><code id="command-preview">填写出生资料后显示</code>
+            </div>
+            <div class="actions">
+              <button id="create" type="submit" disabled>生成命盘</button
+              ><button id="demo" type="button" class="secondary">
+                填入演示资料
+              </button>
+            </div>
+            <p class="help-text">
+              页面排盘自动保存到“后台排盘”记录，不向群内发送。演示资料为虚构。
+            </p>
+          </form>
+          <section
+            id="chart-result"
+            class="panel result-panel"
+            aria-live="polite"
+          >
+            <div class="empty-result">
+              <span class="constellation" aria-hidden="true">✧ · ✦ · ✧</span>
+              <h2>命盘会出现在这里</h2>
+              <p>填写出生资料，点击“生成命盘”。</p>
+              <p>可查看原图、保存图片，或回看文字盘。</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="tab-records" class="tab-content" hidden>
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">02 / 永久归档</p>
+              <h2>起盘记录</h2>
+            </div>
+            <span id="record-total" class="badge">加载中</span>
+          </div>
+          <form id="filter-form" class="filters">
+            <label
+              >来源<select id="filter-source">
+                <option value="">全部来源</option>
+                <option value="group">群友起盘</option>
+                <option value="web">后台排盘</option>
+                <option value="legacy">历史档案</option>
+              </select></label
+            >
+            <label
+              >群<select id="filter-group">
+                <option value="">全部群</option>
+              </select></label
+            >
+            <label
+              >盘型<select id="filter-kind">
+                <option value="">全部盘型</option>
+                <option value="natal">本命盘</option>
+                <option value="decade">大运 / 童限</option>
+                <option value="year">流年盘</option>
+                <option value="date">日期流盘</option>
+                <option value="atlas">人生图谱</option>
+              </select></label
+            >
+            <label class="search-field"
+              >群友 / 记录<input
+                id="filter-search"
+                maxlength="256"
+                placeholder="昵称、用户号或记录编号"
+            /></label>
+            <label>起盘开始日期<input id="filter-start" type="date" /></label
+            ><label>起盘结束日期<input id="filter-end" type="date" /></label>
+            <div class="filter-actions">
+              <button type="submit">查询</button
+              ><button id="reset-filters" type="button" class="secondary">
+                清空
+              </button>
+            </div>
+          </form>
+          <p class="help-text">
+            时间按北京时间显示。历史档案保留原命盘；未保存过的群友身份会标为“未记录”。
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>起盘时间</th>
+                  <th>群友 / 来源</th>
+                  <th>平台与群</th>
+                  <th>命盘资料</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="record-rows"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button id="previous" type="button" class="secondary">上一页</button
+            ><span id="page-info">—</span
+            ><button id="next" type="button" class="secondary">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-settings" class="tab-content" hidden>
+        <form id="settings-form" class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">03 / 插件配置</p>
+              <h2>调整默认设置</h2>
+            </div>
+            <span class="badge">保存后生效</span>
+          </div>
+          <p class="help-text">
+            用于之后新建的命盘，已有记录保留原计算结果。单次排盘指定的选项优先。
+          </p>
+          <div id="basic-settings" class="settings-grid"></div>
+          <details class="advanced">
+            <summary>历法与安星规则</summary>
+            <p class="help-text">沿用插件原有取法；不确定时保留默认值。</p>
+            <div id="rule-settings" class="settings-grid"></div>
+          </details>
+          <div class="config-footer">
+            <div>
+              <strong>群内排盘授权</strong>
+              <p>
+                在目标群由管理员发送 <code>/紫微 开启</code>。私聊仍不能起盘。
+              </p>
+            </div>
+            <span class="badge">需在本群开启</span>
+          </div>
+          <div class="actions">
+            <button id="save-settings" type="submit" disabled>保存配置</button
+            ><button id="reload-settings" type="button" class="secondary">
+              重新载入
+            </button>
+          </div>
+          <p id="settings-note" class="help-text"></p>
+        </form>
+      </section>
+      <footer>紫微斗数 2.1.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
+    </main>
+    <dialog id="detail-dialog">
+      <div class="dialog-bar">
+        <h2>命盘详情</h2>
+        <button id="close-detail" class="secondary" type="button">关闭</button>
+      </div>
+      <div id="detail-result" class="result-panel"></div>
+    </dialog>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -11,6 +11,7 @@ from astrbot.core.star.filter.command import GreedyStr
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 from .access import GroupAccess, can_manage, capture_group
+from .admin_page import AdminPage
 from .archive_store import ArchiveStore
 from .commands import DEMO_BIRTH, HELP, parse_request
 from .compact_commands import (
@@ -27,10 +28,11 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.0.6")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.1.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
+        self.host_config = config
         self.config = dict(config)
         # Validate global configuration at load, rather than fail for every user.
         RuleProfile.from_config(self.config)
@@ -58,14 +60,17 @@ class ZiweiPlugin(Star):
         except (OSError, ValueError):
             self.renderer = None
             logger.warning("紫微斗数：中文字体不可用，将返回文字盘。可配置 font_path。")
+        self.admin_page = AdminPage(self)
+        self.admin_page.register()
 
     async def terminate(self):
         self.closed = True
+        self.admin_page.close()
         self.chart_cache.clear()
         self.archive.close()
 
     async def initialize(self):
-        """Command-only mode deliberately leaves historical AI jobs idle."""
+        """Manual chart mode deliberately leaves historical AI jobs idle."""
 
     @staticmethod
     def _scope_rejection(scope):
@@ -182,6 +187,7 @@ class ZiweiPlugin(Star):
         self.pending += 1
         try:
             request = parse_request(text, self.config)
+            renderer = self.renderer
             async with self.gate:
                 # A queued request must recheck authorization before computing.
                 access_message = await self._chart_access(scope)
@@ -200,12 +206,14 @@ class ZiweiPlugin(Star):
                         yield event.plain_result(access_message)
                     return
                 if scope.user_id:
-                    chart_id = self.archive.save_chart(scope, chart)
+                    chart_id = self.archive.save_chart(
+                        scope, chart, theme=request.image_theme
+                    )
                     self.chart_cache.put(scope, chart, chart_id=chart_id)
-                if request.output == "image" and self.renderer is not None:
+                if request.output == "image" and renderer is not None:
                     try:
                         png = await asyncio.to_thread(
-                            self.renderer.render, chart, request.image_theme
+                            renderer.render, chart, request.image_theme
                         )
                     except Exception as exc:
                         logger.warning(
@@ -273,12 +281,14 @@ class ZiweiPlugin(Star):
             and self.pending < 4
         ):
             self.pending += 1
+            renderer = self.help_renderer
+            theme = self.config.get("image_theme", "night")
             try:
                 async with self.gate:
                     if not self.closed:
                         png = await asyncio.to_thread(
-                            self.help_renderer.render,
-                            self.config.get("image_theme", "night"),
+                            renderer.render,
+                            theme,
                         )
                         if not png:
                             raise ValueError("empty help image")
