@@ -61,12 +61,12 @@ def parse_request(text: str, config=None) -> ChartRequest:
     except ValueError as exc:
         raise ValueError("指令中存在未闭合的引号") from exc
     if not tokens:
-        raise ValueError("请填写出生日期、时刻和性别")
+        raise ValueError("请填写出生日期时间和性别")
     calendar = "solar"
     if tokens[0] in {"公历", "阳历", "solar", "农历", "阴历", "lunar"}:
         calendar = "lunar" if tokens.pop(0) in {"农历", "阴历", "lunar"} else "solar"
     if tokens:
-        joined = re.fullmatch(r"(\d{8})(\d{2})(\d{2})(\d{2})?", tokens[0])
+        joined = re.fullmatch(r"(\d{4}闰?\d{4})(\d{2})(\d{2})(\d{2})?", tokens[0])
         if joined:
             clock = f"{joined[2]}:{joined[3]}"
             if joined[4]:
@@ -75,7 +75,7 @@ def parse_request(text: str, config=None) -> ChartRequest:
         elif tokens[0].isdecimal() and len(tokens[0]) > 8:
             raise ValueError("日期时间连写须为12位 YYYYMMDDHHMM 或14位 YYYYMMDDHHMMSS")
     if len(tokens) < 3:
-        raise ValueError(f"请完整填写出生日期、时刻和性别，例如：{DEMO_BIRTH}")
+        raise ValueError(f"请完整填写出生日期时间和性别，例如：{DEMO_BIRTH}")
     year, month, day, leap = parse_date(tokens[0], calendar == "lunar")
     hour, minute, second = parse_clock(tokens[1])
     sex = {"male": "男", "female": "女", "m": "男", "f": "女"}.get(
