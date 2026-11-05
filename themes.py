@@ -27,6 +27,7 @@ class Palette:
     accent: str
     on_accent: str
     major: str
+    auspicious: str
     assistant: str
     malefic: str
     minor: str
@@ -75,6 +76,7 @@ DAY = Palette(
     "#2e7d32",
     "#fffef8",
     "#9e2f2f",
+    "#1a6840",
     "#8a4b9c",
     "#0f1a20",
     "#1e5a8f",
@@ -92,6 +94,7 @@ NIGHT = Palette(
     "#dec58c",
     "#101c32",
     "#f0cf91",
+    "#85d7b0",
     "#c4b3ee",
     "#c6cbd1",
     "#91bdec",

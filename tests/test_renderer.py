@@ -81,16 +81,26 @@ def test_star_groups_and_transformation_marks_do_not_mutate_calculation():
     }
     assert len(displayed) == len(chart["stars"]) == 70
     for star, category in displayed.values():
-        if star["id"] in {23, 24, 25, 26, 27, 28, 54, 80}:
+        if star["id"] in {23, 24, 25, 26, 27, 28}:
             assert category == "malefic"
         elif star["id"] <= 14:
             assert category == "major"
-        elif star["id"] in {15, 16, 17, 18, 19, 20, 21, 22}:
+        elif star["id"] in {15, 16, 17, 18, 19, 20}:
+            assert category == "auspicious"
+        elif star["id"] in {21, 22}:
             assert category == "assistant"
+        else:
+            assert category == "minor"
+    for category, names in (
+        ("auspicious", {"文昌", "文曲", "左辅", "右弼", "天魁", "天钺"}),
+        ("malefic", {"火星", "铃星", "擎羊", "陀罗", "地空", "地劫"}),
+        ("assistant", {"禄存", "天马"}),
+    ):
+        assert {s["name"] for s, key in displayed.values() if key == category} == names
     assert displayed["natal-33-primary"][1] == "minor"
-    assert displayed["natal-16-primary"][1] == "assistant"
-    # 丙年文昌化科；its assistant color remains independent of the Hua mark.
-    assert displayed["natal-15-primary"][1] == "assistant"
+    assert displayed["natal-16-primary"][1] == "auspicious"
+    # 丙年文昌化科；its six-auspicious color stays independent of the Hua mark.
+    assert displayed["natal-15-primary"][1] == "auspicious"
     assert displayed["natal-15-primary"][0]["marks"]
     assert "natal-78-secondary" in displayed
 

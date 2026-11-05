@@ -71,7 +71,9 @@ def contrast(a, b):
 @pytest.mark.parametrize("theme", ["day", "night"])
 def test_theme_text_contrast_on_the_actual_surfaces(theme):
     p = get_theme(theme)
-    for category in ("major", "assistant", "malefic", "minor"):
+    categories = ("major", "auspicious", "assistant", "malefic", "minor")
+    assert len({p.star_color(category) for category in categories}) == 5
+    for category in categories:
         assert contrast(p.star_color(category), p.paper) >= 4.5
     for surface in (p.paper, p.center, p.bg):
         assert contrast(p.ink, surface) >= 4.5
@@ -149,9 +151,11 @@ def test_palace_arrows_do_not_cover_any_text_or_neighbor(
         for star in palace["stars"]
         for hua in star["self_hua"].values()
     )
-    assert not any(
-        label in {"主星", "辅星", "煞星", "杂曜", "生禄", "年禄"} for *_, label in texts
+    labels = [label for *_, label in texts]
+    assert all(
+        labels.count(label) == 1 for label in ("主星", "六吉", "辅星", "六煞", "杂曜")
     )
+    assert not any(label in {"生禄", "年禄"} for label in labels)
     for a in arrows:
         for b in texts:
             assert a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1], (a, b)

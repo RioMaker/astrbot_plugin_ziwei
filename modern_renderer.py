@@ -11,17 +11,22 @@ from .themes import get_theme
 
 STAR_CATEGORIES = (
     ("major", "主星"),
+    ("auspicious", "六吉"),
     ("assistant", "辅星"),
-    ("malefic", "煞星"),
+    ("malefic", "六煞"),
     ("minor", "杂曜"),
 )
 HUA_LAYERS = ("生年", "大限", "流年")
 LAYER_NAMES = {"生年": "生年", "大限": "大运", "流年": "流年"}
-MALEFIC_IDS = frozenset(
-    {23, 24, 25, 26, 27, 28, 31, 37, 39, 41, 48, 53, 54, 57, 59, 62, 77, 78, 80}
-)
+AUSPICIOUS_IDS = frozenset({15, 16, 17, 18, 19, 20})
+MALEFIC_IDS = frozenset({23, 24, 25, 26, 27, 28})
 GRID = ((6, 7, 8, 9), (5, None, None, 10), (4, None, None, 11), (3, 2, 1, 12))
 CELL_WIDTH = 400
+STAR_COLUMNS = 9
+STAR_COLUMN_STEP = 40
+STAR_NAME_SIZE = 36
+STAR_LINE_STEP = 40
+STAR_BANK_HEIGHT = 220
 MARGIN = 32
 GAP = 0
 PALACE_POSITIONS = {
@@ -104,6 +109,8 @@ def self_hua_arrow_layout(stars, branch, x, y, height):
 
 
 def display_category(star):
+    if star["id"] in AUSPICIOUS_IDS:
+        return "auspicious"
     if star["id"] in MALEFIC_IDS:
         return "malefic"
     return star["group"]
@@ -280,40 +287,49 @@ class Painter:
 
 
 def _vertical_star(painter, star, x, y, color, step):
-    major = star["group"] == "major"
-    name_size = min(32 if major else 29, int(step) - 2)
+    # One glyph size and one column center across every category. Dense palaces
+    # wrap into another bank instead of squeezing the font to fit more columns.
+    center_x = x + step / 2
     for index, character in enumerate(star["name"]):
+        box = painter.font(STAR_NAME_SIZE).getbbox(character, anchor="lt")
         painter.text(
             character,
-            x + (step - name_size) / 2,
-            y + index * 34,
-            name_size,
+            center_x - (box[0] + box[2]) / 2,
+            y + index * STAR_LINE_STEP,
+            STAR_NAME_SIZE,
             color,
         )
     if star["secondary"]:
-        painter.text("副", x + step - 17, y - 18, 16, painter.palette.muted)
+        box = painter.font(18).getbbox("副", anchor="lt")
+        painter.text(
+            "副",
+            center_x - (box[0] + box[2]) / 2,
+            y - 20,
+            18,
+            painter.palette.muted,
+        )
     if star["brightness"]:
-        width = painter.font(18).getlength(star["brightness"]) + 8
+        width = math.ceil(painter.font(20).getlength(star["brightness"])) + 8
         painter.pill(
             star["brightness"],
-            x + (step - width) / 2,
-            y + 73,
-            size=18,
-            height=24,
+            center_x - width / 2,
+            y + 84,
+            size=20,
+            height=26,
             padding=8,
         )
-    size = 18
+    size = 20
     for mark in star["marks"]:
         color, fill = painter.palette.layer_style(mark["source"])
-        width = painter.font(size).getlength(mark["label"]) + 8
+        width = math.ceil(painter.font(size).getlength(mark["label"])) + 8
         painter.pill(
             mark["label"],
-            x + (step - width) / 2,
-            y + 99 + mark["row"] * 24,
+            center_x - width / 2,
+            y + 114 + mark["row"] * 28,
             color,
             fill,
             size=size,
-            height=24,
+            height=26,
             outline=fill,
             padding=8,
         )
@@ -331,18 +347,17 @@ def _draw_palace(painter, item, chart, x, y, height):
             fill=painter.palette.border,
         )
     stars = [(s, g["color"]) for g in item["groups"] for s in g["stars"]]
-    banks = math.ceil(len(stars) / 12)
+    banks = math.ceil(len(stars) / STAR_COLUMNS)
     for bank in range(banks):
-        row = stars[bank * 12 : (bank + 1) * 12]
-        step = min(34, (CELL_WIDTH - 40) / len(row))
+        row = stars[bank * STAR_COLUMNS : (bank + 1) * STAR_COLUMNS]
         for col, (star, color) in enumerate(row):
             _vertical_star(
                 painter,
                 star,
-                x + 16 + col * step,
-                y + 36 + bank * 190,
+                x + 20 + col * STAR_COLUMN_STEP,
+                y + 40 + bank * STAR_BANK_HEIGHT,
                 color,
-                step,
+                STAR_COLUMN_STEP,
             )
     badge_x = x + 70
     for source, label in (
@@ -690,11 +705,27 @@ def _draw_center(painter, chart, x, y, width, height):
 
 def render_chart(chart, font_path, theme="day"):
     view = make_chart_view(chart, theme)
-    max_banks = max(math.ceil(len(p["palace"]["stars"]) / 12) for p in view["palaces"])
-    cell_height = max(376, max_banks * 190 + 186)
+    # Grow only the row that contains a dense palace. One crowded palace must
+    # not add unused star banks to every other row of the twelve-palace grid.
+    row_heights = [
+        max(
+            400,
+            max(
+                math.ceil(
+                    len(view["palaces"][branch - 1]["palace"]["stars"]) / STAR_COLUMNS
+                )
+                for branch in cells
+                if branch is not None
+            )
+            * STAR_BANK_HEIGHT
+            + 180,
+        )
+        for cells in GRID
+    ]
     width = 2 * MARGIN + 4 * CELL_WIDTH
     grid_y = 118
-    footer_y = grid_y + 4 * cell_height + 24
+    row_y = [grid_y + sum(row_heights[:row]) for row in range(4)]
+    footer_y = grid_y + sum(row_heights) + 24
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
     painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
@@ -702,6 +733,11 @@ def render_chart(chart, font_path, theme="day"):
     painter.text("紫微斗数", MARGIN + 84, 27, 40)
     painter.text("十二宫星曜命盘", MARGIN + 86, 80, 18, painter.palette.muted)
     constellation(painter.draw, MARGIN + 540, 30, 490, 55, painter.palette)
+    for index, (category, title) in enumerate(STAR_CATEGORIES):
+        sx = MARGIN + 540 + index * 102
+        color = painter.palette.star_color(category)
+        painter.draw.ellipse((sx, 85, sx + 7, 92), fill=color)
+        painter.text(title, sx + 17, 79, 18, color)
     if chart["flow"] and chart["flow"].get("kind") == "decade":
         decade = chart["flow"]["decade"]
         label = (
@@ -733,16 +769,16 @@ def render_chart(chart, font_path, theme="day"):
                     view["palaces"][branch - 1],
                     chart,
                     MARGIN + col * CELL_WIDTH,
-                    grid_y + row * cell_height,
-                    cell_height,
+                    row_y[row],
+                    row_heights[row],
                 )
     _draw_center(
         painter,
         chart,
         MARGIN + CELL_WIDTH,
-        grid_y + cell_height,
+        row_y[1],
         2 * CELL_WIDTH,
-        2 * cell_height,
+        sum(row_heights[1:3]),
     )
     # Paint inner frame arrows after palace and center backgrounds.
     for row, cells in enumerate(GRID):
@@ -752,8 +788,8 @@ def render_chart(chart, font_path, theme="day"):
                     chart["palaces"][branch - 1]["stars"],
                     branch,
                     MARGIN + col * CELL_WIDTH,
-                    grid_y + row * cell_height,
-                    cell_height,
+                    row_y[row],
+                    row_heights[row],
                 ):
                     color, _ = painter.palette.hua_color(arrow["hua"])
                     painter.arrow(arrow["start"], arrow["end"], color)
@@ -777,7 +813,7 @@ def render_chart(chart, font_path, theme="day"):
             )
     by = footer_y + summary_height + 10
     painter.text(
-        "宫位大限为虚岁；同宫流年年份每12年重复，选中流年单独高亮。",
+        "宫位大限为虚岁；流年按农历年标示。「副」为截空／旬空的副空标记。",
         MARGIN,
         by,
         16,
