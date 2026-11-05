@@ -21,7 +21,7 @@ def main():
         "preview-flow.png": DEMO_BIRTH + " 流年=2026 主题=白天",
         "preview-night.png": DEMO_BIRTH + " 流年=2026",
         "preview-day.png": DEMO_BIRTH + " 主题=白天",
-        "preview-dense.png": "农历 1993-10-25 20:00 男 真太阳时=关 流年=2026",
+        "preview-dense.png": "农历 19931025 2000 男 真太阳时=关 流年=2026",
     }
     for name, text in examples.items():
         request = parse_request(text)

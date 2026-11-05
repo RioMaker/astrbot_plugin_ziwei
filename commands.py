@@ -31,7 +31,7 @@ def parse_date(text: str, lunar=False):
     if not match:
         match = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", clean)
     if not match:
-        raise ValueError("日期格式应为 YYYY-MM-DD 或 YYYYMMDD")
+        raise ValueError("日期请填8位 YYYYMMDD，如 19900615；也支持 YYYY-MM-DD")
     return (*map(int, match.groups()), leap)
 
 
@@ -43,7 +43,9 @@ def parse_clock(text: str):
     if not match:
         match = re.fullmatch(r"(\d{2})(\d{2})(\d{2})?", text)
     if not match:
-        raise ValueError("时刻应为 HH:MM、HH:MM:SS、HHMM、HHMMSS 或十二时辰")
+        raise ValueError(
+            "时间请填4位 HHMM，如 0830；也支持 HHMMSS、HH:MM、HH:MM:SS 或十二时辰"
+        )
     hour, minute, second = (int(match[1]), int(match[2]), int(match[3] or 0))
     if not 0 <= hour <= 23 or not 0 <= minute <= 59 or not 0 <= second <= 59:
         raise ValueError("时刻超出有效范围")

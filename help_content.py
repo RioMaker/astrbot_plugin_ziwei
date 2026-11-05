@@ -1,18 +1,17 @@
 """One source of command help for the image and its plain-text fallback."""
 
-DEMO_BIRTH = "1990-06-15 08:30 男"
+DEMO_BIRTH = "19900615 0830 男"
 HELP_INTRO = "群里发指令，自动返回命盘图片"
-HELP_START = (
-    "管理员先开启",
-    "/紫微 开启",
-    "在要排盘的群里发送一次；已开启可跳过。",
-)
 HELP_BIRTH_TITLE = "照着发，就能排盘"
 HELP_BIRTH_FIELDS = (
     ("/紫微", "排盘指令"),
-    *zip(DEMO_BIRTH.split(), ("公历生日", "出生时间", "男 / 女"), strict=True),
+    *zip(
+        DEMO_BIRTH.split(),
+        ("公历生日 · 8位", "出生时间 · 4位", "男 / 女"),
+        strict=True,
+    ),
 )
-HELP_BIRTH_NOTE = "换成要排盘的资料；时间用24小时制，每项空一格。"
+HELP_BIRTH_NOTE = "月日时分补齐两位；时间用24小时制，每项空一格。"
 HELP_OPTIONS = (
     ("农历生日", "日期前加", "农历"),
     ("看某一年", "末尾加", "流年=2026"),
@@ -21,11 +20,10 @@ HELP_OPTIONS = (
 HELP_OPTIONS_NOTE = "按需添加；选项与出生资料之间留空格。"
 HELP_MORE_COMMAND = "/紫微 帮助 文字"
 HELP_IMAGE_NOTES = (
-    "虚构示例 · 排盘仅限已开启的群，私聊不可用。",
+    "虚构示例，请换成出生资料 · 仅已开启的群可用。",
     "目前只排盘，暂不提供 AI 解读。",
 )
 HELP_SECTIONS = (
-    (HELP_START[0], ((HELP_START[1], HELP_START[2]),)),
     (
         HELP_BIRTH_TITLE,
         ((f"/紫微 {DEMO_BIRTH}", HELP_BIRTH_NOTE),),
@@ -43,7 +41,7 @@ HELP_SECTIONS = (
                 "/ziwei 199006150830 男",
                 "支持日期时间连写；也可用 /紫微199006150830男。",
             ),
-            ("/紫微 农历 2023-闰02-16 12:00 女", "农历请加前缀，闰月请标明“闰”。"),
+            ("/紫微 农历 2023闰0216 1200 女", "农历请加前缀，闰月请标明“闰”。"),
         ),
     ),
     (
@@ -77,8 +75,12 @@ HELP_SECTIONS = (
         ),
     ),
     (
-        "群内授权",
+        "群管理",
         (
+            (
+                "/紫微 开启",
+                "由群主、群管理员或 AstrBot 管理员在要排盘的群里发送一次。",
+            ),
             (
                 "/紫微 关闭",
                 "由群主、群管理员或 AstrBot 管理员在本群操作。",
@@ -91,10 +93,11 @@ HELP_NOTES = (
     "以上日期均为虚构演示数据，请替换为需要排盘的出生资料。",
     "当前仅支持指令排盘，暂不提供 AI 看盘、AI 排盘或辅助定盘。",
     "别名：/紫薇、/紫微排盘、/紫薇排盘、/ziwei；均支持开、关、状态。",
-    "支持1900—2100年，时刻可用HH:MM:SS、HHMM、HHMMSS或十二时辰。",
+    "默认示例用 YYYYMMDD HHMM，月日时分均补齐两位，不用横杠和冒号。",
+    "支持1900—2100年；兼容YYYY-MM-DD、HH:MM、HH:MM:SS、HHMMSS和十二时辰。",
     "连写支持YYYYMMDDHHMM／YYYYMMDDHHMMSS；省空格格式有误时静默忽略。",
     "大限=、大运=与运限=同义；运限不与流年、流盘、流时混用。",
-    "日期流盘：出生资料后加 流盘=2026-10-06 流时=10:00。",
+    "日期流盘：出生资料后加 流盘=20261006 流时=1000。",
     "规则选项：闰月=current|next|split，子时=next_day|midnight。",
     "默认闰月十五／十六分界、晚子时换日。命盘按本人平台实例、群、用户归档。",
 )

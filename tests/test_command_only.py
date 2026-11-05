@@ -54,7 +54,7 @@ def test_help_is_available_without_authorization_and_suppresses_model(text, priv
         assert replies == [HELP]
     else:
         with Image.open(io.BytesIO(replies[0][0].data)) as image:
-            assert image.width == 1080 and image.height > 1000
+            assert image.width == 1080 and image.height > 800
             image.verify()
     assert event.call_llm is True and event.stopped
     assert plugin.db == {} and not plugin.chart_cache.entries
