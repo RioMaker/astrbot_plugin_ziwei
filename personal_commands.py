@@ -6,6 +6,18 @@ import shlex
 from .commands import parse_request
 from .themes import normalize_theme
 
+_PERSONAL_COMMAND = re.compile(
+    r"\A(?P<action>我的命盘|绑定|换绑|解绑|流年|大运)(?P<tail>[\s\S]*)\Z"
+)
+_JOINED_PERSONAL_ARGUMENT = re.compile(
+    r"\A(?:[0-9]|"
+    r"(?:公历|阳历|农历|阴历|solar|lunar)(?=[0-9]|\s)|"
+    r"(?:命盘|页|主题|输出)=|"
+    r"(?:文字|图片|text|image)(?=\Z|\s|(?:主题|输出)=)|"
+    r"(?:帮助(?:\s*文字)?|help(?:\s*text)?|[?？])\Z)",
+    re.IGNORECASE,
+)
+
 PERSONAL_HELP = """绑定一次，以后直接看自己的盘。
 /紫微 绑定 199006150830 男（虚构示例，请换成自己的资料）
 /紫微 绑定、/紫微 换绑 均须重新填写出生资料，不支持选择已有命盘。
@@ -14,26 +26,20 @@ PERSONAL_HELP = """绑定一次，以后直接看自己的盘。
 /紫微 大运 2：用已绑定资料排第2个大运，0为童限
 /紫微 换绑 199207201430 女：明确替换绑定（虚构示例）
 /紫微 解绑：解除绑定，保留历史记录
-支持紫薇等原别名、省空格写法，以及 主题=白天／主题=夜间、文字。
+可连写：/紫薇绑定199006150830男、/紫薇流年2026文字。
+支持紫薇等原别名，以及 主题=白天／主题=夜间、文字。
 同一机器人内各已开启的群通用；私聊和未开启群不可用。
 普通排盘不会改变绑定；每次排盘、绑定和换绑都保留独立历史，后台可查看。"""
 
 
 def split_personal_command(text):
-    for action in ("我的命盘", "绑定", "换绑", "解绑", "流年", "大运"):
-        if not text.startswith(action):
-            continue
-        tail = text[len(action) :]
-        if (
-            not tail
-            or tail[0].isspace()
-            or re.match(
-                r"(?:[0-9]|公历|阳历|农历|阴历|solar|lunar|命盘=|主题=|输出=|页=|文字$|图片$|帮助(?:文字)?$|help(?:text)?$)",
-                tail,
-                re.IGNORECASE,
-            )
-        ):
-            return action, tail.strip()
+    match = _PERSONAL_COMMAND.fullmatch(text)
+    if match is None:
+        return None
+    tail = match["tail"]
+    # A missing space needs a known argument boundary, never just a word prefix.
+    if not tail or tail[0].isspace() or _JOINED_PERSONAL_ARGUMENT.match(tail):
+        return match["action"], tail.strip()
     return None
 
 

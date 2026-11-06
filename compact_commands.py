@@ -8,6 +8,7 @@ from .personal_commands import split_personal_command
 
 _NATAL_COMMANDS = ("紫微排盘", "紫薇排盘", "紫微", "紫薇", "ziwei")
 _COMMANDS = (*_NATAL_COMMANDS, "人生", "我的命盘")
+_COMMAND_PREFIX = re.compile(r"\A(?P<command>" + "|".join(_COMMANDS) + r")")
 _MANAGEMENT = {"开启", "开", "关闭", "关", "状态"}
 _HELP = {"帮助", "help", "?", "？"}
 _CALENDARS = r"(?:公历|阳历|农历|阴历|solar|lunar)"
@@ -24,6 +25,12 @@ _JOINED_DATE_CLOCK = re.compile(
 _BIRTH_AND_SEX = re.compile(
     rf"^(?:{_CALENDARS}\s+)?"
     r"[0-9][0-9:/\-\s闰子丑寅卯辰巳午未申酉戌亥时]*(?P<sex>[男女])"
+)
+_DISPLAY = r"(?:图片|文字|image|text)"
+_NUMBER_AND_DISPLAY = re.compile(rf"\A[0-9]+(?P<display>{_DISPLAY})(?=\Z|\s)")
+_OPTION_AND_DISPLAY = re.compile(
+    rf"(?:\A|\s)(?:主题=(?:白天|夜间|day|night)|输出={_DISPLAY})"
+    rf"(?P<display>{_DISPLAY})(?=\Z|\s)"
 )
 
 
@@ -82,7 +89,7 @@ def _split_at(text: str, positions: set[int]) -> str:
 
 
 def normalize_compact_arguments(text: str) -> NormalizedArguments:
-    """Add spaces only at explicit calendar, sex and option boundaries.
+    """Add spaces only at explicit calendar, sex, option and display boundaries.
 
     Invalid dates and unknown suffixes remain present for the strict command
     parser to reject. Trimming outer whitespace alone is not compact syntax.
@@ -117,6 +124,15 @@ def normalize_compact_arguments(text: str) -> NormalizedArguments:
         if re.match(r"(?:图片|文字|image|text)(?=$|\s)", suffix):
             positions.add(birth.end())
         normalized = _split_at(normalized, positions)
+    # Bound-chart years/decade numbers and known option values may be followed
+    # directly by a display selector. Keep unknown suffixes and quoted data intact.
+    masked = _unquoted(normalized)
+    positions = {
+        match.start("display")
+        for pattern in (_NUMBER_AND_DISPLAY, _OPTION_AND_DISPLAY)
+        for match in pattern.finditer(masked)
+    }
+    normalized = _split_at(normalized, positions)
     return NormalizedArguments(normalized, normalized != original)
 
 
@@ -150,9 +166,10 @@ def parse_compact_command(text: str) -> CompactCommand | None:
     can use the corresponding help text.
     """
     value = text.strip().removeprefix("/")
-    command = next((name for name in _COMMANDS if value.startswith(name)), None)
-    if command is None:
+    match = _COMMAND_PREFIX.match(value)
+    if match is None:
         return None
+    command = match["command"]
     remainder = value[len(command) :]
     compact = bool(remainder and not remainder[0].isspace())
     if compact and not (

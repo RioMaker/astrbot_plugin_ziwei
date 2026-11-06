@@ -45,6 +45,8 @@ from astrbot_plugin_ziwei.life_atlas_commands import parse_life_atlas_request
         ),
         ("199006150830男文字", "199006150830 男 文字"),
         ("199006150830女图片主题=夜间", "199006150830 女 图片 主题=夜间"),
+        ("199006150830男主题=白天文字", "199006150830 男 主题=白天 文字"),
+        ("199006150830男主题=nightimage", "199006150830 男 主题=night image"),
         (
             "199006150830男流盘=2026-10-06流时=10:00",
             "199006150830 男 流盘=2026-10-06 流时=10:00",
@@ -68,6 +70,26 @@ def test_archive_id_and_theme_have_explicit_boundaries_without_birth_inference()
 
 
 @pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("2026文字", "2026 文字"),
+        ("2图片主题=夜间", "2 图片 主题=夜间"),
+        ("0text主题=day", "0 text 主题=day"),
+        ("2026主题=白天文字", "2026 主题=白天 文字"),
+        ("主题=白天文字", "主题=白天 文字"),
+        ("文字主题=夜间", "文字 主题=夜间"),
+        ("image主题=day", "image 主题=day"),
+        ("输出=图片文字", "输出=图片 文字"),
+    ],
+)
+def test_display_boundaries_are_explicit_and_normalization_is_idempotent(
+    text, expected
+):
+    assert normalize_compact_arguments(text) == NormalizedArguments(expected, True)
+    assert normalize_compact_arguments(expected) == NormalizedArguments(expected)
+
+
+@pytest.mark.parametrize(
     "text",
     [
         "199006150830 男",
@@ -83,6 +105,14 @@ def test_archive_id_and_theme_have_explicit_boundaries_without_birth_inference()
         "1990喜欢男",
         "1990-06-15 无关男",
         "子男",
+        "2026文字说明",
+        "2图片故事",
+        "主题=白天文字说明",
+        "主题=白天textbook",
+        "主题=白天文字图片",
+        '主题="白天文字"',
+        "主题='白天文字'",
+        '主题="白天"文字',
     ],
 )
 def test_unknown_or_quoted_text_is_preserved_and_not_guessed(text):
@@ -234,6 +264,13 @@ def test_joined_atlas_subcommand_requires_a_determined_argument_boundary(tail, a
         "紫微星",
         "紫微开启新篇",
         "紫微农历新年",
+        "紫微绑定农历新年",
+        "紫薇换绑公历生日",
+        "ziwei绑定lunaryear",
+        "我的命盘文字说明",
+        "我的命盘textbook",
+        "紫微绑定helpful",
+        "紫微换绑帮助文字说明",
         "紫微排盘很好看",
         "紫微图谱很好看",
         "/紫微图谱bad",

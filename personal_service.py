@@ -129,7 +129,9 @@ class PersonalService:
                     chart = state["chart"]
                     options = tail
                     if action in {"流年", "大运"}:
-                        number, _, options = tail.partition(" ")
+                        parts = tail.split(maxsplit=1)
+                        number = parts[0] if parts else ""
+                        options = parts[1] if len(parts) > 1 else ""
                         if not re.fullmatch(
                             r"[0-9]{4}" if action == "流年" else r"(?:[0-9]|1[0-2])",
                             number,

@@ -350,8 +350,13 @@ def test_atlas_uses_binding_before_cache_but_explicit_archive_wins(plugin):
         "ziwei绑定199006150830男",
         "紫微我的命盘",
         "我的命盘主题=白天",
+        "我的命盘文字主题=白天",
+        "我的命盘主题=白天文字",
+        "我的命盘text主题=night",
         "紫微流年2026",
+        "紫微流年2026文字",
         "紫薇大运2",
+        "紫薇大运2图片主题=夜间",
         "紫微解绑",
     ],
 )
@@ -411,7 +416,15 @@ def test_empty_or_ambiguous_record_selection_does_not_bind(plugin, selection):
 
 
 @pytest.mark.parametrize(
-    "command", ["紫薇绑定帮助文字", "紫微绑定HELPtext", "我的命盘帮助"]
+    "command",
+    [
+        "紫薇绑定帮助文字",
+        "紫微绑定HELPtext",
+        "我的命盘帮助",
+        "紫薇绑定help text",
+        "紫微换绑帮助 文字",
+        "我的命盘?",
+    ],
 )
 def test_compact_personal_help_without_group_authorization(plugin, command):
     async def run():
@@ -419,6 +432,146 @@ def test_compact_personal_help_without_group_authorization(plugin, command):
         replies = [reply async for reply in plugin.compact_command(event)]
         assert len(replies) == 1 and "/我的命盘" in replies[0]
         assert plugin.db == {}
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("alias", ["紫微", "紫薇", "紫微排盘", "紫薇排盘", "ziwei"])
+def test_joined_binding_lifecycle_preserves_single_operation_history(plugin, alias):
+    async def dispatch(command, message_id):
+        event = Event(text=command)
+        event.message_obj.message_id = message_id
+        assert CompactCommandFilter().filter(event, {})
+        replies = [reply async for reply in plugin.compact_command(event)]
+        assert event.message_str == command and event.stopped
+        return replies
+
+    async def run():
+        await allow(plugin)
+        command = alias + "绑定199006150830男主题=夜间"
+        assert "已绑定" in (await dispatch(command, "joined-bind"))[0]
+        assert "已处理" in (await dispatch(command, "joined-bind"))[0]
+        assert (
+            "已更换"
+            in (
+                await dispatch(
+                    alias + "换绑199207201430女经度=116.4主题=白天", "joined-replace"
+                )
+            )[0]
+        )
+        state = bound(plugin)
+        assert state["chart"]["sex"] == "女"
+        assert (
+            "1992-07-20" in (await dispatch("我的命盘主题=白天文字", "joined-view"))[0]
+        )
+        assert bound(plugin) == state
+        assert "已解除" in (await dispatch(alias + "解绑", "joined-unbind"))[0]
+        assert not bound(plugin)
+        history = plugin.archive.bindings.history.list("qq-one", "10001")
+        assert [row["action"] for row in history["items"]] == [
+            "unbind",
+            "replace",
+            "bind",
+        ]
+        assert plugin.archive.records.list(user="10001")["total"] == 2
+        assert plugin.pending == 0
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "command,action,number,theme",
+    [
+        ("紫微流年2026文字", "流年", 2026, "night"),
+        ("紫微流年2026\t文字", "流年", 2026, "night"),
+        ("紫薇流年2026主题=白天文字", "流年", 2026, "day"),
+        ("紫微大运0text", "大运", 0, "night"),
+        ("紫薇大运2图片主题=夜间", "大运", 2, "night"),
+        ("我的命盘文字主题=白天", "我的命盘", 0, "day"),
+        ("我的命盘image主题=day", "我的命盘", 0, "day"),
+    ],
+)
+def test_joined_personal_display_options_use_original_snapshot(
+    plugin, command, action, number, theme
+):
+    async def run():
+        await allow(plugin)
+        await invoke_command(plugin, "绑定 " + DEMO_BIRTH)
+        original = bound(plugin)
+        calls = []
+        plugin.renderer = SimpleNamespace(
+            render=lambda chart, theme: calls.append((chart, theme)) or b"demo-png"
+        )
+        event = Event(text=command)
+        answers = [reply async for reply in plugin.compact_command(event)]
+        expected = (
+            apply_flow(original["chart"], year=number)
+            if action == "流年"
+            else apply_decade(original["chart"], number)
+            if action == "大运"
+            else original["chart"]
+        )
+        if "图片" in command or "image" in command:
+            assert answers[0][0].data == b"demo-png"
+            assert calls == [(expected, theme)]
+        else:
+            assert "1990-06-15" in answers[0] and not calls
+        if action != "我的命盘":
+            assert plugin.chart_cache.get(capture_group(event)).chart == expected
+        assert plugin.archive.records.list()["total"] == (
+            1 if action == "我的命盘" else 2
+        )
+        assert bound(plugin) == original
+        assert plugin.archive.bindings.history.list("qq-one", "10001")["total"] == 1
+        assert event.stopped and event.message_str == command
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "紫薇流年1899文字",
+        "紫薇大运13图片",
+        "我的命盘输出=图片文字",
+        "我的命盘主题=白天文字说明",
+        "紫薇换绑命盘=0123456789abcdef",
+        "紫薇换绑199002300830男",
+        "紫薇解绑主题=白天",
+    ],
+)
+def test_joined_invalid_options_never_mutate_binding_or_add_history(plugin, command):
+    async def run():
+        await allow(plugin)
+        await invoke_command(plugin, "绑定 " + DEMO_BIRTH)
+        original = bound(plugin)
+        event = Event(text=command)
+        assert CompactCommandFilter().filter(event, {})
+        assert [reply async for reply in plugin.compact_command(event)] == []
+        assert bound(plugin) == original
+        assert plugin.archive.records.list()["total"] == 1
+        assert plugin.archive.bindings.history.list("qq-one", "10001")["total"] == 1
+        assert plugin.pending == 0 and event.stopped
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("group", ["", "20099"])
+@pytest.mark.parametrize("command", ["我的命盘文字主题=白天", "紫微流年2026文字"])
+def test_joined_personal_options_cannot_read_an_unauthorized_group(
+    plugin, monkeypatch, group, command
+):
+    def forbidden(*args, **kwargs):
+        pytest.fail("authorization must precede binding reads and calculation")
+
+    monkeypatch.setattr(plugin.archive.bindings, "state", forbidden)
+    monkeypatch.setattr(plugin, "_compute_chart", forbidden)
+
+    async def run():
+        event = Event(group=group, text=command, admin=True)
+        assert [reply async for reply in plugin.compact_command(event)] == []
+        assert event.stopped
+        assert plugin.archive.records.list()["total"] == 0
 
     asyncio.run(run())
 
