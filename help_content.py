@@ -20,6 +20,16 @@ HELP_OPTIONS = (
 HELP_OPTIONS_NOTE = "完整示例，照着填写；出生资料换成要排盘的资料。"
 HELP_BIND_COMMAND = f"/紫微 绑定 {DEMO_BIRTH}"
 HELP_BIND_NOTE = "同一机器人内各已开启的群通用；普通排盘不会改绑定。"
+HELP_PERSONAL_ACTIONS = (
+    ("首次绑定", HELP_BIND_COMMAND),
+    ("选已有盘", "/紫微 绑定"),
+    ("查看本命", "/我的命盘"),
+    ("查看流年", "/紫微 流年 2026"),
+    ("查看大运", "/紫微 大运 2"),
+    ("更换绑定", "/紫微 换绑 199207201430 女"),
+    ("解除绑定", "/紫微 解绑"),
+)
+HELP_ENTRY_COMMAND = "/紫薇"
 HELP_COMMANDS = ("/紫薇 help", "/紫薇 帮助")
 HELP_COMPACT_COMMANDS = ("/紫薇help", "/紫薇帮助")
 HELP_MORE_COMMAND = "/紫薇帮助文字"
@@ -81,6 +91,7 @@ HELP_SECTIONS = (
     (
         "更多指令",
         (
+            (HELP_ENTRY_COMMAND, "直接查看帮助图片。"),
             (
                 "/紫微 图谱 <出生日期时间> <性别>",
                 "也可用 /人生；返回已有规则计算的人生图谱，无 AI 解读。",
