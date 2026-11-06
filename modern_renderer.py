@@ -615,7 +615,7 @@ def _draw_center(painter, chart, x, y, width, height):
         painter.text(label, x + 28, y + 165 + index * 32, 20, painter.palette.muted)
         painter.text(value, x + 135, y + 162 + index * 32, 26, width=width - 163)
     _draw_compact_pillars(painter, n["pillars"], x + 28, y + 292)
-    profile_rules = RuleProfile(**profile)
+    profile_rules = RuleProfile.from_snapshot(profile)
     flow = chart["flow"]
     flow_layers = flow["layers"] if flow else {}
     rows = [
@@ -681,7 +681,8 @@ def _draw_center(painter, chart, x, y, width, height):
         f"闰月 {leap}  ·  {boundary}", x + 28, row_end + 26, 16, painter.palette.muted
     )
     painter.text(
-        f"大限：虚岁起限 · {'顺行' if chart['direction'] == 1 else '逆行'}",
+        f"{profile_rules.source_label} · 大限虚岁"
+        f"{'顺行' if chart['direction'] == 1 else '逆行'}",
         x + 28,
         row_end + 53,
         16,

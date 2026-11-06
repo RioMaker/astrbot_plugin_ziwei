@@ -218,6 +218,32 @@ def test_page_uses_same_chart_modes_as_commands(page, args, kind):
     assert plugin.archive.records.list()["total"] == 1
 
 
+def test_rule_school_save_affects_new_charts_and_preserves_archived_course_chart(page):
+    plugin, _, config, call = page
+
+    async def run():
+        first = await call("charts", web_payload(key="course-chart-0001"))
+        assert first["status"] == 200
+        original_id = first["data"]["id"]
+        original = plugin.archive.records.get(original_id)["chart"]
+        assert original["profile"]["rule_school"] == "xunlongzhe"
+        settings = (await call("settings"))["data"]
+        settings["values"]["rule_school"] = "wm259"
+        saved = await call(
+            "settings/save",
+            {"values": settings["values"], "revision": settings["revision"]},
+        )
+        assert saved["status"] == 200
+        assert json.loads(config.path.read_text("utf-8"))["rule_school"] == "wm259"
+        second = await call("charts", web_payload(key="legacy-chart-0001"))
+        assert second["status"] == 200 and "原版安星" in second["data"]["text"]
+        reread = await call("records/<record_id>", record_id=original_id)
+        assert reread["status"] == 200 and "寻龙者课件" in reread["data"]["text"]
+        assert plugin.archive.records.get(original_id)["chart"] == original
+
+    asyncio.run(run())
+
+
 def test_command_records_real_scope_names_theme_and_failed_commands_do_not_record(page):
     plugin, _, _, _ = page
     event = Event(group="20001", user="10001", platform="qq-demo")

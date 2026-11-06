@@ -9,7 +9,6 @@ from .rules import (
     BUREAUS,
     HUA,
     PALACES,
-    RULES_VERSION,
     STAR_NAMES,
     STEMS,
     TABLES,
@@ -39,6 +38,7 @@ def build_chart(birth: BirthInput, profile: RuleProfile | None = None) -> dict:
 
 
 def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
+    course = profile.rule_school == "xunlongzhe"
     m, d, h = normalized["month"], normalized["day"], normalized["hour_branch"]
     yg, yz = normalized["year_stem"], normalized["year_branch"]
     if sex not in {"男", "女"} or not (
@@ -118,7 +118,9 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
     lu = add(21, TABLES["_AX_LC_ARR"][yg])
     add(22, TABLES["_AX_TM_ARR"][yz if profile.tianma == "year" else wrap(m + 2)])
     for sid, b in zip((23, 24), TABLES["_AX_HL_ARR"][yz], strict=True):
-        add(sid, b + h - 1)
+        # Lesson 10 p4 gives the year-branch positions directly; unlike the
+        # legacy formulas it does not advance them by the birth hour.
+        add(sid, b if course else b + h - 1)
     for sid, b in ((25, lu + 1), (26, lu - 1), (27, 13 - h), (28, h - 1)):
         add(sid, b)
 
@@ -144,11 +146,15 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             65: life + 5,
             64: life - 5,
             45: yz + 9,
-            46: yz + 5,
+            46: yz if course else yz + 5,
             81: yz + 7,
             79: 12 - yz,
             62: yz + 6 + (1 if yz % 2 else -1),
         }
+        if course:
+            # Lesson 11 pp4-5 calls the year-based star 解神. Do not also
+            # create the legacy month-based 解神 and an identical 年解.
+            positions[56] = positions.pop(79)
         if profile.swap_injury and direction == -1:
             positions[65], positions[64] = positions[64], positions[65]
         for sid, b in sorted(positions.items()):
@@ -164,6 +170,8 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             82: ("XC", yz),
             55: ("HG", yz),
         }
+        if course:
+            del lookups[56]
         for sid, (table, index) in lookups.items():
             add(sid, TABLES[f"_AX_{table}_ARR"][index])
         add(80, TABLES["_AX_HG_ARR"][yz] + 1)
@@ -171,13 +179,19 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             for sid, b in zip(pair, TABLES[f"_AX_{table}_ARR"][index], strict=True):
                 add(sid, b)
         if profile.void_rule == 2:
-            for i, b in enumerate(TABLES["_AX_JK_ARR2"][yg]):
+            # Course pp6-7 order 截路/空亡 and 旬路/旬亡 without a
+            # yin/yang swap. Legacy mode retains its Zhongzhou convention.
+            jie_pair = TABLES["_AX_JK_ARR2"][yg]
+            if course:
+                first_jie = 9 - 2 * ((yg - 1) % 5)
+                jie_pair = (first_jie, first_jie + 1)
+            for i, b in enumerate(jie_pair):
                 add(77, b, secondary=i == 1)
-            # The empty pair after the current ten-day cycle. Odd stems use
-            # the first branch as primary; even stems use the second.
+            # The empty pair after the current ten-day cycle. Only the legacy
+            # convention makes the second branch primary for an even stem.
             first = wrap(yz - yg - 1)
             pair = (first, wrap(first + 1))
-            if yg % 2 == 0:
+            if not course and yg % 2 == 0:
                 pair = pair[::-1]
             for i, b in enumerate(pair):
                 add(78, b, secondary=i == 1)
@@ -199,9 +213,15 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             ("岁前", "_AX_LNSQX_ARR", "_LNSQX_CHS"),
             ("将前", "_AX_LNJQX_ARR", "_LNJQX_CHS"),
         ):
-            palaces[TABLES[table][ordinal][yz] - 1]["sequences"][label] = TABLES[names][
-                ordinal
-            ]
+            name = TABLES[names][ordinal]
+            if course:
+                # Lesson 11 p10 / lesson 48 p1 use 大耗 in the seventh slot.
+                # The 将前 order follows the mutually agreeing mnemonics and
+                # lesson 46's numbered explanations, not its conflicting list.
+                name = name.replace("將", "将")
+                if label == "岁前" and ordinal == 7:
+                    name = "大耗"
+            palaces[TABLES[table][ordinal][yz] - 1]["sequences"][label] = name
     decades = [
         {"index": 0, "branch": wrap(life - 2), "age_start": 1, "age_end": bureau - 1}
     ]
@@ -221,7 +241,7 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             for i, sid in enumerate(profile.four_hua(decade["stem"]), 1)
         ]
     return {
-        "rules_version": RULES_VERSION,
+        "rules_version": profile.rules_version,
         "profile": profile.snapshot(),
         "normalized": deepcopy(normalized),
         "sex": sex,
@@ -282,7 +302,7 @@ def apply_decade(natal: dict, index: int) -> dict:
     if type(index) is not int or not 0 <= index <= 12:
         raise ValueError("运限须为 0—12 的整数，0 为童限，1—12 为第几个大限")
     chart = _fresh_flow_chart(natal)
-    profile = RuleProfile(**chart["profile"])
+    profile = RuleProfile.from_snapshot(chart["profile"])
     decade = next(item for item in chart["decades"] if item["index"] == index)
     birth_year = chart["normalized"]["astrology_lunar"]["year"]
     chart["flow"] = {
@@ -305,7 +325,7 @@ def apply_flow(
 ) -> dict:
     """Return a fresh chart; rebuilding clears all previously selected flow layers."""
     chart = _fresh_flow_chart(natal)
-    profile = RuleProfile(**chart["profile"])
+    profile = RuleProfile.from_snapshot(chart["profile"])
     if target is not None:
         if not 1900 <= target.year <= 2100:
             raise ValueError("流盘日期支持 1900—2100")

@@ -86,10 +86,15 @@ def test_theme_text_contrast_on_the_actual_surfaces(theme):
         assert contrast(p.element_color(character), p.paper) >= 4.5
 
 
-def test_parallel_day_night_rendering_cannot_mix_colors_or_mutate_chart(font_path):
+@pytest.mark.parametrize(
+    "school,dense_size", [("wm259", (1984, 2360)), ("xunlongzhe", (2064, 2440))]
+)
+def test_parallel_day_night_rendering_cannot_mix_colors_or_mutate_chart(
+    font_path, school, dense_size
+):
     chart = build_chart(parse_request(DEMO_BIRTH).birth)
     before = deepcopy(chart)
-    request = parse_request("农历 199310252000 男 真太阳时=关")
+    request = parse_request("农历 199310252000 男 真太阳时=关", {"rule_school": school})
     dense = apply_flow(build_chart(request.birth, request.profile), year=2026)
     dense_before = deepcopy(dense)
     renderer = Renderer(font_path)
@@ -108,7 +113,7 @@ def test_parallel_day_night_rendering_cannot_mix_colors_or_mutate_chart(font_pat
                 int(palette.bg[i : i + 2], 16) for i in (1, 3, 5)
             )
     with Image.open(io.BytesIO(dense_png)) as im:
-        assert im.size == (1984, 2360)
+        assert im.size == dense_size
     assert renderer.render(chart, "day") == baseline
     assert chart == before and dense == dense_before and renderer.theme == "night"
 

@@ -56,7 +56,7 @@ def build_facts(chart, scope, topic):
     if topic not in TOPICS:
         raise ValueError("未知分析主题")
     chart = reading_chart(chart, scope)
-    profile = RuleProfile(**chart["profile"])
+    profile = RuleProfile.from_snapshot(chart["profile"])
     layer = {"natal": None, "decade": "大限", "annual": "流年"}[scope]
     life = chart["flow"]["layers"][layer]["life"] if layer else chart["life"]
     layers = {"本命": chart["life"]}

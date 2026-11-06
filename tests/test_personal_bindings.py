@@ -43,7 +43,9 @@ def test_cross_group_fixed_binding_and_shortcut_preserve_snapshot(plugin):
         original = bound(plugin)["chart"]
         # Someone else's birth in an ordinary request never silently rebinds.
         await invoke_command(plugin, "199207201430 女", first)
-        plugin.config.update(longitude=101, late_zi_rule="midnight", tianma="month")
+        plugin.config.update(
+            longitude=101, late_zi_rule="midnight", tianma="month", rule_school="wm259"
+        )
         captured = []
         plugin.renderer = SimpleNamespace(
             render=lambda chart, theme: captured.append(chart) or b"same-png"

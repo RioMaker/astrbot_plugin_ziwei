@@ -22,7 +22,8 @@ PALACES = (
 )
 HUA = ("", "禄", "权", "科", "忌")
 BUREAUS = {2: "水二局", 3: "木三局", 4: "金四局", 5: "土五局", 6: "火六局"}
-RULES_VERSION = "ziwei-1.0-wm259-formulas-lunar148"
+LEGACY_RULES_VERSION = "ziwei-1.0-wm259-formulas-lunar148"
+RULES_VERSION = "ziwei-2.4-xunlongzhe-20261106-v1-lunar148"
 _DATA = Path(__file__).resolve().parent / "data"
 TABLES = json.loads((_DATA / "rules.json").read_text(encoding="utf-8"))
 STAR_NAMES = {
@@ -56,9 +57,11 @@ class RuleProfile:
     xin: int = 1
     ren: int = 1
     gui: int = 1
+    rule_school: str = "xunlongzhe"
 
     def __post_init__(self):
         choices = {
+            "rule_school": {"xunlongzhe", "wm259"},
             "leap_month_rule": {"current", "next", "split"},
             "late_zi_rule": {"next_day", "midnight"},
             "brightness": {"qs", "zz", "xd1", "xd2"},
@@ -88,6 +91,41 @@ class RuleProfile:
     def from_config(cls, config):
         keys = {field.name for field in fields(cls)}
         return cls(**{key: value for key, value in config.items() if key in keys})
+
+    @classmethod
+    def from_snapshot(cls, snapshot):
+        """Pre-course archives must keep their original calculation convention."""
+        return cls(**{"rule_school": "wm259", **snapshot})
+
+    @property
+    def rules_version(self):
+        return (
+            RULES_VERSION if self.rule_school == "xunlongzhe" else LEGACY_RULES_VERSION
+        )
+
+    @property
+    def source_label(self):
+        if self.rule_school == "wm259":
+            return "原版安星"
+        # These are the choices explicitly covered by the course. Calendar,
+        # brightness and flow settings have separate, documented provenance.
+        covered = {
+            "kuiyue": 1,
+            "void_rule": 2,
+            "tianma": "year",
+            "sky_hour": False,
+            "swap_injury": False,
+            "growth_forward": False,
+            "earth_growth": "water",
+            "jia": 1,
+            "wu": 1,
+            "geng": 1,
+            "xin": 1,
+            "ren": 1,
+            "gui": 1,
+        }
+        custom = any(getattr(self, key) != value for key, value in covered.items())
+        return "寻龙者课件" + ("（自定义）" if custom else "（校勘）")
 
     def snapshot(self):
         return asdict(self)

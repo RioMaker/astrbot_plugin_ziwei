@@ -13,22 +13,24 @@ from astrbot_plugin_ziwei.renderer import Renderer, find_font
 
 
 @pytest.mark.parametrize("theme", ["day", "night"])
+@pytest.mark.parametrize("school", ["wm259", "xunlongzhe"])
 @pytest.mark.parametrize(
-    "birth,year,expected_side",
+    "birth,year,legacy_side,course_side",
     [
-        (DEMO_BIRTH, 2020, 400),  # The same star has three Hua source badges.
-        ("农历 1993-10-25 20:00 男 真太阳时=关", 2026, 480),  # Fifteen stars.
-        ("1988-08-08 08:08 女 经度=-74 时区=-5", 2026, 520),  # Twelve columns.
+        (DEMO_BIRTH, 2020, 400, 400),  # Three Hua source badges at the same star.
+        ("农历 1993-10-25 20:00 男 真太阳时=关", 2026, 480, 500),
+        ("1988-08-08 08:08 女 经度=-74 时区=-5", 2026, 520, 480),
     ],
 )
 def test_large_star_columns_keep_every_glyph_aligned_and_clear(
-    monkeypatch, theme, birth, year, expected_side
+    monkeypatch, theme, school, birth, year, legacy_side, course_side
 ):
     try:
         font_path = find_font()
     except ValueError:
         pytest.skip("需要中文字体进行图片验收")
-    request = parse_request(birth)
+    request = parse_request(birth, {"rule_school": school})
+    expected_side = legacy_side if school == "wm259" else course_side
     chart = apply_flow(build_chart(request.birth, request.profile), year=year)
     before = deepcopy(chart)
     records, palaces = [], {}

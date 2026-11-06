@@ -131,10 +131,11 @@ def test_selected_and_natal_palace_titles_stay_readable(monkeypatch, theme, font
 
 @pytest.mark.parametrize("theme", ["day", "night"])
 @pytest.mark.parametrize("mode", ["natal", "toddler", "decade", "annual", "date"])
+@pytest.mark.parametrize("school,max_side", [("wm259", 480), ("xunlongzhe", 500)])
 def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
-    monkeypatch, mode, theme, font_path
+    monkeypatch, mode, theme, font_path, school, max_side
 ):
-    r = parse_request("农历 1993-10-25 20:00 男 真太阳时=关")
+    r = parse_request("农历 1993-10-25 20:00 男 真太阳时=关", {"rule_school": school})
     chart = build_chart(r.birth, r.profile)
     if mode == "toddler":
         chart = apply_decade(chart, 0)
@@ -167,7 +168,7 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
     sizes = {(width, height) for _, _, width, height in palaces}
     assert len(sizes) == 1
     side, height = sizes.pop()
-    assert 400 <= side == height <= 480
+    assert 400 <= side == height <= max_side
     xs = sorted({x for x, _, _, _ in palaces})
     ys = sorted({y for _, y, _, _ in palaces})
     assert xs == [32 + col * side for col in range(4)]
@@ -182,5 +183,7 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
     assert centers == [(xs[1], ys[1], 2 * side, 2 * side)]
     with Image.open(io.BytesIO(png)) as image:
         image.load()
-        assert image.width == 64 + 4 * side and image.height < 2500
+        assert image.width == 64 + 4 * side
+        # The footer budget is unchanged; a wider square grows all four rows.
+        assert image.height < 4 * max_side + 580
     assert len(png) < 2_000_000 and chart == before

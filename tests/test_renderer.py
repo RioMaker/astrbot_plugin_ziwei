@@ -67,9 +67,12 @@ def test_no_minor_stars_image():
     assert Renderer(font).render(c).startswith(b"\x89PNG")
 
 
-def test_star_groups_and_transformation_marks_do_not_mutate_calculation():
-    r = parse_request("1990-06-15 08:30 男")
-    chart = apply_flow(build_chart(r.birth), year=2026)
+@pytest.mark.parametrize("school,star_count", [("wm259", 70), ("xunlongzhe", 69)])
+def test_star_groups_and_transformation_marks_do_not_mutate_calculation(
+    school, star_count
+):
+    r = parse_request("1990-06-15 08:30 男", {"rule_school": school})
+    chart = apply_flow(build_chart(r.birth, r.profile), year=2026)
     before = deepcopy(chart)
     view = make_chart_view(chart)
     assert chart == before
@@ -79,7 +82,8 @@ def test_star_groups_and_transformation_marks_do_not_mutate_calculation():
         for group in item["groups"]
         for star in group["stars"]
     }
-    assert len(displayed) == len(chart["stars"]) == 70
+    # Course mode uses one year-based 解神, not both 解神 and 年解.
+    assert len(displayed) == len(chart["stars"]) == star_count
     for star, category in displayed.values():
         if star["id"] in {23, 24, 25, 26, 27, 28}:
             assert category == "malefic"

@@ -1,0 +1,253 @@
+{
+  "id": "xunlongzhe-local-20261106",
+  "title": "寻龙者-紫微斗数课件",
+  "locator": "各 PDF 的物理页码，从 1 开始",
+  "review_scope": "排盘规则；星情断语不转换为预测或 AI 功能",
+  "missing_lesson_numbers": [
+    15,
+    17,
+    42
+  ],
+  "files": [
+    {
+      "file": "1、紫微基础篇——（一）阴阳.pdf",
+      "sha256": "d525c148c191a97927c5750306cd3baff909f7d9ccf168eabcecd051df22ef2c",
+      "pages": 4
+    },
+    {
+      "file": "2、紫微基础篇——（二）三才.pdf",
+      "sha256": "4fa2f5f190512f84df43054ac140c688db12668c65464ef44293c34e34108a6c",
+      "pages": 1
+    },
+    {
+      "file": "3、紫微基础篇——（三）四相.pdf",
+      "sha256": "cfdbd53132633d7d72712bf9206e7d09afe996ca58df9c76e68b28e67e068a8f",
+      "pages": 2
+    },
+    {
+      "file": "4、紫微基础篇——（四）五行.pdf",
+      "sha256": "4efad92a0379acf8a97991fe3909c2e27e1099723dfd239117ecf2bc10f09068",
+      "pages": 4
+    },
+    {
+      "file": "5、紫微基础篇——（五）八卦.pdf",
+      "sha256": "7444d2c7ea8f806cb1703544ec81b9846c517b97dc90c2c2e2046a5dfc880d42",
+      "pages": 5
+    },
+    {
+      "file": "6、紫微基础篇——（六）十天干、十二地支.pdf",
+      "sha256": "967a4bed2c45738ce87ffaea045c7a0a7701ae1a1d38ba19ffe0270cda8b24c2",
+      "pages": 4
+    },
+    {
+      "file": "7、紫微基础篇——宫位基础 (1).pdf",
+      "sha256": "73a2621de682021604c4f918ef299f4c9e14b511b8592c9573d8fb31f96eb481",
+      "pages": 4
+    },
+    {
+      "file": "7、紫微基础篇——宫位基础.pdf",
+      "sha256": "73a2621de682021604c4f918ef299f4c9e14b511b8592c9573d8fb31f96eb481",
+      "pages": 4
+    },
+    {
+      "file": "8、紫微基础篇——安宫法.pdf",
+      "sha256": "5010dfbfbe9bf65822b4e4f7c478e42ebb7d521affb64b23df789d08034ab5fb",
+      "pages": 3
+    },
+    {
+      "file": "9、紫微基础篇——定星诀(一）.pdf",
+      "sha256": "d15f0a5746e62f01d3a3d282577221b2aa9dee9e7753ed4ee3f66da842832956",
+      "pages": 7
+    },
+    {
+      "file": "10、紫微基础篇——定星诀(二） (1).pdf",
+      "sha256": "0cb0dd1c4e4320e5f3f8f5e0a9478d1de59bc773e2b80ac54ae59e36b12dd775",
+      "pages": 5
+    },
+    {
+      "file": "10、紫微基础篇——定星诀(二）.pdf",
+      "sha256": "ccebd1dd2a6e323e69957ce706afa7debcfbb96371a4ede43f054ac2c9e36cf7",
+      "pages": 5
+    },
+    {
+      "file": "11、紫微基础篇——定星诀(三）.pdf",
+      "sha256": "5cdaf0aaf96198a9685eb0a8fe72c22fc23e2bb5ae0c59bbd9073d675ce696ee",
+      "pages": 10
+    },
+    {
+      "file": "12、紫微星情篇——星情总览.pdf",
+      "sha256": "45a54fafb03e82c4eaa8ef413a3a42703fa85cd1676e68c0e3b058855b7c62f7",
+      "pages": 5
+    },
+    {
+      "file": "13、紫微星情篇——紫微星.pdf",
+      "sha256": "c4e5363df5940f5bb23ea0968d562c53ed1a5195a09e8e0fc6ab25ccbea159ec",
+      "pages": 21
+    },
+    {
+      "file": "14、紫微星情篇——武曲星.pdf",
+      "sha256": "cd053d7f85c5d6060105d8a129ba6a89b6df0926a80da7cb2e0ef16e600e0e8a",
+      "pages": 20
+    },
+    {
+      "file": "16、紫微星情篇——太阴星.pdf",
+      "sha256": "97a40b5396a5a877f52963b5b07142db63b53a31183611693aabbd561b58766e",
+      "pages": 17
+    },
+    {
+      "file": "18、紫微星情篇——巨门星.pdf",
+      "sha256": "4cb055c822a701e87f39e27d3a57aeb29cc1537314a00c1669f900d649e2e603",
+      "pages": 14
+    },
+    {
+      "file": "19、紫微星情篇——天相.pdf",
+      "sha256": "ff3e8e4c116fb38427c03951a09e8914e597c5e858122bc4b84a2a0871e72b5a",
+      "pages": 12
+    },
+    {
+      "file": "20、紫微星情篇——天机.pdf",
+      "sha256": "64d3827ef627bd128fd4a1060a6d212325a9476b53f9fb04b39375a876b34505",
+      "pages": 17
+    },
+    {
+      "file": "21、紫微星情篇——天梁.pdf",
+      "sha256": "0d0fa94ea482179a0b1af7678d6d3f2ceed15bdece350434d66b6a8b023db9c2",
+      "pages": 13
+    },
+    {
+      "file": "22、紫微星情篇——太阳.pdf",
+      "sha256": "eabaeb56dc85327314fff5d46e10a022848f39a1d8837876652d32ce19ec7d44",
+      "pages": 19
+    },
+    {
+      "file": "23、紫微星情篇——天同.pdf",
+      "sha256": "b6f23ec749e1c6b74ebf2a23c23d6cbb7775ee4a260f76691f55779904709a90",
+      "pages": 15
+    },
+    {
+      "file": "24、紫微星情篇——七杀.pdf",
+      "sha256": "38dd7915c19d230324e5defb52f508d5ca0259443f649483b0332d57abe8100f",
+      "pages": 15
+    },
+    {
+      "file": "25、紫微星情篇——天府.pdf",
+      "sha256": "2e7ce5575bdf0ff30d39217e9c59b6218f611bdc20813a6ec0207604bfed5f21",
+      "pages": 12
+    },
+    {
+      "file": "26、紫微星情篇——禄存.pdf",
+      "sha256": "3778d7b58dee6ca972c80ef532b073767583fc84b3dcefe4893650863dec3aad",
+      "pages": 10
+    },
+    {
+      "file": "27、紫微星情篇——破军.pdf",
+      "sha256": "0edfcd5dae38179ce4de3e35f7953916ccca86ab6b20316392f0768604d11551",
+      "pages": 15
+    },
+    {
+      "file": "28、紫微星情篇——甲级星复习.pdf",
+      "sha256": "e8e5c9af431b59f4add9b784b75aed78411e4b5ee2b30215f31d17184ba46668",
+      "pages": 5
+    },
+    {
+      "file": "29、紫微星情篇——天魁天钺.pdf",
+      "sha256": "fc45904f2d002f0ecef893b76b3368d51c3e430fd7bd246674e85d1cd45b04a6",
+      "pages": 8
+    },
+    {
+      "file": "30、紫微星情篇——左辅右弼.pdf",
+      "sha256": "499362f03634808b0de927d994b68946c75be97df3f70f1be423f56faee71d99",
+      "pages": 14
+    },
+    {
+      "file": "31、紫微星情篇——文昌文曲.pdf",
+      "sha256": "3ef7b6cd758069e985c15b66053a456c6383c5291c4d03505b48c16f5fc11a7e",
+      "pages": 16
+    },
+    {
+      "file": "32、紫微星情篇——天官天福.pdf",
+      "sha256": "eff545482bd64db4dfa2f41f874357ce8266c5487cd9e664559fe31b85a55650",
+      "pages": 29
+    },
+    {
+      "file": "33、紫微星情篇——天刑天马.pdf",
+      "sha256": "1156c43b295fbecd7b013384ac78c1763af024c0e0f770b079b1a4b8e3d616dc",
+      "pages": 4
+    },
+    {
+      "file": "34、紫微星情篇——擎羊陀罗 (1).pdf",
+      "sha256": "c2ad68d864db26d8c39382362f223948c32123f266796060477af9f70732fb3d",
+      "pages": 19
+    },
+    {
+      "file": "34、紫微星情篇——擎羊陀罗.pdf",
+      "sha256": "9507fce9f38fc0aa075a0f3d2bf3b176c047cf1395233942e5ebeed0b2a825c0",
+      "pages": 19
+    },
+    {
+      "file": "35、紫微星情篇——火星铃星.pdf",
+      "sha256": "46d640a863fb5bcf80cf29a7c7e60cc58f6871adb741b907c03342c5f1c43247",
+      "pages": 14
+    },
+    {
+      "file": "36、紫微星情篇——地空地劫.pdf",
+      "sha256": "f14cddd250bf457438860fde4133c75ef05931affd04faccf44e79210f375405",
+      "pages": 12
+    },
+    {
+      "file": "37、紫微星情篇——四化.pdf",
+      "sha256": "36710d4679212bc020fe1a8c11894eb39ad3faaec3eb8c6d36b4b8527850a6b9",
+      "pages": 55
+    },
+    {
+      "file": "38、紫微星情篇——台辅封诰天贵恩光.pdf",
+      "sha256": "3b065a282d147355d5f31c7f873f4142e3f16865cbff54a10467f92382da43e7",
+      "pages": 5
+    },
+    {
+      "file": "39、紫微星情篇——红鸾天喜龙池凤阁.pdf",
+      "sha256": "f0cddbfeb2307f579c838830330257fda429958dfce310adf0b5da5ef084464a",
+      "pages": 5
+    },
+    {
+      "file": "40、紫微星情篇——孤辰寡宿天虚天哭.pdf",
+      "sha256": "4ea6270ba02562672fc7866547cccc6d4c7ae6bac9c60d1301bdd7061ed0a43e",
+      "pages": 5
+    },
+    {
+      "file": "41、紫微星情篇——天伤天使天巫阴煞.pdf",
+      "sha256": "3c2c3cc5753ae8ea88c3f1a8d8843f1343d2dbdfa4b4b5c9c6a87a93d6b1b3c5",
+      "pages": 4
+    },
+    {
+      "file": "43、紫微星情篇——天姚天月天空截空旬空.pdf",
+      "sha256": "ebfbe7a29a6d2f974d9ad8ce8a5cf38f4c808872a5996a45771ed96827d39754",
+      "pages": 5
+    },
+    {
+      "file": "44、紫微星情篇——天厨解神蜚廉破碎.pdf",
+      "sha256": "0505550867e65c54743d8ec91d909c10daf8766d5902bd5fd1467a01ce3b8245",
+      "pages": 10
+    },
+    {
+      "file": "45、紫微星情篇——十二长生.pdf",
+      "sha256": "2bdfd4ffa325f16803c9c8190bae6b76d991f4b1450f744fbbb348e19cf49239",
+      "pages": 2
+    },
+    {
+      "file": "46、紫微星情篇——将前十二神煞.pdf",
+      "sha256": "68447ddc3d46f7d52a2d7ebec732cfdd67f013c6813d35de7844e23350ed920a",
+      "pages": 11
+    },
+    {
+      "file": "47、紫微星情篇——博士十二神煞.pdf",
+      "sha256": "a32bc40c8d92347d800b1a28bf2bb785e5e9ae725ba9cf6b9f1944b7c3140cee",
+      "pages": 17
+    },
+    {
+      "file": "48、紫微星情篇——岁前十二神煞.pdf",
+      "sha256": "079bb2d5ae1576e39babff9d4927ffe2ac6e862cb47d3b3d7a630756ed70a3c7",
+      "pages": 13
+    }
+  ]
+}

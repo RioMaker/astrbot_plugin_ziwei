@@ -58,7 +58,7 @@ def test_all_sixty_years_match_literature_pairs_and_primary_secondary(offset):
     stem = "甲乙丙丁戊己庚辛壬癸"[offset % 10]
     chart = build_chart(
         BirthInput(1984 + offset, 6, 15, 12, 0, "男", true_solar=False),
-        RuleProfile(void_rule=2),
+        RuleProfile(rule_school="wm259", void_rule=2),
     )
     assert chart["normalized"]["year_stem"] == offset % 10 + 1
     assert chart["normalized"]["year_branch"] == offset % 12 + 1
@@ -85,6 +85,9 @@ def test_voids_use_astrology_lunar_year_and_respect_late_zi_boundary(
 ):
     # 立春 alone must not switch 癸卯 to 甲辰 for these natal star positions.
     request = parse_request(text + " 真太阳时=关")
-    chart = build_chart(request.birth, RuleProfile(void_rule=2, late_zi_rule=boundary))
+    chart = build_chart(
+        request.birth,
+        RuleProfile(rule_school="wm259", void_rule=2, late_zi_rule=boundary),
+    )
     assert void_pair(chart, 77) == jie
     assert void_pair(chart, 78) == xun

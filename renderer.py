@@ -10,7 +10,7 @@ from .themes import normalize_theme
 
 
 def birth_hua(chart):
-    p = RuleProfile(**chart["profile"])
+    p = RuleProfile.from_snapshot(chart["profile"])
     return "  ".join(
         STAR_NAMES[sid] + HUA[i]
         for i, sid in enumerate(p.four_hua(chart["normalized"]["year_stem"]), 1)
@@ -46,6 +46,7 @@ def text_chart(chart):
         f"命宫{BRANCHES[chart['life'] - 1]} · 身宫{BRANCHES[chart['body'] - 1]}"
         f" · 命主{chart['life_master']} · 身主{chart['body_master']}",
         f"生年四化：{birth_hua(chart)}",
+        f"安星依据：{RuleProfile.from_snapshot(p).source_label}",
         f"规则：闰月={p['leap_month_rule']}，子时={p['late_zi_rule']}，庙旺={p['brightness']}",
     ]
     if chart["flow"]:
