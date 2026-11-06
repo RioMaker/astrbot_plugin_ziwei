@@ -19,33 +19,13 @@ from .personal_commands import (
     natal_request,
     split_personal_command,
 )
-from .personal_store import BindingError, encode, natal_snapshot
+from .personal_store import BindingError, encode
 from .renderer import text_chart
 
 
 class PersonalService:
     def __init__(self, plugin):
         self.plugin = plugin
-
-    def choices(self, scope, action, page):
-        rows = self.plugin.archive.bindings.own_choices(scope, page=page)
-        if not rows["items"]:
-            return (
-                f"暂无可选记录，请发送 /紫微 {action} 199006150830 男"
-                "（虚构示例，请替换）。"
-            )
-        lines = [f"请选择自己的本命盘（第{rows['page']}/{rows['pages']}页）："]
-        for row in rows["items"]:
-            summary = row["summary"]
-            lines += [
-                f"{summary['civil']} · {summary['sex']} · "
-                f"群 {row['group_id'] or '历史未记录'}",
-                f"/紫微 {action} 命盘={row['id'][:12]}",
-            ]
-        if rows["page"] < rows["pages"]:
-            lines.append(f"下一页：/紫微 {action} 页={rows['page'] + 1}")
-        lines.append("流年、大运或图谱记录仅提取本命盘；不会保留流盘叠层。")
-        return "\n".join(lines)
 
     async def run(self, event, args, *, quiet=False):
         action, tail = split_personal_command(str(args).strip())
@@ -96,17 +76,15 @@ class PersonalService:
             if action not in {"绑定", "换绑"} and not state["active"]:
                 raise BindingError(
                     "尚未绑定命盘，请使用 /紫微 绑定 出生日期时间 性别，"
-                    "或 /紫微 绑定 从自己的记录中选择。"
+                    "例如 /紫微 绑定 199006150830 男（虚构示例，请替换）。"
                 )
             if action == "换绑" and not state["active"]:
                 raise BindingError("尚未绑定命盘，请先使用 /紫微 绑定。")
-            if action in {"绑定", "换绑"} and (
-                not tail or re.fullmatch(r"页=[1-9][0-9]{0,5}", tail)
-            ):
-                yield event.plain_result(
-                    self.choices(scope, action, int(tail[2:]) if tail else 1)
+            if action in {"绑定", "换绑"} and not tail:
+                raise BindingError(
+                    f"请重新填写出生资料：/紫微 {action} 199006150830 男"
+                    "（虚构示例，请替换）。不支持选择已有命盘。"
                 )
-                return
             if action == "解绑":
                 if tail:
                     raise BindingError("解绑无需附加参数，请发送 /紫微 解绑。")
@@ -143,28 +121,10 @@ class PersonalService:
                 if rejection:
                     raise BindingError(rejection)
                 store.assert_current(scope.platform_id, scope.user_id, expected)
-                new_record, source_record, source_group = False, "", ""
                 if action in {"绑定", "换绑"}:
-                    if tail.startswith("命盘="):
-                        selection, _, options = tail.partition(" ")
-                        if not re.fullmatch(r"[a-f0-9]{8,32}", selection[3:]):
-                            raise BindingError("请填写列表中的命盘短编号或完整编号。")
-                        rows = store.own_choices(scope, selection[3:])
-                        if rows["total"] != 1:
-                            raise BindingError(
-                                "未找到唯一的本人记录，请重新发送 /紫微 "
-                                + action
-                                + " 选择。"
-                            )
-                        row = rows["items"][0]
-                        chart = natal_snapshot(row["chart"])
-                        source_record, source_group = row["id"], row["group_id"]
-                        output, theme = display_options(options, config)
-                    else:
-                        request = natal_request(tail, config)
-                        chart = await finish_worker(plugin._compute_chart(request))
-                        output, theme = request.output, request.image_theme
-                        new_record, source_group = True, scope.group_id
+                    request = natal_request(tail, config)
+                    chart = await finish_worker(plugin._compute_chart(request))
+                    output, theme = request.output, request.image_theme
                 else:
                     chart = state["chart"]
                     options = tail
@@ -212,10 +172,7 @@ class PersonalService:
                         request_id=message_id,
                         fingerprint=fingerprint,
                         chart=chart,
-                        source_record=source_record,
-                        source_group=source_group,
                         user_name=scope.user_name,
-                        new_record=new_record,
                         scope=scope,
                         theme=theme,
                     )

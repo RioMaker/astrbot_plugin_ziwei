@@ -1,12 +1,11 @@
 """Persistent personal natal charts, scoped to platform instance and user."""
 
-import hashlib
 import json
-import re
 import uuid
 from copy import deepcopy
 
 from .admin_records import chart_summary
+from .binding_history import BindingHistory
 
 
 class BindingError(ValueError):
@@ -70,6 +69,7 @@ class PersonalStore:
                 actor TEXT NOT NULL, via TEXT NOT NULL, source_record TEXT NOT NULL,
                 PRIMARY KEY(actor_key,request_id));
         """)
+        self.history = BindingHistory(archive, natal_snapshot)
 
     def state(self, platform, user):
         platform, user = identity(platform, user)
@@ -139,10 +139,7 @@ class PersonalStore:
         request_id,
         fingerprint,
         chart=None,
-        source_record="",
-        source_group="",
         user_name="",
-        new_record=False,
         scope=None,
         theme="night",
     ):
@@ -150,6 +147,8 @@ class PersonalStore:
         actor_key = encode([via, actor])
         if action not in {"bind", "replace", "unbind"}:
             raise BindingError("绑定操作无效。")
+        if via not in {"chat", "admin"}:
+            raise BindingError("绑定来源无效。")
         with self.archive.transaction() as db:
             replay = self.replay(actor_key, request_id, fingerprint)
             if replay is not None:
@@ -159,28 +158,43 @@ class PersonalStore:
                 raise BindingError("已有绑定命盘，请使用 /紫微 换绑 明确替换。", 409)
             if action in {"replace", "unbind"} and not old["active"]:
                 raise BindingError("尚未绑定命盘，请先使用 /紫微 绑定。", 409)
+            source_record, source_group = "", ""
             if action != "unbind":
                 if chart is None:
-                    raise BindingError("请选择命盘或填写出生资料。")
+                    raise BindingError("请重新填写出生资料。")
                 chart = natal_snapshot(chart)
-                if new_record:
-                    if scope is not None:
-                        if (scope.platform_id, scope.user_id) != (platform, user):
-                            raise BindingError("命盘归属与真实发送者不一致。")
-                        source_record = self.archive._insert_chart(db, scope, chart)
-                        self.archive.records.add(
-                            db,
-                            chart,
-                            source_record,
-                            scope=scope,
-                            chart_id=source_record,
-                            theme=theme,
-                        )
-                    else:
-                        source_record = uuid.uuid4().hex
-                        self.archive.records.add(
-                            db, chart, source_record, actor=actor, theme=theme
-                        )
+                if via == "chat":
+                    if scope is None or (scope.platform_id, scope.user_id) != (
+                        platform,
+                        user,
+                    ):
+                        raise BindingError("命盘归属与真实发送者不一致。")
+                    source_group = scope.group_id
+                    source_record = self.archive._insert_chart(db, scope, chart)
+                    self.archive.records.add(
+                        db,
+                        chart,
+                        source_record,
+                        scope=scope,
+                        chart_id=source_record,
+                        theme=theme,
+                        binding_action=action,
+                    )
+                else:
+                    source_record = uuid.uuid4().hex
+                    self.archive.records.add(
+                        db,
+                        chart,
+                        source_record,
+                        actor=actor,
+                        theme=theme,
+                        subject={
+                            "platform_id": platform,
+                            "user_id": user,
+                            "user_name": user_name or old["user_name"],
+                        },
+                        binding_action=action,
+                    )
             else:
                 chart, source_record, source_group = None, "", ""
             version = uuid.uuid4().hex
@@ -197,7 +211,7 @@ class PersonalStore:
                     user,
                     user_name or old["user_name"],
                     version,
-                    old["created"] or now,
+                    now if old["created"] is None else old["created"],
                     now,
                     encode(chart) if chart else None,
                     source_record,
@@ -222,52 +236,21 @@ class PersonalStore:
                     source_record,
                 ),
             )
+            self.history.record(
+                db, version, source_record or old["source_record"], old["source_record"]
+            )
         return self.state(platform, user)
-
-    def own_choices(self, scope, prefix="", page=1):
-        # Known identities permit same-user cross-group selection; old hashes only
-        # permit reading the requester's own current-group archive.
-        owner = hashlib.sha256(
-            json.dumps(
-                [scope.platform_id, scope.group_id, scope.user_id],
-                ensure_ascii=False,
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
-        if prefix and not re.fullmatch(r"[a-f0-9]{8,32}", prefix):
-            raise BindingError("命盘编号须为列表中的短编号或完整编号。")
-        where = "((r.source='group' AND r.platform_id=? AND r.user_id=?) OR c.owner=?)"
-        values = [scope.platform_id, scope.user_id, owner]
-        if prefix:
-            where += " AND substr(r.id,1,?)=?"
-            values += [len(prefix), prefix]
-        with self.lock:
-            total = self.db.execute(
-                "SELECT count(*) FROM admin_records r "
-                "LEFT JOIN charts c ON c.id=r.chart_id WHERE " + where,
-                values,
-            ).fetchone()[0]
-            pages = max(1, (total + 9) // 10)
-            page = min(max(1, page), pages)
-            rows = self.db.execute(
-                "SELECT r.id FROM admin_records r "
-                "LEFT JOIN charts c ON c.id=r.chart_id WHERE "
-                + where
-                + " ORDER BY r.created DESC,r.id DESC LIMIT 10 OFFSET ?",
-                [*values, (page - 1) * 10],
-            ).fetchall()
-            items = [self.archive.records.get(row["id"]) for row in rows]
-        return {"items": items, "page": page, "pages": pages, "total": total}
 
     def users(self, search="", platform="", page=1):
         # A user may have records in many groups, but has one binding per instance.
         cte = """WITH people AS (
-            SELECT platform_id,user_id FROM admin_records WHERE source='group'
+            SELECT platform_id,user_id FROM admin_records
+            WHERE platform_id<>'' AND user_id<>''
             UNION SELECT platform_id,user_id FROM personal_bindings
         ), latest AS (
             SELECT p.platform_id,p.user_id,COALESCE(NULLIF(b.user_name,''),(
-                SELECT r.user_name FROM admin_records r WHERE r.source='group'
-                AND r.platform_id=p.platform_id AND r.user_id=p.user_id
+                SELECT r.user_name FROM admin_records r
+                WHERE r.platform_id=p.platform_id AND r.user_id=p.user_id
                 AND r.user_name<>'' ORDER BY r.created DESC,r.id DESC LIMIT 1),'')
                 AS user_name,
                 b.chart IS NOT NULL AS active,b.updated,b.revision,b.actor,b.via
@@ -298,7 +281,7 @@ class PersonalStore:
                 for row in self.db.execute(
                     "SELECT platform_id FROM personal_bindings UNION "
                     "SELECT platform_id FROM admin_records "
-                    "WHERE source='group' ORDER BY platform_id"
+                    "WHERE platform_id<>'' AND user_id<>'' ORDER BY platform_id"
                 ).fetchall()
             ]
         return {

@@ -514,6 +514,44 @@ dialog::backdrop {
 .binding-layout {
   margin-top: 24px;
 }
+.binding-history-panel {
+  margin-top: 24px;
+}
+#binding-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.binding-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+.binding-history-item:last-child {
+  border-bottom: 0;
+}
+.history-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.history-info h3 {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+.history-info p {
+  margin: 6px 0;
+}
+.history-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
 .binding-filters {
   display: grid;
   grid-template-columns: 1fr 2fr auto;
@@ -548,6 +586,10 @@ dialog::backdrop {
   }
 }
 @media (max-width: 760px) {
+  .binding-history-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
   main {
     padding: 20px 14px;
   }

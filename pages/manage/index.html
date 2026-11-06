@@ -259,16 +259,14 @@
             <p id="binding-state" class="notice">
               请先载入群友，查看当前绑定。
             </p>
-            <label
-              >命盘来源<select id="binding-source">
-                <option value="birth">填写出生资料</option>
-                <option value="record">选择已有起盘记录</option>
-              </select></label
-            >
+            <p class="help-text">
+              绑定与换绑均须填写出生资料，每次都会保留该群友的独立命盘和操作历史。
+            </p>
             <div id="binding-birth-fields">
               <label
                 >出生日期时间<input
                   id="binding-birth"
+                  required
                   maxlength="32"
                   autocomplete="off"
                   placeholder="例如 199006150830"
@@ -295,16 +293,6 @@
                   autocomplete="off"
               /></label>
             </div>
-            <label id="binding-record-field" hidden
-              >起盘记录编号<input
-                id="binding-record"
-                maxlength="32"
-                autocomplete="off"
-                placeholder="在起盘记录中点击“用于绑定”"
-              /><small
-                >使用该记录的本命盘；流年、大运叠层不会绑定。</small
-              ></label
-            >
             <div class="actions">
               <button id="binding-save" type="submit" disabled>绑定命盘</button
               ><button
@@ -339,6 +327,47 @@
             </div>
           </section>
         </div>
+        <section class="panel binding-history-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">永久保留</p>
+              <h2>绑定历史</h2>
+            </div>
+            <span id="binding-history-total" class="badge">未载入</span>
+          </div>
+          <p id="binding-history-owner" class="help-text">
+            载入群友后，可回看每次绑定、换绑和解绑。
+          </p>
+          <button
+            id="binding-user-records"
+            class="secondary"
+            type="button"
+            disabled
+          >
+            查看该群友排盘记录
+          </button>
+          <ol id="binding-history-list">
+            <li class="help-text">请先载入群友。</li>
+          </ol>
+          <div class="pagination">
+            <button
+              id="binding-history-previous"
+              class="secondary"
+              type="button"
+              disabled
+            >
+              上一页</button
+            ><span id="binding-history-page">—</span
+            ><button
+              id="binding-history-next"
+              class="secondary"
+              type="button"
+              disabled
+            >
+              下一页
+            </button>
+          </div>
+        </section>
       </section>
 
       <section id="tab-records" class="tab-content" hidden>
@@ -357,10 +386,11 @@
                 <option value="group">群友起盘</option>
                 <option value="web">后台排盘</option>
                 <option value="legacy">历史档案</option>
+                <option value="binding_import">历史绑定补档</option>
               </select></label
             >
             <label
-              >群<select id="filter-group">
+              >机器人 / 群<select id="filter-group">
                 <option value="">全部群</option>
               </select></label
             >
@@ -379,6 +409,12 @@
                 id="filter-search"
                 maxlength="256"
                 placeholder="昵称、用户号或记录编号"
+            /></label>
+            <label
+              >用户账号（精确）<input
+                id="filter-user"
+                maxlength="256"
+                placeholder="可查看该用户全部排盘"
             /></label>
             <label>起盘开始日期<input id="filter-start" type="date" /></label
             ><label>起盘结束日期<input id="filter-end" type="date" /></label>
@@ -450,7 +486,7 @@
           <p id="settings-note" class="help-text"></p>
         </form>
       </section>
-      <footer>紫微斗数 2.2.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
+      <footer>紫微斗数 2.3.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
     </main>
     <dialog id="detail-dialog">
       <div class="dialog-bar">

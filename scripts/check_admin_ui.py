@@ -244,8 +244,12 @@ async def check(args, data_dir, address):
         assert plugin.archive.records.list(source="web")["total"] == 3
         original = plugin.archive.bindings.state("demo-qq", "10001")
         assert original["actor"] == "演示管理员"
-        await page.locator("#binding-source").select_option("record")
-        await page.locator("#binding-record").fill(malicious_id)
+        assert await page.locator("#binding-source, #binding-record").count() == 0
+        assert (
+            await page.get_by_role("button", name="用于绑定", exact=True).count() == 0
+        )
+        await page.locator("#binding-birth").fill("199207201430")
+        await page.locator("#binding-sex").select_option("女")
         await page.locator("#binding-save").click()
         await page.locator("#binding-save:enabled").wait_for()
         assert (
@@ -255,21 +259,31 @@ async def check(args, data_dir, address):
         await page.locator("#binding-unbind").click()
         await page.locator("#binding-save:enabled").wait_for()
         assert not plugin.archive.bindings.state("demo-qq", "10001")["active"]
-        assert plugin.archive.records.list(source="web")["total"] == 3
-        await page.locator('[data-tab="records"]').click()
-        await page.locator("#filter-search").fill("10001")
-        await page.locator('#filter-form button[type="submit"]').click()
-        await page.wait_for_function(
-            "document.getElementById('record-total').textContent === '共 1 条'"
-        )
-        await (
-            page.locator("#record-rows")
-            .get_by_role("button", name="用于绑定", exact=True)
-            .click()
-        )
-        await page.locator("#binding-save:enabled").wait_for()
+        assert plugin.archive.records.list(source="web")["total"] == 4
+        assert await page.locator("#binding-history-list li").count() == 3
+        await page.locator("#binding-birth").fill("199006150830")
+        await page.locator("#binding-sex").select_option("男")
         await page.locator("#binding-save").click()
         await page.locator("#binding-save:enabled").wait_for()
+        assert await page.locator("#binding-history-list li").count() == 4
+        assert plugin.archive.records.list(source="web")["total"] == 5
+        replacement = page.locator('#binding-history-list [data-action="replace"]')
+        assert "1992-07-20" in await replacement.text_content()
+        assert "1990-06-15" in await replacement.text_content()
+        await replacement.get_by_role("button", name="查看换绑前命盘").click()
+        await page.locator("#detail-dialog[open] img").wait_for()
+        assert "1990-06-15" in await page.locator("#detail-result").text_content()
+        assert "10001" in await page.locator("#detail-result").text_content()
+        await page.locator("#close-detail").click()
+        await page.locator("#binding-user-records").click()
+        await page.wait_for_function(
+            "document.getElementById('record-total').textContent === '共 4 条'"
+        )
+        assert await page.locator("#filter-user").input_value() == "10001"
+        owned = plugin.archive.records.list(platform="demo-qq", user="10001")
+        assert owned["total"] == 4
+        assert len({row["id"] for row in owned["items"]}) == 4
+        await page.locator('[data-tab="bindings"]').click()
         await page.locator("#binding-view").click()
         await page.locator("#binding-result img").wait_for()
         assert plugin.archive.bindings.state("demo-qq", "10001")["active"]
@@ -304,7 +318,7 @@ async def check(args, data_dir, address):
         await frame.locator("#demo").click()
         await frame.locator("#create").click()
         await frame.locator("#chart-result img").wait_for()
-        assert plugin.archive.records.list(source="web")["total"] == 4
+        assert plugin.archive.records.list(source="web")["total"] == 6
         # Without the Dashboard bridge, the distributed page is inert.
         standalone = await browser.new_context()
         missing = await standalone.new_page()
@@ -325,7 +339,8 @@ async def check(args, data_dir, address):
                     "pagination/search",
                     "XSS text",
                     "network retry deduplication",
-                    "admin bind/replace/unbind, retry and record selection",
+                    "birth-only binding, replace/unbind, retry and immutable history",
+                    "target user's complete chart records and historical PNG preview",
                     "bound PNG readback across authorized groups",
                     "validation errors",
                     "390px layout",

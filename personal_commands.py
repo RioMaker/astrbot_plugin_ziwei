@@ -8,7 +8,7 @@ from .themes import normalize_theme
 
 PERSONAL_HELP = """绑定一次，以后直接看自己的盘。
 /紫微 绑定 199006150830 男（虚构示例，请换成自己的资料）
-/紫微 绑定：从自己的起盘记录中选择
+/紫微 绑定、/紫微 换绑 均须重新填写出生资料，不支持选择已有命盘。
 /我的命盘：返回已绑定的本命盘图片
 /紫微 流年 2026：用已绑定资料排农历流年
 /紫微 大运 2：用已绑定资料排第2个大运，0为童限
@@ -16,7 +16,7 @@ PERSONAL_HELP = """绑定一次，以后直接看自己的盘。
 /紫微 解绑：解除绑定，保留历史记录
 支持紫薇等原别名、省空格写法，以及 主题=白天／主题=夜间、文字。
 同一机器人内各已开启的群通用；私聊和未开启群不可用。
-普通排盘不会改变绑定；绑定保留当时的本命盘和取法。"""
+普通排盘不会改变绑定；每次排盘、绑定和换绑都保留独立历史，后台可查看。"""
 
 
 def split_personal_command(text):
@@ -38,6 +38,8 @@ def split_personal_command(text):
 
 
 def natal_request(args, config):
+    if re.search(r"(?:^|\s)(?:命盘|页)=", args):
+        raise ValueError("不支持选择已有命盘，请重新填写出生日期时间和性别。")
     request = parse_request(args, config)
     if (
         request.flow_year is not None

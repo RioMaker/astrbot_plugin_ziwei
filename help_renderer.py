@@ -24,7 +24,7 @@ class HelpRenderer:
 
     def render(self, theme="night"):
         width, margin = 1080, 48
-        painter = Painter(width, 1556, self.font_path, theme)
+        painter = Painter(width, 1506, self.font_path, theme)
         p = painter.palette
         left, content_width = margin + 30, width - margin * 2 - 60
 
@@ -89,19 +89,19 @@ class HelpRenderer:
             if index < len(HELP_OPTIONS) - 1:
                 painter.rule(left, y + 86, content_width)
 
-        section("03", "我的命盘 · 绑定一次，随时查看", 864, 540)
-        painter.text("出生资料换成自己的；绑定后无需重复填写。", left, 932, 26, p.muted)
+        section("03", "我的命盘 · 绑定一次，随时查看", 864, 490)
+        painter.text("绑定、换绑都要填出生资料；每次均留记录。", left, 932, 26, p.muted)
         for index, (label, example) in enumerate(HELP_PERSONAL_ACTIONS):
             y = 978 + index * 50
             painter.text(label, left, y + 2, 30, p.ink)
             painter.text(example, left + 240, y, 32, p.accent)
-        painter.text("大运填序号，0为童限；解绑保留历史记录。", left, 1330, 24, p.muted)
-        painter.text(HELP_BIND_NOTE, left, 1366, 24, p.muted)
+        painter.text("大运填序号，0为童限；解绑保留历史记录。", left, 1280, 24, p.muted)
+        painter.text(HELP_BIND_NOTE, left, 1316, 24, p.muted)
 
-        painter.text("查看帮助", left, 1434, 26, p.ink)
-        painter.text(HELP_ENTRY_COMMAND, left + 240, 1430, 32, p.accent)
+        painter.text("查看帮助", left, 1384, 26, p.ink)
+        painter.text(HELP_ENTRY_COMMAND, left + 240, 1380, 32, p.accent)
         for index, note in enumerate(HELP_IMAGE_NOTES):
-            painter.text(note, margin, 1476 + index * 34, 22, p.muted)
+            painter.text(note, margin, 1426 + index * 34, 22, p.muted)
 
         stream = io.BytesIO()
         painter.image.save(stream, format="PNG", optimize=True)

@@ -56,6 +56,8 @@ class AdminRecords:
             CREATE INDEX IF NOT EXISTS admin_records_group
                 ON admin_records(platform_id, group_id, created DESC);
             CREATE INDEX IF NOT EXISTS admin_records_chart ON admin_records(chart_id);
+            CREATE INDEX IF NOT EXISTS admin_records_user
+                ON admin_records(platform_id,user_id,created DESC);
         """)
         # Historical identities were hashes. Never guess or reverse those hashes.
         with archive.transaction() as db:
@@ -99,9 +101,22 @@ class AdminRecords:
         actor="",
         request_key=None,
         fingerprint=None,
+        subject=None,
+        binding_action="",
+        restored=False,
     ):
         kind, summary = chart_summary(chart, atlas=bool(atlas_id))
-        source = "web" if actor else "group" if scope else "legacy"
+        source = (
+            "binding_import"
+            if restored
+            else "web"
+            if actor
+            else "group"
+            if scope
+            else "legacy"
+        )
+        if binding_action:
+            summary |= {"binding_action": binding_action}
         identity = [
             str(getattr(scope, name, "") or "")[:256]
             for name in (
@@ -112,6 +127,16 @@ class AdminRecords:
                 "user_name",
             )
         ]
+        if subject is not None:
+            if scope is not None:
+                raise ValueError("不能替换真实消息的命盘归属。")
+            identity = [
+                subject["platform_id"],
+                "",
+                "",
+                subject["user_id"],
+                subject.get("user_name", ""),
+            ]
         db.execute(
             "INSERT INTO admin_records VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
@@ -127,7 +152,7 @@ class AdminRecords:
                 actor,
                 request_key,
                 fingerprint,
-                encode(chart) if actor else None,
+                encode(chart) if actor or restored else None,
             ),
         )
         return record_id
@@ -195,6 +220,7 @@ class AdminRecords:
         kind="",
         platform="",
         group="",
+        user="",
         search="",
         start=None,
         end=None,
@@ -205,6 +231,7 @@ class AdminRecords:
             ("kind", kind),
             ("platform_id", platform),
             ("group_id", group),
+            ("user_id", user),
         ):
             if value:
                 conditions.append(f"{key}=?")
@@ -255,10 +282,18 @@ class AdminRecords:
                 "SELECT DISTINCT platform_id,platform_name,group_id FROM admin_records "
                 "WHERE source='group' ORDER BY platform_id,group_id"
             ).fetchall()
+            platforms = [
+                row[0]
+                for row in self.db.execute(
+                    "SELECT DISTINCT platform_id FROM admin_records "
+                    "WHERE platform_id<>'' ORDER BY platform_id"
+                ).fetchall()
+            ]
         return {
             "counts": counts,
             "users": users,
             "groups": [dict(row) for row in groups],
+            "platforms": platforms,
         }
 
 

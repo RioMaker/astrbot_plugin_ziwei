@@ -26,13 +26,14 @@ def payload(**changes):
             revision="",
             request_id="demo-binding-0001",
             args=DEMO_BIRTH,
-            record_id="",
         )
         | changes
     )
 
 
-@pytest.mark.parametrize("route", ["bindings", "bindings/target", "bindings/save"])
+@pytest.mark.parametrize(
+    "route", ["bindings", "bindings/target", "bindings/save", "bindings/history"]
+)
 def test_bindings_routes_require_real_dashboard_identity(page, route):
     plugin, request, _, call = page
     request.username = None
@@ -120,14 +121,16 @@ def test_admin_bind_readback_replace_unbind_and_stale_retry(page):
     asyncio.run(run())
 
 
-def test_admin_existing_record_uses_natal_even_from_another_user(page):
+@pytest.mark.parametrize("owner", ["10001", "10002"])
+@pytest.mark.parametrize("args", ["", DEMO_BIRTH])
+def test_admin_existing_record_is_rejected_even_with_birth_data(page, owner, args):
     plugin, _, _, call = page
     record = plugin.archive.save_chart(
-        capture_group(Event(user="10002")), apply_flow(natal(), year=2026)
+        capture_group(Event(user=owner)), apply_flow(natal(), year=2026)
     )
-    result = asyncio.run(call("bindings/save", payload(args="", record_id=record)))
-    assert result["status"] == 200
-    assert plugin.archive.bindings.state("qq-one", "10001")["chart"] == natal()
+    result = asyncio.run(call("bindings/save", payload(args=args, record_id=record)))
+    assert result["status"] == 400 and "不支持选择" in result["message"]
+    assert plugin.archive.bindings.state("qq-one", "10001")["active"] is False
     assert plugin.archive.bindings.state("qq-one", "10002")["active"] is False
     assert plugin.archive.records.list()["total"] == 1
 
@@ -184,7 +187,7 @@ def test_unknown_record_and_unbound_replace_are_explicit_errors(page):
         asyncio.run(call("bindings/save", payload(record_id="a" * 32, args="")))[
             "status"
         ]
-        == 404
+        == 400
     )
     assert (
         asyncio.run(call("bindings/save", payload(action="replace")))["status"] == 409
@@ -285,7 +288,7 @@ def test_chat_cannot_select_admin_record_before_explicit_admin_binding(page):
         source = result["data"]["source_record"]
         await allow(plugin)
         answer = await invoke_command(plugin, "绑定 命盘=" + source)
-        assert "未找到" in answer[0]
+        assert "不支持选择" in answer[0]
         assert not plugin.archive.bindings.state("qq-one", "10001")["active"]
 
     asyncio.run(run())

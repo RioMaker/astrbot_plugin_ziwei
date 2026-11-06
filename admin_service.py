@@ -149,7 +149,13 @@ class AdminService:
         self.active()
         source = text(query.get("source", ""), "来源")
         kind = text(query.get("kind", ""), "盘型")
-        if source not in {"", "group", "web", "legacy"} or kind not in {"", *KINDS}:
+        if source not in {
+            "",
+            "group",
+            "web",
+            "legacy",
+            "binding_import",
+        } or kind not in {"", *KINDS}:
             raise AdminError("筛选条件无效。")
         raw_page = query.get("page", "1")
         if not re.fullmatch(r"[0-9]{1,6}", str(raw_page)) or int(raw_page) < 1:
@@ -179,6 +185,7 @@ class AdminService:
             kind=kind,
             platform=text(query.get("platform", ""), "平台"),
             group=text(query.get("group", ""), "群号"),
+            user=text(query.get("user", ""), "用户账号"),
             search=text(query.get("search", ""), "搜索内容"),
             start=bounds[0],
             end=bounds[1],

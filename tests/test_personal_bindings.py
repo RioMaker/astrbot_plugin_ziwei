@@ -169,7 +169,7 @@ def test_personal_flow_commands_use_snapshot_and_leave_binding(plugin):
     asyncio.run(run())
 
 
-def test_select_only_own_records_cross_group_and_flow_to_natal(plugin):
+def test_existing_charts_cannot_be_selected_for_binding(plugin):
     async def run():
         event = Event(group="20002")
         own = plugin.archive.save_chart(
@@ -178,17 +178,17 @@ def test_select_only_own_records_cross_group_and_flow_to_natal(plugin):
         foreign = plugin.archive.save_chart(capture_group(Event(user="99999")), natal())
         await allow(plugin)
         listing = (await invoke_command(plugin, "绑定"))[0]
-        assert own[:12] in listing and foreign[:12] not in listing
-        assert "未找到" in (await invoke_command(plugin, "绑定 命盘=" + foreign))[0]
+        assert "重新填写" in listing and own[:12] not in listing
+        for record in (own, own[:12], foreign):
+            reply = (await invoke_command(plugin, "绑定 命盘=" + record))[0]
+            assert "不支持选择" in reply
         assert not bound(plugin)
-        assert "已绑定" in (await invoke_command(plugin, "绑定 命盘=" + own[:12]))[0]
-        assert bound(plugin)["chart"] == natal()
         assert plugin.archive.records.list()["total"] == 2
 
     asyncio.run(run())
 
 
-def test_legacy_selection_requires_current_group_owner_and_pages(plugin):
+def test_legacy_charts_remain_readable_but_cannot_be_selected(plugin):
     own_scope, other_scope = capture_group(Event()), capture_group(Event(group="20002"))
     own = plugin.archive.save_chart(own_scope, natal())
     foreign = plugin.archive.save_chart(other_scope, natal())
@@ -198,12 +198,16 @@ def test_legacy_selection_requires_current_group_owner_and_pages(plugin):
             "user_id='' WHERE id IN (?,?)",
             (own, foreign),
         )
-    items = plugin.archive.bindings.own_choices(own_scope)["items"]
-    assert [item["id"] for item in items] == [own]
-    for _ in range(12):
-        plugin.archive.save_chart(own_scope, natal())
-    page = plugin.archive.bindings.own_choices(own_scope, page=2)
-    assert (page["total"], page["pages"], len(page["items"])) == (13, 2, 3)
+
+    async def run():
+        await allow(plugin)
+        for tail in ("命盘=" + own, "命盘=" + foreign, "页=1"):
+            assert "不支持选择" in (await invoke_command(plugin, "绑定 " + tail))[0]
+        assert not bound(plugin)
+        assert plugin.archive.records.list()["total"] == 2
+        assert plugin.archive.records.get(own)["chart"] == natal()
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize(

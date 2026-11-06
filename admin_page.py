@@ -35,6 +35,7 @@ class AdminPage:
             ("manage/charts", self.create, "POST"),
             ("manage/bindings", self.binding_users, "GET"),
             ("manage/bindings/target", self.binding_target, "GET"),
+            ("manage/bindings/history", self.binding_history, "GET"),
             ("manage/bindings/save", self.binding_save, "POST"),
         ):
             handler = self.guard(callback)
@@ -116,6 +117,9 @@ class AdminPage:
 
     async def binding_target(self):
         return await self.bindings.target(self.web.request.query)
+
+    async def binding_history(self):
+        return self.bindings.history(self.web.request.query)
 
     async def binding_save(self):
         return await self.bindings.save(await self.payload(), self.web.request.username)

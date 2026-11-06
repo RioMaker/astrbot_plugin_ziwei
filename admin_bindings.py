@@ -8,7 +8,7 @@ from .admin_records import chart_summary
 from .admin_service import AdminError, finish_worker, text
 from .compact_commands import normalize_compact_arguments
 from .personal_commands import natal_request
-from .personal_store import BindingError, encode, identity, natal_snapshot
+from .personal_store import BindingError, encode, identity
 
 
 class AdminBindings:
@@ -64,6 +64,8 @@ class AdminBindings:
 
     async def save(self, payload, actor):
         self.service.active()
+        if "record_id" in payload:
+            raise AdminError("不支持选择已有命盘，请刷新页面并重新填写出生资料。")
         if set(payload) != {
             "platform_id",
             "user_id",
@@ -71,7 +73,6 @@ class AdminBindings:
             "revision",
             "request_id",
             "args",
-            "record_id",
         }:
             raise AdminError("绑定请求格式无效。")
         platform, user = identity(payload["platform_id"], payload["user_id"])
@@ -86,14 +87,11 @@ class AdminBindings:
         if not re.fullmatch(r"[a-zA-Z0-9_-]{16,80}", key):
             raise AdminError("请求编号无效，请刷新页面。")
         args = text(payload["args"], "出生资料", 1024)
-        record_id = text(payload["record_id"], "记录编号", 32)
         if action == "unbind":
-            if args or record_id:
+            if args:
                 raise AdminError("解绑无需附加命盘资料。")
-        elif bool(args) == bool(record_id):
-            raise AdminError("请选择一种来源：出生资料或已有起盘记录。")
-        if record_id and not re.fullmatch(r"[a-f0-9]{32}", record_id):
-            raise AdminError("请填写已有记录的完整编号。")
+        elif not args:
+            raise AdminError("请重新填写出生日期时间和性别。")
         fingerprint = hashlib.sha256(
             encode({k: v for k, v in payload.items() if k != "request_id"}).encode()
         ).hexdigest()
@@ -113,13 +111,8 @@ class AdminBindings:
                     raise BindingError("该群友已绑定命盘，请载入后使用换绑。", 409)
                 if action != "bind" and not old["active"]:
                     raise BindingError("该群友尚未绑定命盘，请先绑定。", 409)
-                chart, group, theme = None, "", config.get("image_theme", "night")
-                if record_id:
-                    row = plugin.archive.records.get(record_id)
-                    if row is None:
-                        raise AdminError("起盘记录不存在。", 404)
-                    chart, group = natal_snapshot(row["chart"]), row["group_id"]
-                elif args:
+                chart, theme = None, config.get("image_theme", "night")
+                if args:
                     request = natal_request(
                         normalize_compact_arguments(args).args, config
                     )
@@ -136,11 +129,16 @@ class AdminBindings:
                     request_id=key,
                     fingerprint=fingerprint,
                     chart=chart,
-                    source_record=record_id,
-                    source_group=group,
-                    new_record=bool(args),
                     theme=theme,
                 )
                 return store.public(state)
         finally:
             plugin.pending -= 1
+
+    def history(self, query):
+        self.service.active()
+        platform, user = identity(query.get("platform_id"), query.get("user_id"))
+        page = str(query.get("page", "1"))
+        if not re.fullmatch(r"[1-9][0-9]{0,5}", page):
+            raise AdminError("页码无效。")
+        return self.plugin.archive.bindings.history.list(platform, user, int(page))
