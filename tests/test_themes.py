@@ -89,19 +89,28 @@ def test_theme_text_contrast_on_the_actual_surfaces(theme):
 def test_parallel_day_night_rendering_cannot_mix_colors_or_mutate_chart(font_path):
     chart = build_chart(parse_request(DEMO_BIRTH).birth)
     before = deepcopy(chart)
+    request = parse_request("农历 199310252000 男 真太阳时=关")
+    dense = apply_flow(build_chart(request.birth, request.profile), year=2026)
+    dense_before = deepcopy(dense)
     renderer = Renderer(font_path)
     baseline = renderer.render(chart, "day")
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         day_future = pool.submit(renderer.render, chart, "day")
         night_future = pool.submit(renderer.render, chart, "night")
+        dense_future = pool.submit(renderer.render, dense, "night")
         day, night = day_future.result(), night_future.result()
+        dense_png = dense_future.result()
     assert day == baseline and day != night
     for png, palette in ((day, DAY), (night, NIGHT)):
         with Image.open(io.BytesIO(png)) as im:
+            assert im.width == 1664
             assert im.getpixel((0, 0)) == tuple(
                 int(palette.bg[i : i + 2], 16) for i in (1, 3, 5)
             )
-    assert chart == before and renderer.theme == "night"
+    with Image.open(io.BytesIO(dense_png)) as im:
+        assert im.size == (1984, 2360)
+    assert renderer.render(chart, "day") == baseline
+    assert chart == before and dense == dense_before and renderer.theme == "night"
 
 
 @pytest.mark.parametrize("theme", ["day", "night"])

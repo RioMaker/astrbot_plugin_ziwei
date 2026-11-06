@@ -34,7 +34,7 @@ def test_render_decodable_bounded_image(args, theme):
     with Image.open(io.BytesIO(png)) as image:
         image.load()
         assert image.format == "PNG" and image.mode == "RGB"
-        assert 1600 <= image.width <= 1750 and image.height < 3100
+        assert 1664 <= image.width <= 2144 and image.height < 2700
         assert len(image.getcolors(maxcolors=1000000)) > 100
     assert len(png) < 2_000_000
 

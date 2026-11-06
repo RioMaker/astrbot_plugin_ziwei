@@ -14,14 +14,15 @@ from astrbot_plugin_ziwei.renderer import Renderer, find_font
 
 @pytest.mark.parametrize("theme", ["day", "night"])
 @pytest.mark.parametrize(
-    "birth,year",
+    "birth,year,expected_side",
     [
-        (DEMO_BIRTH, 2020),  # The same star has three Hua source badges.
-        ("农历 1993-10-25 20:00 男 真太阳时=关", 2026),  # Fifteen stars in one palace.
+        (DEMO_BIRTH, 2020, 400),  # The same star has three Hua source badges.
+        ("农历 1993-10-25 20:00 男 真太阳时=关", 2026, 480),  # Fifteen stars.
+        ("1988-08-08 08:08 女 经度=-74 时区=-5", 2026, 520),  # Twelve columns.
     ],
 )
 def test_large_star_columns_keep_every_glyph_aligned_and_clear(
-    monkeypatch, theme, birth, year
+    monkeypatch, theme, birth, year, expected_side
 ):
     try:
         font_path = find_font()
@@ -45,16 +46,21 @@ def test_large_star_columns_keep_every_glyph_aligned_and_clear(
 
     def star(painter, value, x, y, color, step):
         nonlocal active_star
-        active_star = {"star": value, "palace": active_palace, "glyphs": []}
+        active_star = {
+            "star": value,
+            "palace": active_palace,
+            "top": y,
+            "glyphs": [],
+        }
         real_star(painter, value, x, y, color, step)
         records.append(active_star)
         active_star = None
 
-    def palace(painter, item, chart, x, y, height):
+    def palace(painter, item, chart, x, y, height, *, width):
         nonlocal active_palace
         active_palace = item["palace"]["branch"]
-        palaces[active_palace] = (x, y, x + 400, y + height)
-        real_palace(painter, item, chart, x, y, height)
+        palaces[active_palace] = (x, y, x + width, y + height)
+        real_palace(painter, item, chart, x, y, height, width=width)
         active_palace = None
 
     monkeypatch.setattr(drawing.Painter, "text", text)
@@ -94,11 +100,21 @@ def test_large_star_columns_keep_every_glyph_aligned_and_clear(
                     assert (
                         a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]
                     ), (value["instance_id"], glyph, other)
-    # A wrapped star bank must not make one grid row taller than the others.
-    expected_height = 620 if "农历" in birth else 400
+    # Equal squares stay compact even when the densest palace wraps.
     assert len(palaces) == 12
     assert {(right - x, bottom - y) for x, y, right, bottom in palaces.values()} == {
-        (400, expected_height)
+        (expected_side, expected_side)
     }
+    for branch in palaces:
+        stars = [record for record in records if record["palace"] == branch]
+        tops = sorted({record["top"] for record in stars})
+        for top, following in zip(tops, tops[1:], strict=False):
+            bottom = max(
+                glyph[3][3]
+                for record in stars
+                if record["top"] == top
+                for glyph in record["glyphs"]
+            )
+            assert 8 <= following - bottom <= 24
     with Image.open(io.BytesIO(png)) as image:
-        assert image.height < 3100
+        assert image.height < 2700

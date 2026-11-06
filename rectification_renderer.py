@@ -12,7 +12,7 @@ from .themes import get_theme, normalize_theme
 
 MAX_CANDIDATES = 32
 MAX_PIXELS = 80_000_000
-MAX_CELL_WIDTH = 1664
+BASE_CELL_WIDTH = 1664
 MIN_CELL_WIDTH = 1200
 _GAP = 24
 _MARGIN = 8
@@ -78,7 +78,7 @@ def _wrap(text, font, width):
 
 def _layout(candidates, image_sizes, font_path, cell_width):
     columns, rows = 1, len(candidates)
-    ratio = cell_width / MAX_CELL_WIDTH
+    ratio = min(1.0, cell_width / BASE_CELL_WIDTH)
     sizes = {"title": round(42 * ratio), "body": round(28 * ratio)}
     fonts = {key: ImageFont.truetype(font_path, size) for key, size in sizes.items()}
     inset = max(14, round(20 * ratio))
@@ -166,7 +166,7 @@ def plan_candidate_collage(candidates, image_sizes, font_path):
         for size in image_sizes
     ):
         raise ValueError("定盘总图须提供每张完整原图的实际尺寸")
-    width = min(MAX_CELL_WIDTH, max(MIN_CELL_WIDTH, max(s[0] for s in image_sizes)))
+    width = max(MIN_CELL_WIDTH, max(s[0] for s in image_sizes))
     while True:
         plan = _layout(candidates, image_sizes, font_path, width)
         pixels = math.prod(plan["size"])

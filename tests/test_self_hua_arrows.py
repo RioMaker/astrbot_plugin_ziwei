@@ -13,22 +13,24 @@ from astrbot_plugin_ziwei.modern_renderer import (
 )
 
 
-def inside(point, x, y, height):
-    return x <= point[0] <= x + CELL_WIDTH and y <= point[1] <= y + height
+def inside(point, x, y, width, height):
+    return x <= point[0] <= x + width and y <= point[1] <= y + height
 
 
 @pytest.mark.parametrize("branch", range(1, 13))
 @pytest.mark.parametrize("source", ["outward", "inward"])
-def test_arrows_follow_the_outer_or_inner_frame_and_point_correctly(branch, source):
-    height = 416
+@pytest.mark.parametrize("width,height", [(CELL_WIDTH, 416), (460, 460), (480, 480)])
+def test_arrows_follow_the_outer_or_inner_frame_and_point_correctly(
+    branch, source, width, height
+):
     row, col = PALACE_POSITIONS[branch]
-    x, y = 32 + col * CELL_WIDTH, 160 + row * height
+    x, y = 32 + col * width, 160 + row * height
     star = {"id": 1, "instance_id": "test", "self_hua": {source: "禄"}}
-    arrow = self_hua_arrow_layout([star], branch, x, y, height)[0]
-    assert inside(arrow["start"], x, y, height)
-    assert not inside(arrow["end"], x, y, height)
+    arrow = self_hua_arrow_layout([star], branch, x, y, height, width=width)[0]
+    assert inside(arrow["start"], x, y, width, height)
+    assert not inside(arrow["end"], x, y, width, height)
     assert arrow["source"] == source and arrow["hua"] == "禄"
-    dx, dy = self_hua_vector(branch, source, cell_height=height)
+    dx, dy = self_hua_vector(branch, source, cell_width=width, cell_height=height)
     assert math.isclose(math.hypot(dx, dy), 1)
     displacement = (
         arrow["end"][0] - arrow["start"][0],
@@ -44,7 +46,7 @@ def test_arrows_follow_the_outer_or_inner_frame_and_point_correctly(branch, sour
         else {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}[outer]
     )
     assert arrow["side"] == expected
-    assert 0 <= arrow["end"][0] <= 1664
+    assert 0 <= arrow["end"][0] <= 64 + 4 * width
     assert 128 <= arrow["end"][1] <= 160 + 4 * height + 24
 
 

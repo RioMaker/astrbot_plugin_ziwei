@@ -89,7 +89,10 @@ def assert_geometry(plan, candidates):
     ]
     assert len(plan["cells"]) == len(candidates)
     width, height = plan["size"]
-    assert width <= 1680 and width * height <= MAX_PIXELS
+    assert width == plan["cell_width"] + 16 and width * height <= MAX_PIXELS
+    assert plan["cell_width"] <= max(
+        1200, max(cell["source_size"][0] for cell in plan["cells"])
+    )
     assert plan["columns"] == 1 and plan["rows"] == len(candidates)
     assert plan["empty_cells"] == []
     for cell, candidate in zip(plan["cells"], candidates, strict=True):

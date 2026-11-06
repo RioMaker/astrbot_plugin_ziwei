@@ -22,11 +22,11 @@ AUSPICIOUS_IDS = frozenset({15, 16, 17, 18, 19, 20})
 MALEFIC_IDS = frozenset({23, 24, 25, 26, 27, 28})
 GRID = ((6, 7, 8, 9), (5, None, None, 10), (4, None, None, 11), (3, 2, 1, 12))
 CELL_WIDTH = 400
-STAR_COLUMNS = 9
 STAR_COLUMN_STEP = 40
 STAR_NAME_SIZE = 36
 STAR_LINE_STEP = 40
-STAR_BANK_HEIGHT = 220
+STAR_BANK_GAP = 12
+PALACE_FOOTER_HEIGHT = 156
 MARGIN = 32
 GAP = 0
 PALACE_POSITIONS = {
@@ -37,26 +37,28 @@ PALACE_POSITIONS = {
 }
 
 
-def self_hua_vector(branch, source, *, cell_height=CELL_WIDTH):
+def self_hua_vector(branch, source, *, cell_width=CELL_WIDTH, cell_height=CELL_WIDTH):
     """Outward points away from the chart center; inward points toward it."""
     if source not in {"outward", "inward"}:
         raise ValueError("未知自化方向")
     row, col = PALACE_POSITIONS[branch]
-    dx, dy = (col - 1.5) * CELL_WIDTH, (row - 1.5) * cell_height
+    dx, dy = (col - 1.5) * cell_width, (row - 1.5) * cell_height
     length = math.hypot(dx, dy)
     sign = 1 if source == "outward" else -1
     return sign * dx / length, sign * dy / length
 
 
-def _horizontal_arrow_slot(index, count):
+def _horizontal_arrow_slot(index, count, width):
     """Leave the central palace title and its body badge clear."""
     left_count = (count + 1) // 2
     if index < left_count:
-        return 66 + 80 * (index + 1) / (left_count + 1)
-    return 280 + 64 * (index - left_count + 1) / (count - left_count + 1)
+        slot = 66 + 80 * (index + 1) / (left_count + 1)
+    else:
+        slot = 280 + 64 * (index - left_count + 1) / (count - left_count + 1)
+    return slot * width / CELL_WIDTH
 
 
-def self_hua_arrow_layout(stars, branch, x, y, height):
+def self_hua_arrow_layout(stars, branch, x, y, height, *, width=CELL_WIDTH):
     """Outer frame for outward Hua; inner frame for inward Hua."""
     row, col = PALACE_POSITIONS[branch]
     outer_side = (
@@ -73,22 +75,24 @@ def self_hua_arrow_layout(stars, branch, x, y, height):
             lane = (index + 1) / (len(marks) + 1)
             if side in {"top", "bottom"}:
                 anchor = (
-                    x + _horizontal_arrow_slot(index, len(marks)),
+                    x + _horizontal_arrow_slot(index, len(marks), width),
                     y if side == "top" else y + height,
                 )
                 label = (anchor[0] + 18, y + 2 if side == "top" else y + height - 17)
             else:
                 anchor = (
-                    x if side == "left" else x + CELL_WIDTH,
+                    x if side == "left" else x + width,
                     y + 24 + (height - 128) * lane,
                 )
                 # Put inner-frame labels on the center side of the boundary,
                 # leaving the palace edge available for its star columns.
                 label = (
-                    x - 23 if side == "left" else x + CELL_WIDTH + 9,
+                    x - 23 if side == "left" else x + width + 9,
                     anchor[1] + 14,
                 )
-            dx, dy = self_hua_vector(branch, source, cell_height=height)
+            dx, dy = self_hua_vector(
+                branch, source, cell_width=width, cell_height=height
+            )
             arrows.append(
                 {
                     "star_id": star["id"],
@@ -334,27 +338,66 @@ def _vertical_star(painter, star, x, y, color, step):
         )
 
 
-def _draw_palace(painter, item, chart, x, y, height):
+def _star_height(star):
+    """Occupied vertical slots, including pills and the secondary-void label."""
+    bottom = (len(star["name"]) - 1) * STAR_LINE_STEP + STAR_NAME_SIZE
+    if star["brightness"]:
+        bottom = max(bottom, 84 + 26)
+    for mark in star["marks"]:
+        bottom = max(bottom, 114 + mark["row"] * 28 + 26)
+    if star["secondary"]:
+        mark_rows = max((mark["row"] + 1 for mark in star["marks"]), default=0)
+        bottom = max(bottom, 118 + mark_rows * 28 + 18)
+    return bottom
+
+
+def _star_banks(item, width):
+    """Pack each bank to its occupied height at the original glyph size."""
+    stars = [(s, g["color"]) for g in item["groups"] for s in g["stars"]]
+    columns = (width - 40) // STAR_COLUMN_STEP
+    banks = []
+    top = 20
+    for start in range(0, len(stars), columns):
+        row = stars[start : start + columns]
+        height = max(_star_height(star) for star, _ in row)
+        banks.append((top, height, row))
+        top += height + STAR_BANK_GAP
+    return banks
+
+
+def _chart_cell_size(view):
+    """Find the smallest shared square that fits all stars and palace footers."""
+    side = CELL_WIDTH
+    while True:
+        occupied = 20
+        for item in view["palaces"]:
+            banks = _star_banks(item, side)
+            if banks:
+                top, height, _ = banks[-1]
+                occupied = max(occupied, top + height)
+        if occupied + 8 + PALACE_FOOTER_HEIGHT <= side:
+            return side
+        side += 20
+
+
+def _draw_palace(painter, item, chart, x, y, height, *, width=CELL_WIDTH):
     palace = item["palace"]
     selected = item["annual_selected"]
     natal_life = palace["branch"] == chart["life"]
-    painter.card(x, y, CELL_WIDTH, height, radius=0)
+    painter.card(x, y, width, height, radius=0)
     # Small corner sights evoke a celestial chart without sitting behind stars.
-    for sx, direction in ((x + 8, 1), (x + CELL_WIDTH - 8, -1)):
+    for sx, direction in ((x + 8, 1), (x + width - 8, -1)):
         painter.draw.line(
             (sx, y + 9, sx + 12 * direction, y + 9),
             fill=painter.palette.border,
         )
-    stars = [(s, g["color"]) for g in item["groups"] for s in g["stars"]]
-    banks = math.ceil(len(stars) / STAR_COLUMNS)
-    for bank in range(banks):
-        row = stars[bank * STAR_COLUMNS : (bank + 1) * STAR_COLUMNS]
+    for top, _, row in _star_banks(item, width):
         for col, (star, color) in enumerate(row):
             _vertical_star(
                 painter,
                 star,
                 x + 12 + col * STAR_COLUMN_STEP,
-                y + 20 + bank * STAR_BANK_HEIGHT,
+                y + top,
                 color,
                 STAR_COLUMN_STEP,
             )
@@ -369,7 +412,7 @@ def _draw_palace(painter, item, chart, x, y, height):
                 painter.pill(
                     label,
                     badge_x,
-                    y + height - 156,
+                    y + height - PALACE_FOOTER_HEIGHT,
                     foreground,
                     fill,
                     size=18,
@@ -402,13 +445,13 @@ def _draw_palace(painter, item, chart, x, y, height):
         y + height - 92,
         18,
         painter.palette.muted,
-        CELL_WIDTH - 123,
+        width - 123,
     )
     d = item["decade"]
     age = f"{d['age_start']}—{d['age_end']}岁"
     painter.text(
         age,
-        x + (CELL_WIDTH - painter.font(25).getlength(age)) / 2,
+        x + (width - painter.font(25).getlength(age)) / 2,
         y + height - 64,
         25,
         painter.palette.ink,
@@ -420,7 +463,7 @@ def _draw_palace(painter, item, chart, x, y, height):
         if selected
         else painter.palette.ink
     )
-    px = x + (CELL_WIDTH - painter.font(30).getlength(palace["name"])) / 2
+    px = x + (width - painter.font(30).getlength(palace["name"])) / 2
     painter.text(palace["name"], px, y + height - 33, 30, name_color)
     if palace["body"]:
         painter.pill(
@@ -445,21 +488,21 @@ def _draw_palace(painter, item, chart, x, y, height):
     for index, character in enumerate(sequences["长生"]):
         painter.text(
             character,
-            x + CELL_WIDTH - 30,
+            x + width - 30,
             y + height - 121 + index * 20,
             18,
             painter.palette.muted,
         )
     painter.text(
         palace["stem_name"],
-        x + CELL_WIDTH - 34,
+        x + width - 34,
         y + height - 65,
         26,
         painter.palette.element_color(palace["stem_name"]),
     )
     painter.text(
         palace["branch_name"],
-        x + CELL_WIDTH - 34,
+        x + width - 34,
         y + height - 36,
         26,
         painter.palette.element_color(palace["branch_name"]),
@@ -473,7 +516,7 @@ def _draw_palace(painter, item, chart, x, y, height):
             else painter.palette.major
         )
         painter.draw.rectangle(
-            (x + 3, y + 3, x + CELL_WIDTH - 3, y + height - 3),
+            (x + 3, y + 3, x + width - 3, y + height - 3),
             outline=outline,
             width=2,
         )
@@ -704,21 +747,11 @@ def _draw_center(painter, chart, x, y, width, height):
 
 def render_chart(chart, font_path, theme="day"):
     view = make_chart_view(chart, theme)
-    # Size all twelve palaces for the densest one, keeping every row equal
-    # while preserving wrapped star banks, annotations, and footer clearance.
-    cell_height = max(
-        400,
-        max(
-            math.ceil(len(item["palace"]["stars"]) / STAR_COLUMNS)
-            for item in view["palaces"]
-        )
-        * STAR_BANK_HEIGHT
-        + 180,
-    )
-    width = 2 * MARGIN + 4 * CELL_WIDTH
+    cell_size = _chart_cell_size(view)
+    width = 2 * MARGIN + 4 * cell_size
     grid_y = 118
-    row_y = [grid_y + row * cell_height for row in range(4)]
-    footer_y = grid_y + 4 * cell_height + 24
+    row_y = [grid_y + row * cell_size for row in range(4)]
+    footer_y = grid_y + 4 * cell_size + 24
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
     painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
@@ -761,17 +794,18 @@ def render_chart(chart, font_path, theme="day"):
                     painter,
                     view["palaces"][branch - 1],
                     chart,
-                    MARGIN + col * CELL_WIDTH,
+                    MARGIN + col * cell_size,
                     row_y[row],
-                    cell_height,
+                    cell_size,
+                    width=cell_size,
                 )
     _draw_center(
         painter,
         chart,
-        MARGIN + CELL_WIDTH,
+        MARGIN + cell_size,
         row_y[1],
-        2 * CELL_WIDTH,
-        2 * cell_height,
+        2 * cell_size,
+        2 * cell_size,
     )
     # Paint inner frame arrows after palace and center backgrounds.
     for row, cells in enumerate(GRID):
@@ -780,9 +814,10 @@ def render_chart(chart, font_path, theme="day"):
                 for arrow in self_hua_arrow_layout(
                     chart["palaces"][branch - 1]["stars"],
                     branch,
-                    MARGIN + col * CELL_WIDTH,
+                    MARGIN + col * cell_size,
                     row_y[row],
-                    cell_height,
+                    cell_size,
+                    width=cell_size,
                 ):
                     color, _ = painter.palette.hua_color(arrow["hua"])
                     painter.arrow(arrow["start"], arrow["end"], color)
@@ -790,9 +825,9 @@ def render_chart(chart, font_path, theme="day"):
     if layers:
         painter.text("运限四化", MARGIN, footer_y, 21, painter.palette.accent)
         for i, (label, layer) in enumerate(layers):
-            sx = MARGIN + i % 2 * (2 * CELL_WIDTH + 8)
+            sx = MARGIN + i % 2 * (2 * cell_size + 8)
             sy = footer_y + 38 + i // 2 * 88
-            painter.card(sx, sy, 2 * CELL_WIDTH - 8, 76)
+            painter.card(sx, sy, 2 * cell_size - 8, 76)
             painter.text(
                 f"{LAYER_NAMES.get(label, label)} · 命宫{BRANCHES[layer['life'] - 1]}",
                 sx + 18,
@@ -802,7 +837,13 @@ def render_chart(chart, font_path, theme="day"):
             )
             pairs = [(text[:-1], text[-1]) for text in layer["four_hua"]]
             _draw_hua_row(
-                painter, pairs, sx + 18, sy + 39, cell=184, size=18, source=label
+                painter,
+                pairs,
+                sx + 18,
+                sy + 39,
+                cell=(2 * cell_size - 64) / 4,
+                size=18,
+                source=label,
             )
     by = footer_y + summary_height + 10
     painter.text(

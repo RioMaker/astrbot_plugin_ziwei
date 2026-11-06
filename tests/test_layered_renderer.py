@@ -152,9 +152,9 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
     palaces, centers = [], []
     real_palace, real_center = drawing._draw_palace, drawing._draw_center
 
-    def palace(painter, item, chart, x, y, height):
-        palaces.append((x, y, drawing.CELL_WIDTH, height))
-        real_palace(painter, item, chart, x, y, height)
+    def palace(painter, item, chart, x, y, height, *, width):
+        palaces.append((x, y, width, height))
+        real_palace(painter, item, chart, x, y, height, width=width)
 
     def center(painter, chart, x, y, width, height):
         centers.append((x, y, width, height))
@@ -164,11 +164,14 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
     monkeypatch.setattr(drawing, "_draw_center", center)
     png = Renderer(font_path, theme).render(chart)
     assert len(palaces) == 12
-    assert {(width, height) for _, _, width, height in palaces} == {(400, 620)}
+    sizes = {(width, height) for _, _, width, height in palaces}
+    assert len(sizes) == 1
+    side, height = sizes.pop()
+    assert 400 <= side == height <= 480
     xs = sorted({x for x, _, _, _ in palaces})
     ys = sorted({y for _, y, _, _ in palaces})
-    assert xs == [32, 432, 832, 1232]
-    assert ys == [118, 738, 1358, 1978]
+    assert xs == [32 + col * side for col in range(4)]
+    assert ys == [118 + row * side for row in range(4)]
     # The two middle rows leave exactly the central two-by-two opening.
     assert [(x, y) for x, y, _, _ in palaces] == [
         (x, y)
@@ -176,8 +179,8 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
         for col, x in enumerate(xs)
         if row in {0, 3} or col in {0, 3}
     ]
-    assert centers == [(432, 738, 800, 1240)]
+    assert centers == [(xs[1], ys[1], 2 * side, 2 * side)]
     with Image.open(io.BytesIO(png)) as image:
         image.load()
-        assert image.width == 1664 and image.height < 3100
+        assert image.width == 64 + 4 * side and image.height < 2500
     assert len(png) < 2_000_000 and chart == before
