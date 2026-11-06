@@ -1,9 +1,11 @@
 import io
 from copy import deepcopy
+from datetime import datetime
 
 import pytest
 from PIL import Image
 
+from astrbot_plugin_ziwei import modern_renderer as drawing
 from astrbot_plugin_ziwei.commands import DEMO_BIRTH, parse_request
 from astrbot_plugin_ziwei.engine import apply_decade, apply_flow, build_chart
 from astrbot_plugin_ziwei.modern_renderer import (
@@ -128,9 +130,9 @@ def test_selected_and_natal_palace_titles_stay_readable(monkeypatch, theme, font
 
 
 @pytest.mark.parametrize("theme", ["day", "night"])
-@pytest.mark.parametrize("mode", ["natal", "toddler", "decade", "annual"])
+@pytest.mark.parametrize("mode", ["natal", "toddler", "decade", "annual", "date"])
 def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
-    mode, theme, font_path
+    monkeypatch, mode, theme, font_path
 ):
     r = parse_request("农历 1993-10-25 20:00 男 真太阳时=关")
     chart = build_chart(r.birth, r.profile)
@@ -140,12 +142,41 @@ def test_dense_multilayer_chart_remains_bounded_and_keeps_all_stars(
         chart = apply_decade(chart, 12)
     elif mode == "annual":
         chart = apply_flow(chart, year=2026)
+    elif mode == "date":
+        chart = apply_flow(chart, target=datetime(2026, 10, 6, 10))
     before = deepcopy(chart)
     view = make_chart_view(chart, theme)
     assert sum(
         len(group["stars"]) for item in view["palaces"] for group in item["groups"]
     ) == len(chart["stars"])
+    palaces, centers = [], []
+    real_palace, real_center = drawing._draw_palace, drawing._draw_center
+
+    def palace(painter, item, chart, x, y, height):
+        palaces.append((x, y, drawing.CELL_WIDTH, height))
+        real_palace(painter, item, chart, x, y, height)
+
+    def center(painter, chart, x, y, width, height):
+        centers.append((x, y, width, height))
+        real_center(painter, chart, x, y, width, height)
+
+    monkeypatch.setattr(drawing, "_draw_palace", palace)
+    monkeypatch.setattr(drawing, "_draw_center", center)
     png = Renderer(font_path, theme).render(chart)
+    assert len(palaces) == 12
+    assert {(width, height) for _, _, width, height in palaces} == {(400, 620)}
+    xs = sorted({x for x, _, _, _ in palaces})
+    ys = sorted({y for _, y, _, _ in palaces})
+    assert xs == [32, 432, 832, 1232]
+    assert ys == [118, 738, 1358, 1978]
+    # The two middle rows leave exactly the central two-by-two opening.
+    assert [(x, y) for x, y, _, _ in palaces] == [
+        (x, y)
+        for row, y in enumerate(ys)
+        for col, x in enumerate(xs)
+        if row in {0, 3} or col in {0, 3}
+    ]
+    assert centers == [(432, 738, 800, 1240)]
     with Image.open(io.BytesIO(png)) as image:
         image.load()
         assert image.width == 1664 and image.height < 3100

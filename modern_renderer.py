@@ -704,27 +704,21 @@ def _draw_center(painter, chart, x, y, width, height):
 
 def render_chart(chart, font_path, theme="day"):
     view = make_chart_view(chart, theme)
-    # Grow only the row that contains a dense palace. One crowded palace must
-    # not add unused star banks to every other row of the twelve-palace grid.
-    row_heights = [
+    # Size all twelve palaces for the densest one, keeping every row equal
+    # while preserving wrapped star banks, annotations, and footer clearance.
+    cell_height = max(
+        400,
         max(
-            400,
-            max(
-                math.ceil(
-                    len(view["palaces"][branch - 1]["palace"]["stars"]) / STAR_COLUMNS
-                )
-                for branch in cells
-                if branch is not None
-            )
-            * STAR_BANK_HEIGHT
-            + 180,
+            math.ceil(len(item["palace"]["stars"]) / STAR_COLUMNS)
+            for item in view["palaces"]
         )
-        for cells in GRID
-    ]
+        * STAR_BANK_HEIGHT
+        + 180,
+    )
     width = 2 * MARGIN + 4 * CELL_WIDTH
     grid_y = 118
-    row_y = [grid_y + sum(row_heights[:row]) for row in range(4)]
-    footer_y = grid_y + sum(row_heights) + 24
+    row_y = [grid_y + row * cell_height for row in range(4)]
+    footer_y = grid_y + 4 * cell_height + 24
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
     painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
@@ -769,7 +763,7 @@ def render_chart(chart, font_path, theme="day"):
                     chart,
                     MARGIN + col * CELL_WIDTH,
                     row_y[row],
-                    row_heights[row],
+                    cell_height,
                 )
     _draw_center(
         painter,
@@ -777,7 +771,7 @@ def render_chart(chart, font_path, theme="day"):
         MARGIN + CELL_WIDTH,
         row_y[1],
         2 * CELL_WIDTH,
-        sum(row_heights[1:3]),
+        2 * cell_height,
     )
     # Paint inner frame arrows after palace and center backgrounds.
     for row, cells in enumerate(GRID):
@@ -788,7 +782,7 @@ def render_chart(chart, font_path, theme="day"):
                     branch,
                     MARGIN + col * CELL_WIDTH,
                     row_y[row],
-                    row_heights[row],
+                    cell_height,
                 ):
                     color, _ = painter.palette.hua_color(arrow["hua"])
                     painter.arrow(arrow["start"], arrow["end"], color)

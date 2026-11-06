@@ -94,9 +94,11 @@ def test_large_star_columns_keep_every_glyph_aligned_and_clear(
                     assert (
                         a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]
                     ), (value["instance_id"], glyph, other)
-    if "农历" in birth:
-        # Only the bottom row needs a second bank; upper rows remain compact.
-        assert palaces[2][3] - palaces[2][1] > palaces[6][3] - palaces[6][1]
-        assert palaces[6][3] - palaces[6][1] == 400
-        with Image.open(io.BytesIO(png)) as image:
-            assert image.height < 2400
+    # A wrapped star bank must not make one grid row taller than the others.
+    expected_height = 620 if "农历" in birth else 400
+    assert len(palaces) == 12
+    assert {(right - x, bottom - y) for x, y, right, bottom in palaces.values()} == {
+        (400, expected_height)
+    }
+    with Image.open(io.BytesIO(png)) as image:
+        assert image.height < 3100
