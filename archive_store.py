@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from .admin_records import AdminRecords
 from .ai_limits import DEFAULT_POLICY, question_token, take
 from .llm_data import owner_key
+from .personal_store import PersonalStore
 from .rectification_store import RectificationStore
 
 
@@ -77,6 +78,7 @@ class ArchiveStore:
                 db.execute("DELETE FROM ai_usage WHERE pending=1")
         self.rectifications = RectificationStore(self, resume_ai_jobs=resume_ai_jobs)
         self.records = AdminRecords(self)
+        self.bindings = PersonalStore(self)
 
     @contextmanager
     def transaction(self):

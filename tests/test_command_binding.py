@@ -8,7 +8,9 @@ from astrbot.core.star.filter.command import GreedyStr
 from astrbot_plugin_ziwei.main import ZiweiPlugin
 
 
-@pytest.mark.parametrize("handler", [ZiweiPlugin.ziwei, ZiweiPlugin.life_atlas])
+@pytest.mark.parametrize(
+    "handler", [ZiweiPlugin.ziwei, ZiweiPlugin.life_atlas, ZiweiPlugin.my_chart]
+)
 def test_greedy_command_preserves_annotation_for_framework_binding(handler):
     # AstrBot CommandFilter.init_handler_md uses the default value instead of
     # the annotation when a default is present. An empty str therefore prevents

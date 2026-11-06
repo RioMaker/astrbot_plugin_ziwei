@@ -5,6 +5,7 @@ from functools import wraps
 
 from astrbot.api import logger
 
+from .admin_bindings import AdminBindings
 from .admin_service import AdminError, AdminService
 
 
@@ -12,6 +13,7 @@ class AdminPage:
     def __init__(self, plugin):
         self.plugin = plugin
         self.service = AdminService(plugin)
+        self.bindings = AdminBindings(self.service)
         self.handlers = []
 
     def register(self):
@@ -31,6 +33,9 @@ class AdminPage:
             ("manage/records", self.records, "GET"),
             ("manage/records/<record_id>", self.detail, "GET"),
             ("manage/charts", self.create, "POST"),
+            ("manage/bindings", self.binding_users, "GET"),
+            ("manage/bindings/target", self.binding_target, "GET"),
+            ("manage/bindings/save", self.binding_save, "POST"),
         ):
             handler = self.guard(callback)
             register(
@@ -105,3 +110,12 @@ class AdminPage:
         return await self.service.create(
             await self.payload(), self.web.request.username
         )
+
+    async def binding_users(self):
+        return self.bindings.users(self.web.request.query)
+
+    async def binding_target(self):
+        return await self.bindings.target(self.web.request.query)
+
+    async def binding_save(self):
+        return await self.bindings.save(await self.payload(), self.web.request.username)

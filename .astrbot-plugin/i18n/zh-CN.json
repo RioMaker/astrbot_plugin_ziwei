@@ -2,13 +2,13 @@
   "views": {
     "manage": {
       "title": "紫微排盘控制台",
-      "description": "配置插件、在线排盘和查看群友起盘记录。"
+      "description": "配置插件、在线排盘、查看群友记录和管理命盘绑定。"
     }
   },
   "pages": {
     "manage": {
       "title": "紫微排盘控制台",
-      "description": "配置插件、在线排盘和查看群友起盘记录。"
+      "description": "配置插件、在线排盘、查看群友记录和管理命盘绑定。"
     }
   }
 }

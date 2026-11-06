@@ -7,7 +7,12 @@ const kinds = {
   date: "日期流盘",
   atlas: "人生图谱",
 };
-const sources = { group: "群友起盘", web: "后台排盘", legacy: "历史档案" };
+const sources = {
+  group: "群友起盘",
+  web: "后台排盘",
+  legacy: "历史档案",
+  binding: "已绑定命盘",
+};
 const labels = {
   day: "白天星图",
   night: "夜间星空",
@@ -143,6 +148,14 @@ function renderResult(target, record) {
   );
   target.append(heading);
   target.append(node("p", "编号 " + record.id, "help-text"));
+  if (record.source !== "binding") {
+    const bind = node("button", "用于绑定", "secondary");
+    bind.type = "button";
+    bind.addEventListener("click", () =>
+      action(bind, () => useBindingRecord(record)),
+    );
+    target.append(bind);
+  }
   if (record.warning) target.append(node("p", record.warning, "notice"));
   if (record.image && record.image.startsWith("data:image/png;base64,")) {
     const actions = node("div", undefined, "result-actions");
@@ -298,6 +311,12 @@ async function loadRecords(nextPage = 1) {
       ),
     );
     operation.append(view);
+    const bind = node("button", "用于绑定", "secondary");
+    bind.type = "button";
+    bind.addEventListener("click", () =>
+      action(bind, () => useBindingRecord(record)),
+    );
+    operation.append(bind);
     row.append(person, groupCell, chart, operation);
     $("record-rows").append(row);
   });
@@ -419,9 +438,270 @@ $("settings-form").addEventListener("submit", (event) => {
 $("reload-settings").addEventListener("click", () =>
   action($("reload-settings"), loadSettings),
 );
+
+let bindingState = null,
+  bindingPage = 1,
+  bindingPages = 1,
+  bindingGeneration = 0,
+  bindingQueryGeneration = 0,
+  bindingBusy = false,
+  bindingSubmission = null;
+function bindingIdentity() {
+  return {
+    platform_id: $("binding-platform").value.trim(),
+    user_id: $("binding-user").value.trim(),
+  };
+}
+function sameBindingTarget(state) {
+  const target = bindingIdentity();
+  return (
+    state &&
+    target.platform_id === state.platform_id &&
+    target.user_id === state.user_id
+  );
+}
+function bindingButtons() {
+  const loaded = ready && sameBindingTarget(bindingState) && !bindingBusy;
+  $("binding-save").disabled = !loaded;
+  $("binding-save").textContent = bindingState?.active
+    ? "换绑为此命盘"
+    : "绑定命盘";
+  $("binding-unbind").disabled = !loaded || !bindingState.active;
+  $("binding-view").disabled = !loaded || !bindingState.active;
+}
+function showBindingState(state) {
+  bindingState = state;
+  const info = state.active
+    ? `已绑定：${state.summary.civil} · ${state.summary.sex}。换绑将替换此命盘。`
+    : "尚未绑定，可以选择资料后绑定。";
+  $("binding-state").textContent =
+    `${state.user_id} · ${info}` +
+    (state.updated
+      ? ` 最近操作：${dateFormat.format(new Date(state.updated * 1000))}（${state.via === "admin" ? "后台：" + state.actor : "群友本人"}）`
+      : "");
+  bindingButtons();
+}
+function invalidateBinding() {
+  bindingGeneration++;
+  bindingState = null;
+  bindingSubmission = null;
+  $("binding-state").textContent = "账号已变化，请重新载入该群友。";
+  $("binding-result").replaceChildren(
+    node("p", "载入群友后可查看绑定盘。", "help-text"),
+  );
+  bindingButtons();
+}
+for (const id of ["binding-platform", "binding-user"])
+  $(id).addEventListener("input", invalidateBinding);
+function updateBindingSource() {
+  const fromBirth = $("binding-source").value === "birth";
+  $("binding-birth-fields").hidden = !fromBirth;
+  $("binding-record-field").hidden = fromBirth;
+  $("binding-birth").required = fromBirth;
+  $("binding-record").required = !fromBirth;
+}
+$("binding-source").addEventListener("change", updateBindingSource);
+updateBindingSource();
+async function loadBinding(render = false) {
+  const target = bindingIdentity();
+  if (!target.platform_id || !target.user_id)
+    throw new Error("请填写机器人实例和群友账号。");
+  const generation = ++bindingGeneration;
+  const result = await bridge.apiGet("manage/bindings/target", {
+    ...target,
+    render: render ? "1" : "0",
+  });
+  if (generation !== bindingGeneration || !sameBindingTarget(result)) return;
+  showBindingState(result);
+  if (result.preview) renderResult($("binding-result"), result.preview);
+  else
+    $("binding-result").replaceChildren(
+      node(
+        "p",
+        result.active
+          ? "已载入，点击“查看绑定盘”显示图片。"
+          : "该群友尚未绑定命盘。",
+        "help-text",
+      ),
+    );
+}
+async function loadBindings(nextPage = 1) {
+  const generation = ++bindingQueryGeneration;
+  const result = await bridge.apiGet("manage/bindings", {
+    page: nextPage,
+    search: $("binding-search-text").value.trim(),
+    platform: $("binding-filter-platform").value,
+  });
+  if (generation !== bindingQueryGeneration) return;
+  bindingPage = result.page;
+  bindingPages = result.pages;
+  $("binding-total").textContent = `${result.total} 位群友`;
+  $("binding-page").textContent = `${bindingPage} / ${bindingPages}`;
+  $("binding-previous").disabled = bindingPage <= 1;
+  $("binding-next").disabled = bindingPage >= bindingPages;
+  const selected = $("binding-filter-platform").value;
+  $("binding-filter-platform").replaceChildren(new Option("全部实例", ""));
+  $("binding-platforms").replaceChildren();
+  for (const platform of result.platforms) {
+    $("binding-filter-platform").add(new Option(platform, platform));
+    $("binding-platforms").append(new Option(platform, platform));
+  }
+  $("binding-filter-platform").value = selected;
+  $("binding-rows").replaceChildren();
+  for (const user of result.items) {
+    const row = node("tr"),
+      person = node("td", user.user_name || "未记录昵称"),
+      state = node("td", user.active ? "已绑定" : "未绑定"),
+      operation = node("td");
+    person.append(node("small", user.user_id));
+    if (user.updated)
+      state.append(
+        node("small", dateFormat.format(new Date(user.updated * 1000))),
+      );
+    const select = node("button", "管理", "secondary");
+    select.type = "button";
+    select.addEventListener("click", () =>
+      action(select, async () => {
+        $("binding-platform").value = user.platform_id;
+        $("binding-user").value = user.user_id;
+        invalidateBinding();
+        await loadBinding();
+        $("binding-form").scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }),
+    );
+    operation.append(select);
+    row.append(person, node("td", user.platform_id), state, operation);
+    $("binding-rows").append(row);
+  }
+  if (!result.items.length) {
+    const row = node("tr"),
+      cell = node(
+        "td",
+        "暂无群友记录，也可以在下方填写账号后绑定。",
+        "no-records",
+      );
+    cell.colSpan = 4;
+    row.append(cell);
+    $("binding-rows").append(row);
+  }
+}
+async function useBindingRecord(record) {
+  if ($("detail-dialog").open) $("detail-dialog").close();
+  changeTab("bindings");
+  $("binding-source").value = "record";
+  $("binding-record").value = record.id;
+  updateBindingSource();
+  $("binding-platform").value = record.platform_id || "";
+  $("binding-user").value = record.user_id || "";
+  invalidateBinding();
+  if (record.platform_id && record.user_id) await loadBinding();
+  notice("已选取该记录的本命盘，请核对群友账号后点击绑定或换绑。");
+  $("binding-form").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+async function saveBinding(unbind = false) {
+  if (!sameBindingTarget(bindingState)) throw new Error("请先载入该群友。");
+  const fromBirth = $("binding-source").value === "birth";
+  const body = {
+    ...bindingIdentity(),
+    action: unbind ? "unbind" : bindingState.active ? "replace" : "bind",
+    revision: bindingState.revision,
+    args:
+      !unbind && fromBirth
+        ? [
+            $("binding-calendar").value,
+            $("binding-birth").value.trim(),
+            $("binding-sex").value,
+            $("binding-extra").value.trim(),
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : "",
+    record_id: !unbind && !fromBirth ? $("binding-record").value.trim() : "",
+  };
+  const signature = JSON.stringify(body);
+  if (!bindingSubmission || bindingSubmission.signature !== signature)
+    bindingSubmission = {
+      signature,
+      body: { ...body, request_id: requestId() },
+    };
+  bindingBusy = true;
+  bindingButtons();
+  try {
+    const state = await bridge.apiPost(
+      "manage/bindings/save",
+      bindingSubmission.body,
+    );
+    bindingSubmission = null;
+    if (sameBindingTarget(state)) {
+      showBindingState(state);
+      $("binding-result").replaceChildren(
+        node(
+          "p",
+          state.active
+            ? "绑定已保存，点击“查看绑定盘”查看图片。"
+            : "已解除绑定，历史记录仍保留。",
+          "help-text",
+        ),
+      );
+    }
+    notice(
+      state.replayed
+        ? "该请求已处理，已刷新当前绑定状态。"
+        : unbind
+          ? "已解除绑定，历史记录仍保留。"
+          : "绑定已保存，同一机器人内各已开启的群通用。",
+      "success",
+    );
+    await Promise.all([
+      loadBindings(bindingPage),
+      loadOverview(),
+      loadRecords(page),
+    ]);
+  } finally {
+    bindingBusy = false;
+    bindingButtons();
+  }
+}
+$("binding-search").addEventListener("submit", (event) => {
+  event.preventDefault();
+  action(event.submitter, () => loadBindings(1));
+});
+$("binding-load").addEventListener("click", () =>
+  action($("binding-load"), () => loadBinding()),
+);
+$("binding-view").addEventListener("click", async () => {
+  await action($("binding-view"), () => loadBinding(true));
+  bindingButtons();
+});
+$("binding-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!ready || $("binding-save").disabled) return;
+  await action($("binding-save"), () => saveBinding());
+  bindingButtons();
+});
+$("binding-unbind").addEventListener("click", async () => {
+  if ($("binding-unbind").disabled) return;
+  await action($("binding-unbind"), () => saveBinding(true));
+  bindingButtons();
+});
+$("binding-previous").addEventListener("click", async () => {
+  await action($("binding-previous"), () => loadBindings(bindingPage - 1));
+  $("binding-previous").disabled = bindingPage <= 1;
+});
+$("binding-next").addEventListener("click", async () => {
+  await action($("binding-next"), () => loadBindings(bindingPage + 1));
+  $("binding-next").disabled = bindingPage >= bindingPages;
+});
 $("refresh").addEventListener("click", () =>
   action($("refresh"), async () => {
-    await Promise.all([loadOverview(), loadRecords(page)]);
+    await Promise.all([
+      loadOverview(),
+      loadRecords(page),
+      loadBindings(bindingPage),
+    ]);
     notice("记录已刷新。", "success");
   }),
 );
@@ -431,7 +711,12 @@ try {
       "请从 AstrBot WebUI → 插件 → 紫微斗数排盘 → 紫微排盘控制台打开。",
     );
   await bridge.ready();
-  await Promise.all([loadSettings(), loadOverview(), loadRecords()]);
+  await Promise.all([
+    loadSettings(),
+    loadOverview(),
+    loadRecords(),
+    loadBindings(),
+  ]);
   ready = true;
   $("create").disabled = false;
   notice("已连接管理后台。群友起盘会自动归档，页面排盘也会保留记录。");

@@ -24,11 +24,13 @@ from .engine import apply_decade, apply_flow, build_chart
 from .help_renderer import HelpRenderer
 from .life_atlas_service import LifeAtlasService
 from .llm_data import ChartCache
+from .personal_commands import split_personal_command
+from .personal_service import PersonalService
 from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.1.0")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.2.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -50,6 +52,7 @@ class ZiweiPlugin(Star):
         # Preserve historical tables without resuming any AI jobs.
         self.archive = ArchiveStore(data_dir / "archives.sqlite3", resume_ai_jobs=False)
         self.life_atlases = LifeAtlasService(self)
+        self.personal = PersonalService(self)
         self.help_renderer = None
         try:
             self.renderer = Renderer(
@@ -137,6 +140,10 @@ class ZiweiPlugin(Star):
 
     async def _ziwei_command(self, event, args, *, quiet=False):
         text = str(args).strip()
+        if split_personal_command(text) is not None:
+            async for result in self.personal.run(event, text, quiet=quiet):
+                yield result
+            return
         if text == "定盘" or text.startswith("定盘 "):
             claim_command(event, quiet)
             yield event.plain_result(
@@ -251,6 +258,12 @@ class ZiweiPlugin(Star):
                 yield event.plain_result("排盘暂时失败，请稍后重试。")
         finally:
             self.pending -= 1
+
+    @filter.command("我的命盘")
+    async def my_chart(self, event: AstrMessageEvent, args: GreedyStr):
+        """返回同一机器人内本人绑定的本命盘。"""
+        async for result in self.personal.run(event, "我的命盘 " + str(args)):
+            yield result
 
     @filter.command("人生")
     async def life_atlas(self, event: AstrMessageEvent, args: GreedyStr):

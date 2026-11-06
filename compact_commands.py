@@ -4,8 +4,10 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
+from .personal_commands import split_personal_command
+
 _NATAL_COMMANDS = ("紫微排盘", "紫薇排盘", "紫微", "紫薇", "ziwei")
-_COMMANDS = (*_NATAL_COMMANDS, "人生")
+_COMMANDS = (*_NATAL_COMMANDS, "人生", "我的命盘")
 _MANAGEMENT = {"开启", "开", "关闭", "关", "状态"}
 _HELP = {"帮助", "help", "?", "？"}
 _CALENDARS = r"(?:公历|阳历|农历|阴历|solar|lunar)"
@@ -34,7 +36,7 @@ class NormalizedArguments:
 @dataclass(frozen=True)
 class CompactCommand:
     command: str
-    target: Literal["natal", "atlas", "manage", "help"]
+    target: Literal["natal", "atlas", "manage", "help", "personal"]
     args: str
     compact: bool = False
 
@@ -157,10 +159,18 @@ def parse_compact_command(text: str) -> CompactCommand | None:
         _explicit_argument_start(remainder)
         or normalize_help_arguments(remainder) is not None
         or command in _NATAL_COMMANDS
-        and (remainder in _MANAGEMENT or _explicit_atlas_subcommand(remainder))
+        and (
+            remainder in _MANAGEMENT
+            or _explicit_atlas_subcommand(remainder)
+            or split_personal_command(remainder) is not None
+        )
+        or command == "我的命盘"
+        and split_personal_command(value) is not None
     ):
         return None
     args = remainder.strip()
+    if command == "我的命盘":
+        return CompactCommand(command, "personal", "我的命盘 " + args, compact)
     target = "atlas" if command == "人生" else "natal"
     if target == "natal" and args.startswith("图谱"):
         tail = args[len("图谱") :]

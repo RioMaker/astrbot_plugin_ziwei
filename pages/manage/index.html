@@ -50,6 +50,9 @@
         <button type="button" data-tab="settings" aria-pressed="false">
           插件配置
         </button>
+        <button type="button" data-tab="bindings" aria-pressed="false">
+          命盘绑定
+        </button>
       </nav>
 
       <section id="tab-chart" class="tab-content">
@@ -177,6 +180,167 @@
         </div>
       </section>
 
+      <section id="tab-bindings" class="tab-content" hidden>
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">个人命盘</p>
+              <h2>绑定一次，各群通用</h2>
+            </div>
+            <span id="binding-total" class="badge">加载中</span>
+          </div>
+          <p class="help-text">
+            群友在同一机器人已开启的群里发送
+            /我的命盘，即可查看本命盘。代绑不会向群发送消息。
+          </p>
+          <form id="binding-search" class="binding-filters">
+            <label
+              >机器人实例<select id="binding-filter-platform">
+                <option value="">全部实例</option>
+              </select></label
+            >
+            <label
+              >查找群友<input
+                id="binding-search-text"
+                placeholder="昵称或用户账号"
+                maxlength="256"
+            /></label>
+            <button type="submit">查询</button>
+          </form>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>群友</th>
+                  <th>机器人实例</th>
+                  <th>绑定状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="binding-rows"></tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button id="binding-previous" class="secondary" type="button">
+              上一页</button
+            ><span id="binding-page"></span
+            ><button id="binding-next" class="secondary" type="button">
+              下一页
+            </button>
+          </div>
+        </div>
+        <div class="chart-layout binding-layout">
+          <form id="binding-form" class="panel">
+            <h2>替群友管理命盘</h2>
+            <p class="help-text">
+              从上方选择群友，或填写账号后载入。账号须与聊天平台实际账号一致。
+            </p>
+            <label
+              >机器人实例<input
+                id="binding-platform"
+                list="binding-platforms"
+                required
+                maxlength="256"
+                autocomplete="off"
+                placeholder="选择上方列表中的实例"
+            /></label>
+            <datalist id="binding-platforms"></datalist>
+            <label
+              >群友账号<input
+                id="binding-user"
+                required
+                maxlength="256"
+                autocomplete="off"
+                placeholder="例如 QQ 账号"
+            /></label>
+            <button id="binding-load" class="secondary" type="button">
+              载入该群友
+            </button>
+            <p id="binding-state" class="notice">
+              请先载入群友，查看当前绑定。
+            </p>
+            <label
+              >命盘来源<select id="binding-source">
+                <option value="birth">填写出生资料</option>
+                <option value="record">选择已有起盘记录</option>
+              </select></label
+            >
+            <div id="binding-birth-fields">
+              <label
+                >出生日期时间<input
+                  id="binding-birth"
+                  maxlength="32"
+                  autocomplete="off"
+                  placeholder="例如 199006150830"
+                /><small>年月日时分连写 12 位；示例为虚构。</small></label
+              >
+              <div class="two-columns">
+                <label
+                  >性别<select id="binding-sex">
+                    <option>男</option>
+                    <option>女</option>
+                  </select></label
+                ><label
+                  >历法<select id="binding-calendar">
+                    <option>公历</option>
+                    <option>农历</option>
+                  </select></label
+                >
+              </div>
+              <label
+                >附加参数（可选）<input
+                  id="binding-extra"
+                  maxlength="700"
+                  placeholder="例如 经度=116.4 真太阳时=关"
+                  autocomplete="off"
+              /></label>
+            </div>
+            <label id="binding-record-field" hidden
+              >起盘记录编号<input
+                id="binding-record"
+                maxlength="32"
+                autocomplete="off"
+                placeholder="在起盘记录中点击“用于绑定”"
+              /><small
+                >使用该记录的本命盘；流年、大运叠层不会绑定。</small
+              ></label
+            >
+            <div class="actions">
+              <button id="binding-save" type="submit" disabled>绑定命盘</button
+              ><button
+                id="binding-view"
+                type="button"
+                class="secondary"
+                disabled
+              >
+                查看绑定盘</button
+              ><button
+                id="binding-unbind"
+                type="button"
+                class="secondary"
+                disabled
+              >
+                解除绑定
+              </button>
+            </div>
+            <p class="help-text">
+              换绑会替换该账号原绑定；解绑保留历史记录。操作会记录当前后台登录账号。
+            </p>
+          </form>
+          <section
+            id="binding-result"
+            class="panel result-panel"
+            aria-live="polite"
+          >
+            <div class="empty-result">
+              <span class="constellation" aria-hidden="true">✧ · ✦ · ✧</span>
+              <h2>群友的本命盘</h2>
+              <p>载入群友后，点击“查看绑定盘”。</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <section id="tab-records" class="tab-content" hidden>
         <div class="panel">
           <div class="section-heading">
@@ -286,7 +450,7 @@
           <p id="settings-note" class="help-text"></p>
         </form>
       </section>
-      <footer>紫微斗数 2.1.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
+      <footer>紫微斗数 2.2.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
     </main>
     <dialog id="detail-dialog">
       <div class="dialog-bar">

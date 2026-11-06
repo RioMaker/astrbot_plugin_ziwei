@@ -22,7 +22,7 @@ LIFE_ATLAS_HELP = f"""人生变动图谱
 可省略空格，如 /人生199006150830男；省空格格式有误时静默忽略，标准空格写法仍提示错误。
 默认深色星图，从出生画到60虚岁所在大运末年；只返回图片。
 可用经度、时区、真太阳时、农历等出生选项，不与流年、流盘或运限混用。
-/紫微 图谱：优先使用当前本人命盘；多份档案且无当前选择时列出选择。
+/紫微 图谱：优先使用已绑定的本命盘，其次为本群当前本人命盘。
 /人生 命盘=<本人命盘ID>：使用指定档案；可附主题=白天或主题=夜间。
 仅已开启的群可用。当前为P1结构候选图谱，不代表已判定重大事件。"""
 
@@ -34,6 +34,13 @@ class LifeAtlasService:
     def _archived_chart(self, scope, chart_id):
         plugin = self.plugin
         if not chart_id:
+            binding = plugin.archive.bindings.current(scope)
+            if binding:
+                return {
+                    "id": "",
+                    "chart": binding["chart"],
+                    "binding_revision": binding["revision"],
+                }, None
             cached = plugin.chart_cache.get(scope)
             if cached:
                 chart_id = cached.chart_id
@@ -96,6 +103,7 @@ class LifeAtlasService:
                         yield event.plain_result(rejection)
                     return
                 source_chart_id = ""
+                binding_revision = None
                 if request.chart_request is not None:
                     chart = await plugin._compute_chart(request.chart_request)
                 else:
@@ -104,6 +112,7 @@ class LifeAtlasService:
                         yield event.plain_result(message)
                         return
                     chart, source_chart_id = row["chart"], row["id"]
+                    binding_revision = row.get("binding_revision")
                 atlas = await asyncio.to_thread(build_life_atlas, chart)
                 rejection = await plugin._chart_access(scope)
                 if rejection:
@@ -128,6 +137,10 @@ class LifeAtlasService:
                         yield event.plain_result(rejection)
                     return
                 # No await separates this final authorization, atomic save and yield.
+                if binding_revision is not None:
+                    plugin.archive.bindings.assert_current(
+                        scope.platform_id, scope.user_id, binding_revision
+                    )
                 _, chart_id = plugin.archive.save_life_atlas(
                     scope, atlas, request.image_theme, source_chart_id
                 )

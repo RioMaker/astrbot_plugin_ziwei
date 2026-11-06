@@ -26,6 +26,7 @@ from astrbot_plugin_ziwei.tests import conftest  # noqa: E402
 from astrbot_plugin_ziwei.access import capture_group  # noqa: E402
 from astrbot_plugin_ziwei.main import ZiweiPlugin  # noqa: E402
 from astrbot_plugin_ziwei.tests.conftest import Event  # noqa: E402
+from astrbot_plugin_ziwei.tests.helpers import allow  # noqa: E402
 from astrbot_plugin_ziwei.tests.test_admin_page import Config, PageContext  # noqa: E402
 from astrbot_plugin_ziwei.tests.test_readings import natal  # noqa: E402
 
@@ -80,9 +81,10 @@ async def check(args, data_dir, address):
             (legacy_id,),
         )
     fail_once = False
+    fail_binding_once = False
 
     async def backend(_source, method, endpoint, value):
-        nonlocal fail_once
+        nonlocal fail_once, fail_binding_once
 
         async def body():
             return json.dumps(value).encode("utf-8")
@@ -111,6 +113,9 @@ async def check(args, data_dir, address):
             if fail_once and endpoint == "manage/charts":
                 fail_once = False
                 raise RuntimeError("演示网络中断，请再次点击生成命盘。")
+            if fail_binding_once and endpoint == "manage/bindings/save":
+                fail_binding_once = False
+                raise RuntimeError("演示绑定网络中断，请再次点击绑定。")
             return result["data"]
         finally:
             request_context.reset(token)
@@ -163,7 +168,11 @@ async def check(args, data_dir, address):
         )
         assert await page.locator("#record-rows img").count() == 0
         assert "<img src=x" in await page.locator("#record-rows").inner_text()
-        await page.locator("#record-rows button").click()
+        await (
+            page.locator("#record-rows")
+            .get_by_role("button", name="查看命盘", exact=True)
+            .click()
+        )
         await page.locator("#detail-dialog[open] img").wait_for()
         await page.locator("#close-detail").click()
         # Keep the distributed screenshot readable after checking literal XSS text.
@@ -211,8 +220,70 @@ async def check(args, data_dir, address):
         await page.locator("#notice.error").wait_for()
         assert plugin.archive.records.list(source="web")["total"] == 2
         await page.locator("#demo").click()
+
+        await page.locator('[data-tab="bindings"]').click()
+        await page.locator("#binding-search-text").fill("10001")
+        await page.locator('#binding-search button[type="submit"]').click()
+        await page.wait_for_function(
+            "document.getElementById('binding-total').textContent === '1 位群友'"
+        )
+        await page.locator("#binding-rows button").click()
+        await page.locator("#binding-save:enabled").wait_for()
+        assert await page.locator("#binding-platform").input_value() == "demo-qq"
+        await page.locator("#binding-birth").fill("199006150830")
+        fail_binding_once = True
+        await page.locator("#binding-save").click()
+        await page.wait_for_function(
+            "document.getElementById('notice').textContent.includes('演示绑定网络中断')"
+        )
+        await page.locator("#binding-save").click()
+        await page.wait_for_function(
+            "document.getElementById('binding-state').textContent.includes('已绑定：')"
+        )
+        await page.locator("#binding-save:enabled").wait_for()
+        assert plugin.archive.records.list(source="web")["total"] == 3
+        original = plugin.archive.bindings.state("demo-qq", "10001")
+        assert original["actor"] == "演示管理员"
+        await page.locator("#binding-source").select_option("record")
+        await page.locator("#binding-record").fill(malicious_id)
+        await page.locator("#binding-save").click()
+        await page.locator("#binding-save:enabled").wait_for()
+        assert (
+            plugin.archive.bindings.state("demo-qq", "10001")["revision"]
+            != original["revision"]
+        )
+        await page.locator("#binding-unbind").click()
+        await page.locator("#binding-save:enabled").wait_for()
+        assert not plugin.archive.bindings.state("demo-qq", "10001")["active"]
+        assert plugin.archive.records.list(source="web")["total"] == 3
+        await page.locator('[data-tab="records"]').click()
+        await page.locator("#filter-search").fill("10001")
+        await page.locator('#filter-form button[type="submit"]').click()
+        await page.wait_for_function(
+            "document.getElementById('record-total').textContent === '共 1 条'"
+        )
+        await (
+            page.locator("#record-rows")
+            .get_by_role("button", name="用于绑定", exact=True)
+            .click()
+        )
+        await page.locator("#binding-save:enabled").wait_for()
+        await page.locator("#binding-save").click()
+        await page.locator("#binding-save:enabled").wait_for()
+        await page.locator("#binding-view").click()
+        await page.locator("#binding-result img").wait_for()
+        assert plugin.archive.bindings.state("demo-qq", "10001")["active"]
+        for group in ("20001", "20002"):
+            event = Event(platform="demo-qq", group=group)
+            await allow(plugin, event)
+            replies = [reply async for reply in plugin.my_chart(event, "")]
+            assert replies[0][0].data.startswith(b"\x89PNG")
+        await page.screenshot(
+            path=str(args.output / "admin-bindings-desktop.png"), full_page=True
+        )
+
         await page.set_viewport_size({"width": 390, "height": 844})
-        for tab in ("chart", "records", "settings"):
+        for tab in ("chart", "records", "settings", "bindings"):
             await page.locator('[data-tab="' + tab + '"]').click()
             assert await page.evaluate(
                 "document.documentElement.scrollWidth <= innerWidth"
@@ -233,7 +304,7 @@ async def check(args, data_dir, address):
         await frame.locator("#demo").click()
         await frame.locator("#create").click()
         await frame.locator("#chart-result img").wait_for()
-        assert plugin.archive.records.list(source="web")["total"] == 3
+        assert plugin.archive.records.list(source="web")["total"] == 4
         # Without the Dashboard bridge, the distributed page is inert.
         standalone = await browser.new_context()
         missing = await standalone.new_page()
@@ -247,13 +318,15 @@ async def check(args, data_dir, address):
         json.dumps(
             {
                 "result": "passed",
-                "screenshots": 6,
+                "screenshots": 8,
                 "checks": [
                     "real backend create/config/history",
                     "PNG download",
                     "pagination/search",
                     "XSS text",
                     "network retry deduplication",
+                    "admin bind/replace/unbind, retry and record selection",
+                    "bound PNG readback across authorized groups",
                     "validation errors",
                     "390px layout",
                     "sandbox iframe",

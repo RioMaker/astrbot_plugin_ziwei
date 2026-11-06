@@ -511,6 +511,25 @@ dialog::backdrop {
   padding: 45px 15px;
   color: var(--muted);
 }
+.binding-layout {
+  margin-top: 24px;
+}
+.binding-filters {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: end;
+  gap: 16px;
+  margin: 18px 0;
+}
+.binding-filters label {
+  margin: 0;
+}
+#binding-state {
+  overflow-wrap: anywhere;
+}
+#record-rows td:last-child button + button {
+  margin-top: 8px;
+}
 @media (max-width: 1050px) {
   main {
     padding: 24px;
@@ -609,5 +628,47 @@ dialog::backdrop {
   }
   .two-columns {
     gap: 12px;
+  }
+  .binding-filters {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  #tab-bindings thead {
+    display: none;
+  }
+  #binding-rows {
+    display: block;
+  }
+  #binding-rows tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-bottom: 1px solid var(--border);
+  }
+  #binding-rows tr:last-child {
+    border-bottom: 0;
+  }
+  #binding-rows td {
+    border: 0;
+    padding: 12px;
+    overflow-wrap: anywhere;
+  }
+  #binding-rows td:nth-child(2) {
+    grid-row: 2;
+    grid-column: 1;
+    color: var(--muted);
+  }
+  #binding-rows td:nth-child(2)::before {
+    content: "机器人：";
+    display: block;
+  }
+  #binding-rows td:nth-child(3) {
+    grid-row: 2;
+    grid-column: 2;
+    white-space: nowrap;
+  }
+  #binding-rows td:nth-child(4) {
+    grid-row: 1;
+    grid-column: 2;
+    text-align: right;
   }
 }

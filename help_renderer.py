@@ -3,6 +3,8 @@
 import io
 
 from .help_content import (
+    HELP_BIND_COMMAND,
+    HELP_BIND_NOTE,
     HELP_BIRTH_FIELDS,
     HELP_BIRTH_NOTE,
     HELP_BIRTH_TITLE,
@@ -24,7 +26,7 @@ class HelpRenderer:
 
     def render(self, theme="night"):
         width, margin = 1080, 48
-        painter = Painter(width, 1144, self.font_path, theme)
+        painter = Painter(width, 1374, self.font_path, theme)
         p = painter.palette
         left, content_width = margin + 30, width - margin * 2 - 60
 
@@ -89,15 +91,21 @@ class HelpRenderer:
             if index < len(HELP_OPTIONS) - 1:
                 painter.rule(left, y + 86, content_width)
 
-        painter.card(margin, 864, width - margin * 2, 174, fill=p.center)
-        painter.text("查看帮助", left, 894, 26, p.ink)
-        painter.text(" 或 ".join(HELP_COMMANDS), left + 240, 890, 30, p.accent)
-        painter.text("省略空格", left, 944, 24, p.muted)
-        painter.text(" 或 ".join(HELP_COMPACT_COMMANDS), left + 240, 940, 28, p.accent)
-        painter.text("完整参数", left, 990, 24, p.muted)
-        painter.text(HELP_MORE_COMMAND, left + 240, 986, 28, p.accent)
+        section("03", "绑定自己的盘，以后不用重复填", 864, 212)
+        painter.text(HELP_BIND_COMMAND, left, 934, 34, p.accent)
+        painter.text("绑定后只需发送", left, 988, 28, p.ink)
+        painter.text("/我的命盘", left + 270, 982, 36, p.accent)
+        painter.text(HELP_BIND_NOTE, left, 1036, 24, p.muted)
+
+        painter.card(margin, 1094, width - margin * 2, 174, fill=p.center)
+        painter.text("查看帮助", left, 1124, 26, p.ink)
+        painter.text(" 或 ".join(HELP_COMMANDS), left + 240, 1120, 30, p.accent)
+        painter.text("省略空格", left, 1174, 24, p.muted)
+        painter.text(" 或 ".join(HELP_COMPACT_COMMANDS), left + 240, 1170, 28, p.accent)
+        painter.text("完整参数", left, 1220, 24, p.muted)
+        painter.text(HELP_MORE_COMMAND, left + 240, 1216, 28, p.accent)
         for index, note in enumerate(HELP_IMAGE_NOTES):
-            painter.text(note, margin, 1062 + index * 36, 22, p.muted)
+            painter.text(note, margin, 1292 + index * 36, 22, p.muted)
 
         stream = io.BytesIO()
         painter.image.save(stream, format="PNG", optimize=True)
