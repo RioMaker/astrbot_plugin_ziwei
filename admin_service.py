@@ -18,6 +18,9 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 SCHEMA = json.loads((Path(__file__).parent / "_conf_schema.json").read_text("utf-8"))
+COURSE_REVIEW = json.loads(
+    (Path(__file__).parent / "data/course_review.json").read_text("utf-8")
+)
 KINDS = {"natal", "decade", "year", "date", "atlas"}
 
 
@@ -80,6 +83,7 @@ class AdminService:
         return {
             "values": values,
             "schema": SCHEMA,
+            "course_review": deepcopy(COURSE_REVIEW),
             "revision": revision(values),
             "can_save": callable(getattr(self.plugin.host_config, "save_config", None)),
             "image_available": self.plugin.renderer is not None,

@@ -379,6 +379,9 @@ def test_settings_save_persists_and_preserves_old_chart_and_revision(page):
         {"kuiyue": True},
         {"image_theme": "bad"},
         {"void_rule": 4},
+        {"fire_bell_hour": "unknown"},
+        {"fire_bell_chou": "unknown"},
+        {"jiangqian_order": "unknown"},
         {"font_path": "Z:/missing-font.ttf"},
         {"unknown": 1},
     ],
@@ -396,6 +399,56 @@ def test_invalid_settings_never_write_or_change_runtime(page, changes):
     assert result["status"] == 400
     assert dict(plugin.config) == before and dict(config) == before
     assert not config.path.exists()
+
+
+def test_review_options_save_and_reload_without_rewriting_prior_charts(page):
+    plugin, _, config, call = page
+
+    async def run():
+        original = (await call("charts", web_payload()))["data"]
+        before = plugin.archive.records.get(original["id"])["chart"]
+        initial = (await call("settings"))["data"]
+        for key, field in initial["course_review"]["fields"].items():
+            assert set(field["options"]) == {
+                str(v) for v in initial["schema"][key]["options"]
+            }
+            assert field["source"] and field["reason"]
+        choices = {
+            "geng": 4,
+            "fire_bell_hour": "hour",
+            "fire_bell_chou": "copy",
+            "jiangqian_order": "list",
+        }
+        saved = await call(
+            "settings/save",
+            {"values": initial["values"] | choices, "revision": initial["revision"]},
+        )
+        assert saved["status"] == 200
+        persisted = json.loads(config.path.read_text("utf-8"))
+        reloaded = (await call("settings"))["data"]
+        for key, value in choices.items():
+            assert persisted[key] == reloaded["values"][key] == value
+        new = (await call("charts", web_payload(key="course-options-0001")))["data"]
+        assert "寻龙者课件（自定义）" in new["text"]
+        chart = plugin.archive.records.get(new["id"])["chart"]
+        for key, value in choices.items():
+            assert chart["profile"][key] == value
+        assert plugin.archive.records.get(original["id"])["chart"] == before
+        conflict = await call(
+            "settings/save",
+            {"values": initial["values"], "revision": initial["revision"]},
+        )
+        assert conflict["status"] == 409
+        # The same persisted values are usable after constructing a new host instance.
+        restored = ZiweiPlugin(PageContext(), Config(config.path, persisted))
+        try:
+            assert (
+                restored.admin_page.service.settings()["values"] == reloaded["values"]
+            )
+        finally:
+            await restored.terminate()
+
+    asyncio.run(run())
 
 
 def test_failed_save_rolls_back_runtime_without_logging_values(page, caplog):

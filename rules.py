@@ -58,10 +58,16 @@ class RuleProfile:
     ren: int = 1
     gui: int = 1
     rule_school: str = "xunlongzhe"
+    fire_bell_hour: str = "school"
+    fire_bell_chou: str = "verse"
+    jiangqian_order: str = "verse"
 
     def __post_init__(self):
         choices = {
             "rule_school": {"xunlongzhe", "wm259"},
+            "fire_bell_hour": {"school", "year", "hour"},
+            "fire_bell_chou": {"verse", "copy"},
+            "jiangqian_order": {"verse", "list"},
             "leap_month_rule": {"current", "next", "split"},
             "late_zi_rule": {"next_day", "midnight"},
             "brightness": {"qs", "zz", "xd1", "xd2"},
@@ -104,9 +110,20 @@ class RuleProfile:
         )
 
     @property
+    def fire_bell_uses_hour(self):
+        return self.fire_bell_hour == "hour" or (
+            self.fire_bell_hour == "school" and self.rule_school == "wm259"
+        )
+
+    @property
     def source_label(self):
+        review_override = (
+            self.fire_bell_uses_hour != (self.rule_school == "wm259")
+            or self.fire_bell_chou != "verse"
+            or self.jiangqian_order != "verse"
+        )
         if self.rule_school == "wm259":
-            return "原版安星"
+            return "原版安星" + ("（自定义）" if review_override else "")
         # These are the choices explicitly covered by the course. Calendar,
         # brightness and flow settings have separate, documented provenance.
         covered = {
@@ -124,7 +141,9 @@ class RuleProfile:
             "ren": 1,
             "gui": 1,
         }
-        custom = any(getattr(self, key) != value for key, value in covered.items())
+        custom = review_override or any(
+            getattr(self, key) != value for key, value in covered.items()
+        )
         return "寻龙者课件" + ("（自定义）" if custom else "（校勘）")
 
     def snapshot(self):

@@ -117,10 +117,13 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
         add(sid, b)
     lu = add(21, TABLES["_AX_LC_ARR"][yg])
     add(22, TABLES["_AX_TM_ARR"][yz if profile.tianma == "year" else wrap(m + 2)])
-    for sid, b in zip((23, 24), TABLES["_AX_HL_ARR"][yz], strict=True):
-        # Lesson 10 p4 gives the year-branch positions directly; unlike the
-        # legacy formulas it does not advance them by the birth hour.
-        add(sid, b if course else b + h - 1)
+    fire_bell = TABLES["_AX_HL_ARR"][yz]
+    if profile.fire_bell_chou == "copy" and yz in (2, 6, 10):
+        fire_bell = fire_bell[::-1]
+    for sid, b in zip((23, 24), fire_bell, strict=True):
+        # Lesson 10 p4 gives year-branch positions without an hour step;
+        # keep that provisional default, with an explicit legacy supplement.
+        add(sid, b + h - 1 if profile.fire_bell_uses_hour else b)
     for sid, b in ((25, lu + 1), (26, lu - 1), (27, 13 - h), (28, h - 1)):
         add(sid, b)
 
@@ -213,11 +216,16 @@ def build_natal(normalized: dict, sex: str, profile: RuleProfile) -> dict:
             ("岁前", "_AX_LNSQX_ARR", "_LNSQX_CHS"),
             ("将前", "_AX_LNJQX_ARR", "_LNJQX_CHS"),
         ):
-            name = TABLES[names][ordinal]
+            name_index = ordinal
+            if label == "将前" and profile.jiangqian_order == "list":
+                # Conflicting list in lessons 11 p10 / 46 p1: 月煞 precedes
+                # 指背、咸池. Explicit opt-in; the default keeps the verse.
+                name_index = {9: 11, 10: 9, 11: 10}.get(ordinal, ordinal)
+            name = TABLES[names][name_index]
             if course:
                 # Lesson 11 p10 / lesson 48 p1 use 大耗 in the seventh slot.
-                # The 将前 order follows the mutually agreeing mnemonics and
-                # lesson 46's numbered explanations, not its conflicting list.
+                # The default 将前 order follows the mutually agreeing
+                # mnemonics and lesson 46's numbered explanations.
                 name = name.replace("將", "将")
                 if label == "岁前" and ordinal == 7:
                     name = "大耗"

@@ -33,6 +33,8 @@ const labels = {
   palace: "按宫位",
   water: "水土共长生",
   fire: "火土共长生",
+  xunlongzhe: "寻龙者课件（校勘暂用）",
+  wm259: "原版安星（wm259）",
 };
 let settingsState = null,
   page = 1,
@@ -355,12 +357,38 @@ $("next").addEventListener("click", async () => {
   $("next").disabled = page >= pages;
 });
 
+function refreshReviewSelections() {
+  const school = $("setting-rule_school").value;
+  for (const [key, review] of Object.entries(settingsState.course_review.fields)) {
+    const value = $("setting-" + key).value;
+    const option = review.options[value];
+    const changed =
+      value !== String(settingsState.values[key]) ||
+      (option.by_school && school !== settingsState.values.rule_school);
+    $("selection-" + key).textContent =
+      `${changed ? "未保存" : "已保存"} · 当前选择：${option.label}` +
+      (option.by_school ? ` → ${option.by_school[school]}` : "") +
+      `（${option.mark}）`;
+  }
+}
+
 function renderSettings(state) {
   settingsState = state;
   $("basic-settings").replaceChildren();
   $("rule-settings").replaceChildren();
+  $("course-reviews").replaceChildren();
+  $("course-review-notes").replaceChildren();
+  // Create the cards in review order, independently of config field order.
+  for (const [key, review] of Object.entries(state.course_review.fields)) {
+    const card = node("article", undefined, "review-card");
+    card.id = "review-" + key;
+    card.append(node("span", "待老师确认", "badge"));
+    card.append(node("p", review.source, "help-text review-source"));
+    $("course-reviews").append(card);
+  }
   for (const [key, item] of Object.entries(state.schema)) {
-    const label = node("label", item.description);
+    const review = state.course_review.fields[key];
+    const label = node("label", review?.title || item.description);
     const input = node(Array.isArray(item.options) ? "select" : "input");
     input.id = "setting-" + key;
     const fieldLabels = {
@@ -372,7 +400,9 @@ function renderSettings(state) {
       item.options.forEach((value) =>
         input.add(
           new Option(
-            fieldLabels[key]?.[value] || labels[value] || String(value),
+            review
+              ? `【${review.options[value].mark}】${review.options[value].label}`
+              : fieldLabels[key]?.[value] || labels[value] || String(value),
             String(value),
           ),
         ),
@@ -391,9 +421,23 @@ function renderSettings(state) {
     else label.append(input);
     const field = node("div");
     field.append(label);
-    if (item.hint || typeof item.options === "string")
+    if (!review && (item.hint || typeof item.options === "string"))
       label.append(node("small", item.hint || item.options));
+    if (review) {
+      const selection = node("p", "", "review-selection");
+      selection.id = "selection-" + key;
+      selection.setAttribute("role", "status");
+      input.setAttribute("aria-describedby", selection.id);
+      $("review-" + key).append(
+        field,
+        selection,
+        node("p", review.reason, "help-text"),
+      );
+      input.addEventListener("change", refreshReviewSelections);
+      continue;
+    }
     const basic = [
+      "rule_school",
       "image_theme",
       "output_mode",
       "font_path",
@@ -403,6 +447,18 @@ function renderSettings(state) {
     ].includes(key);
     $(basic ? "basic-settings" : "rule-settings").append(field);
   }
+  for (const note of state.course_review.notes) {
+    const block = node("article", undefined, "review-note");
+    block.append(
+      node("h3", note.title),
+      node("span", note.status, "badge"),
+      node("p", note.source, "help-text"),
+      node("p", note.decision, "help-text"),
+    );
+    $("course-review-notes").append(block);
+  }
+  $("setting-rule_school").addEventListener("change", refreshReviewSelections);
+  refreshReviewSelections();
   $("save-settings").disabled = !state.can_save;
   $("settings-note").textContent = !state.can_save
     ? "当前环境不支持保存，请使用 AstrBot 插件配置页。"

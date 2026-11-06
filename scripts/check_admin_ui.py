@@ -189,6 +189,36 @@ async def check(args, data_dir, address):
             path=str(args.output / "admin-records-desktop.png"), full_page=True
         )
         await page.locator('[data-tab="settings"]').click()
+        assert await page.locator(".review-card").count() == 4
+        assert (
+            await page.locator(".review-card .badge").all_text_contents()
+            == ["待老师确认"] * 4
+        )
+        assert (
+            "【暂用】"
+            in await page.locator("#setting-geng option:checked").inner_text()
+        )
+        assert (
+            "课件异文备选"
+            in await page.locator('#setting-geng option[value="4"]').inner_text()
+        )
+        assert (
+            "仅按年支" in await page.locator("#selection-fire_bell_hour").inner_text()
+        )
+        await page.locator("#setting-rule_school").select_option("wm259")
+        assert "未保存" in await page.locator("#selection-fire_bell_hour").inner_text()
+        assert (
+            "顺数生时" in await page.locator("#selection-fire_bell_hour").inner_text()
+        )
+        await page.locator("#setting-rule_school").select_option("xunlongzhe")
+        for key, value in {
+            "geng": "4",
+            "fire_bell_chou": "copy",
+            "fire_bell_hour": "hour",
+            "jiangqian_order": "list",
+        }.items():
+            await page.locator("#setting-" + key).select_option(value)
+            assert "未保存" in await page.locator("#selection-" + key).inner_text()
         await page.locator("#setting-image_theme").select_option("day")
         await page.locator("#setting-longitude").fill("116.4")
         await page.locator("#save-settings").click()
@@ -197,6 +227,34 @@ async def check(args, data_dir, address):
         )
         assert json.loads(config.path.read_text())["longitude"] == 116.4
         assert plugin.config["image_theme"] == "day"
+        assert plugin.config["geng"] == 4
+        assert plugin.config["fire_bell_chou"] == "copy"
+        assert plugin.config["fire_bell_hour"] == "hour"
+        assert plugin.config["jiangqian_order"] == "list"
+        await page.locator("#reload-settings").click()
+        await page.locator("#reload-settings:enabled").wait_for()
+        assert await page.locator("#setting-geng").input_value() == "4"
+        assert "已保存" in await page.locator("#selection-geng").inner_text()
+        # Capture the provisional defaults after verifying persistence of alternatives.
+        for key, value in {
+            "geng": "1",
+            "fire_bell_chou": "verse",
+            "fire_bell_hour": "school",
+            "jiangqian_order": "verse",
+        }.items():
+            await page.locator("#setting-" + key).select_option(value)
+        await page.locator("#save-settings").click()
+        await page.wait_for_function(
+            "document.getElementById('selection-geng').textContent.startsWith('已保存')"
+        )
+        await page.locator(".review-notes summary").click()
+        assert await page.locator("#course-review-notes article").count() == 5
+        assert "土五局" in await page.locator("#course-review-notes").inner_text()
+        assert await page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        await page.locator(".review-notes summary").click()
+        await page.locator(".course-review").screenshot(
+            path=str(args.output / "admin-course-options-desktop.png")
+        )
         await page.locator("#settings-form > details > summary").click()
         assert await page.locator("#setting-void_rule").is_visible()
         await page.locator("#settings-form > details > summary").click()
@@ -305,6 +363,15 @@ async def check(args, data_dir, address):
             await page.screenshot(
                 path=str(args.output / ("admin-" + tab + "-mobile.png")), full_page=True
             )
+            if tab == "settings":
+                await page.locator(".review-notes summary").click()
+                assert await page.evaluate(
+                    "document.documentElement.scrollWidth <= innerWidth"
+                )
+                await page.locator(".course-review").screenshot(
+                    path=str(args.output / "admin-course-options-mobile.png")
+                )
+                await page.locator(".review-notes summary").click()
         # Exercise the same external module inside an opaque-origin iframe.
         frame_page = await context.new_page()
         await frame_page.set_content(
@@ -332,9 +399,10 @@ async def check(args, data_dir, address):
         json.dumps(
             {
                 "result": "passed",
-                "screenshots": 8,
+                "screenshots": 10,
                 "checks": [
                     "real backend create/config/history",
+                    "course markers, effective choices, save/reload, notes",
                     "PNG download",
                     "pagination/search",
                     "XSS text",

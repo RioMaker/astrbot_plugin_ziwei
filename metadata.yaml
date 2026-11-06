@@ -1,7 +1,7 @@
 name: astrbot_plugin_ziwei
 display_name: 紫微斗数排盘
 desc: 群授权指令排盘与后台控制台，支持个人命盘绑定、后台代绑、星空图片、群友记录、运限和人生图谱；暂不提供 AI 看盘。
-version: "2.4.0"
+version: "2.4.1"
 author: Rio
 repo: "https://github.com/RioMaker/astrbot_plugin_ziwei"
 astrbot_version: ">=4.24.0"

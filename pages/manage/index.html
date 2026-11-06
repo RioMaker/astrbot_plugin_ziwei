@@ -463,9 +463,25 @@
             用于之后新建的命盘，已有记录保留原计算结果。单次排盘指定的选项优先。
           </p>
           <div id="basic-settings" class="settings-grid"></div>
+          <section class="course-review" aria-labelledby="course-review-title">
+            <div class="section-heading">
+              <h2 id="course-review-title">课件待确认项</h2>
+              <span class="badge">暂按校勘选择</span>
+            </div>
+            <p class="help-text">
+              “暂用”为当前建议，“课件异文备选”为另一处原文，“原版补充／其他取法”不代表课件结论。
+              以下均未获老师确认；可先使用，确认后切换并保存。已有命盘与绑定保留当时快照。
+            </p>
+            <div id="course-reviews" class="review-grid"></div>
+            <details class="advanced review-notes">
+              <summary>其余校勘与课件未明确事项</summary>
+              <p class="help-text">这些项目暂保留说明；有完整、明确的备选算法后再补充开关。页码均为 PDF 物理页码。</p>
+              <div id="course-review-notes"></div>
+            </details>
+          </section>
           <details class="advanced">
             <summary>历法与安星规则</summary>
-            <p class="help-text">沿用插件原有取法；不确定时保留默认值。</p>
+            <p class="help-text">其余安星细项可覆盖所选依据；历法、庙旺、童限及流层算法沿用原实现补充。偏离课件取法的新盘会标为自定义。</p>
             <div id="rule-settings" class="settings-grid"></div>
           </details>
           <div class="config-footer">
@@ -486,7 +502,7 @@
           <p id="settings-note" class="help-text"></p>
         </form>
       </section>
-      <footer>紫微斗数 2.3.1 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
+      <footer>紫微斗数 2.4.1 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
     </main>
     <dialog id="detail-dialog">
       <div class="dialog-bar">
