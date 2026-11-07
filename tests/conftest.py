@@ -72,6 +72,21 @@ class Image:
         return SimpleNamespace(type="image", data=data)
 
 
+class At:
+    def __init__(self, qq):
+        self.qq = qq
+
+
+class Plain:
+    def __init__(self, text):
+        self.text = text
+
+
+class Reply:
+    def __init__(self, message_str=""):
+        self.message_str = message_str
+
+
 class GreedyStr(str):
     pass
 
@@ -91,7 +106,7 @@ module(
         after_message_sent=lambda: lambda fn: fn,
     ),
 )
-module("astrbot.api.message_components", Image=Image)
+module("astrbot.api.message_components", Image=Image, At=At, Plain=Plain, Reply=Reply)
 module(
     "astrbot.api.star", Star=Star, Context=object, register=lambda *a: lambda cls: cls
 )

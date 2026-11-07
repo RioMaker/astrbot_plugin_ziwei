@@ -138,6 +138,7 @@ async def check(args, data_dir, address):
         await page.goto(address)
         await page.locator("#create:enabled").wait_for()
         await page.locator("#demo").click()
+        await page.locator("#birth").fill("1990年6月15日 0830")
         await page.locator("#create").click()
         await page.locator("#chart-result img").wait_for()
         await page.locator("#create:enabled").wait_for()
@@ -262,6 +263,9 @@ async def check(args, data_dir, address):
             path=str(args.output / "admin-settings-desktop.png"), full_page=True
         )
         await page.locator('[data-tab="chart"]').click()
+        await page.locator("#calendar").select_option("农历")
+        await page.locator("#birth").fill("1990年五月廿三日 0830")
+        assert await page.locator("#lunar-hint").is_visible()
         fail_once = True
         await page.locator("#create").click()
         await page.wait_for_function(
@@ -273,6 +277,17 @@ async def check(args, data_dir, address):
         )
         await page.locator("#create:enabled").wait_for()
         assert plugin.archive.records.list(source="web")["total"] == 2
+        charts = [
+            plugin.archive.records.get(row["id"])["chart"]
+            for row in plugin.archive.records.list(source="web")["items"]
+        ]
+        assert {chart["normalized"]["original"]["calendar"] for chart in charts} == {
+            "solar",
+            "lunar",
+        }
+        assert {chart["normalized"]["civil"] for chart in charts} == {
+            "1990-06-15 08:30:00"
+        }
         await page.locator("#birth").fill("199013990830")
         await page.locator("#create").click()
         await page.locator("#notice.error").wait_for()
@@ -288,7 +303,8 @@ async def check(args, data_dir, address):
         await page.locator("#binding-rows button").click()
         await page.locator("#binding-save:enabled").wait_for()
         assert await page.locator("#binding-platform").input_value() == "demo-qq"
-        await page.locator("#binding-birth").fill("199006150830")
+        await page.locator("#binding-calendar").select_option("农历")
+        await page.locator("#binding-birth").fill("1990年五月廿三日 0830")
         fail_binding_once = True
         await page.locator("#binding-save").click()
         await page.wait_for_function(
@@ -302,11 +318,13 @@ async def check(args, data_dir, address):
         assert plugin.archive.records.list(source="web")["total"] == 3
         original = plugin.archive.bindings.state("demo-qq", "10001")
         assert original["actor"] == "演示管理员"
+        assert original["chart"]["normalized"]["original"]["calendar"] == "lunar"
         assert await page.locator("#binding-source, #binding-record").count() == 0
         assert (
             await page.get_by_role("button", name="用于绑定", exact=True).count() == 0
         )
-        await page.locator("#binding-birth").fill("199207201430")
+        await page.locator("#binding-calendar").select_option("公历")
+        await page.locator("#binding-birth").fill("1992年7月20日 1430")
         await page.locator("#binding-sex").select_option("女")
         await page.locator("#binding-save").click()
         await page.locator("#binding-save:enabled").wait_for()
@@ -402,6 +420,7 @@ async def check(args, data_dir, address):
                 "screenshots": 10,
                 "checks": [
                     "real backend create/config/history",
+                    "Chinese solar/lunar dates, conversion and binding snapshots",
                     "course markers, effective choices, save/reload, notes",
                     "PNG download",
                     "pagination/search",

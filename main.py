@@ -17,9 +17,8 @@ from .commands import DEMO_BIRTH, HELP, parse_request
 from .compact_commands import (
     normalize_compact_arguments,
     normalize_help_arguments,
-    parse_compact_command,
 )
-from .compact_filter import CompactCommandFilter, claim_command
+from .compact_filter import CompactCommandFilter, claim_command, fallback_command
 from .engine import apply_decade, apply_flow, build_chart
 from .help_renderer import HelpRenderer
 from .life_atlas_service import LifeAtlasService
@@ -30,7 +29,7 @@ from .renderer import Renderer, text_chart
 from .rules import RuleProfile
 
 
-@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.4.1")
+@register("astrbot_plugin_ziwei", "Rio", "紫微斗数排盘", "2.5.0")
 class ZiweiPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -275,14 +274,14 @@ class ZiweiPlugin(Star):
 
     @filter.custom_filter(CompactCommandFilter)
     async def compact_command(self, event: AstrMessageEvent):
-        """Handle only awakened commands missing the name/argument separator."""
-        if not CompactCommandFilter().filter(event, self.config):
+        """Handle awakened compact commands and commands after real bot mentions."""
+        command = fallback_command(event)
+        if command is None:
             return
-        command = parse_compact_command(event.get_message_str().strip())
         if command.target == "atlas":
-            results = self.life_atlases.run(event, command.args, quiet=True)
+            results = self.life_atlases.run(event, command.args, quiet=command.compact)
         else:
-            results = self._ziwei_command(event, command.args, quiet=True)
+            results = self._ziwei_command(event, command.args, quiet=command.compact)
         async for result in results:
             yield result
 

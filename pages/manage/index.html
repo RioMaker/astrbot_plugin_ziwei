@@ -72,7 +72,7 @@
                 maxlength="32"
                 placeholder="例如 199006150830"
                 autocomplete="off"
-              /><small>年月日时分连写 12 位，使用 24 小时制。</small></label
+              /><small>可连写 12 位，或填 1990年6月15日 0830；使用 24 小时制。</small></label
             >
             <div class="two-columns">
               <label
@@ -83,14 +83,15 @@
               >
               <label
                 >历法<select id="calendar">
-                  <option value="公历">公历</option>
-                  <option value="农历">农历</option>
+                  <option value="公历">公历／阳历</option>
+                  <option value="农历">农历／阴历</option>
                 </select></label
               >
             </div>
             <p id="lunar-hint" class="help-text" hidden>
-              闰月可写为 2023闰02161200，表示闰二月十六日 12:00。
+              闰月可写为 2023闰02161200 或 2023年闰二月十六日 1200。
             </p>
+            <p class="help-text">先按所选历法转换日期，再按经度、时区与真太阳时设置校正时间。</p>
             <div class="two-columns">
               <label
                 >盘型<select id="mode">
@@ -270,7 +271,7 @@
                   maxlength="32"
                   autocomplete="off"
                   placeholder="例如 199006150830"
-                /><small>年月日时分连写 12 位；示例为虚构。</small></label
+                /><small>可连写 12 位或使用年月日写法；示例为虚构。</small></label
               >
               <div class="two-columns">
                 <label
@@ -280,8 +281,8 @@
                   </select></label
                 ><label
                   >历法<select id="binding-calendar">
-                    <option>公历</option>
-                    <option>农历</option>
+                    <option value="公历">公历／阳历</option>
+                    <option value="农历">农历／阴历</option>
                   </select></label
                 >
               </div>
@@ -502,7 +503,7 @@
           <p id="settings-note" class="help-text"></p>
         </form>
       </section>
-      <footer>紫微斗数 2.4.1 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
+      <footer>紫微斗数 2.5.0 <span>仅排盘 · 暂不提供 AI 解读</span></footer>
     </main>
     <dialog id="detail-dialog">
       <div class="dialog-bar">

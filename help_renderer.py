@@ -24,7 +24,7 @@ class HelpRenderer:
 
     def render(self, theme="night"):
         width, margin = 1080, 48
-        painter = Painter(width, 1506, self.font_path, theme)
+        painter = Painter(width, 1540, self.font_path, theme)
         p = painter.palette
         left, content_width = margin + 30, width - margin * 2 - 60
 

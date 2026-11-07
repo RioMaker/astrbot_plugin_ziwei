@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 
 from .calendar_core import BirthInput, equation_of_time
+from .date_input import CALENDAR_PATTERN, NAMED_DATE_PATTERN, calendar_name, parse_date
 from .help_content import DEMO_BIRTH, HELP  # noqa: F401 - public command help
 from .rules import RuleProfile
 from .themes import normalize_theme
@@ -20,19 +21,6 @@ class ChartRequest:
     flow_target: datetime | None = None
     image_theme: str = "night"
     decade_index: int | None = None
-
-
-def parse_date(text: str, lunar=False):
-    leap = "闰" in text
-    if leap and not lunar:
-        raise ValueError("闰月标记只能用于农历")
-    clean = text.replace("闰", "")
-    match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", clean)
-    if not match:
-        match = re.fullmatch(r"(\d{4})(\d{2})(\d{2})", clean)
-    if not match:
-        raise ValueError("日期请填8位 YYYYMMDD，如 19900615；也支持 YYYY-MM-DD")
-    return (*map(int, match.groups()), leap)
 
 
 def parse_clock(text: str):
@@ -62,10 +50,15 @@ def parse_request(text: str, config=None) -> ChartRequest:
         raise ValueError("指令中存在未闭合的引号") from exc
     if not tokens:
         raise ValueError("请填写出生日期时间和性别")
-    calendar = "solar"
-    if tokens[0] in {"公历", "阳历", "solar", "农历", "阴历", "lunar"}:
-        calendar = "lunar" if tokens.pop(0) in {"农历", "阴历", "lunar"} else "solar"
+    prefix_calendar = None
+    prefix = re.fullmatch(rf"({CALENDAR_PATTERN})([0-9].*)?", tokens[0])
+    if prefix:
+        prefix_calendar = calendar_name(prefix[1])
+        tokens[:1] = [prefix[2]] if prefix[2] else []
     if tokens:
+        named = re.fullmatch(rf"({NAMED_DATE_PATTERN})(.+)", tokens[0])
+        if named:
+            tokens[:1] = [named[1], named[2]]
         joined = re.fullmatch(r"(\d{4}闰?\d{4})(\d{2})(\d{2})(\d{2})?", tokens[0])
         if joined:
             clock = f"{joined[2]}:{joined[3]}"
@@ -76,8 +69,6 @@ def parse_request(text: str, config=None) -> ChartRequest:
             raise ValueError("日期时间连写须为12位 YYYYMMDDHHMM 或14位 YYYYMMDDHHMMSS")
     if len(tokens) < 3:
         raise ValueError(f"请完整填写出生日期时间和性别，例如：{DEMO_BIRTH}")
-    year, month, day, leap = parse_date(tokens[0], calendar == "lunar")
-    hour, minute, second = parse_clock(tokens[1])
     sex = {"male": "男", "female": "女", "m": "男", "f": "女"}.get(
         tokens[2].lower(), tokens[2]
     )
@@ -105,9 +96,16 @@ def parse_request(text: str, config=None) -> ChartRequest:
             "流时",
             "主题",
             "运限",
+            "历法",
         }:
             raise ValueError(f"不支持参数「{key}」")
         options[key] = value
+    calendar = calendar_name(options["历法"]) if "历法" in options else prefix_calendar
+    if prefix_calendar and calendar != prefix_calendar:
+        raise ValueError("日期前缀与历法选项不一致，请只指定一种历法")
+    calendar = calendar or "solar"
+    year, month, day, leap = parse_date(tokens[0], calendar == "lunar")
+    hour, minute, second = parse_clock(tokens[1])
     if "输出" in options:
         output = {"文字": "text", "图片": "image"}.get(options["输出"], options["输出"])
     if output not in {"image", "text"}:

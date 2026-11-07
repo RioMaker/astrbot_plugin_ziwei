@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal
 
+from .date_input import CALENDAR_PATTERN, NAMED_DATE_PATTERN
 from .personal_commands import split_personal_command
 
 _NATAL_COMMANDS = ("紫微排盘", "紫薇排盘", "紫微", "紫薇", "ziwei")
@@ -11,9 +12,9 @@ _COMMANDS = (*_NATAL_COMMANDS, "人生", "我的命盘")
 _COMMAND_PREFIX = re.compile(r"\A(?P<command>" + "|".join(_COMMANDS) + r")")
 _MANAGEMENT = {"开启", "开", "关闭", "关", "状态"}
 _HELP = {"帮助", "help", "?", "？"}
-_CALENDARS = r"(?:公历|阳历|农历|阴历|solar|lunar)"
+_CALENDARS = CALENDAR_PATTERN
 _OPTION = re.compile(
-    r"(?:真太阳时|输出|经度|时区|闰月|子时|流年|流盘|流时|主题|运限|大限|大运|命盘)="
+    r"(?:真太阳时|历法|输出|经度|时区|闰月|子时|流年|流盘|流时|主题|运限|大限|大运|命盘)="
 )
 _JOINED_DATE_CLOCK = re.compile(
     rf"^(?:{_CALENDARS}\s+)?"
@@ -24,7 +25,8 @@ _JOINED_DATE_CLOCK = re.compile(
 # Splitting only the sex boundary marks compact failures without guessing a date.
 _BIRTH_AND_SEX = re.compile(
     rf"^(?:{_CALENDARS}\s+)?"
-    r"[0-9][0-9:/\-\s闰子丑寅卯辰巳午未申酉戌亥时]*(?P<sex>[男女])"
+    r"[0-9][0-9:/\-\s闰年月日号正冬腊初廿卅一二三四五六七八九十"
+    r"子丑寅卯辰巳午未申酉戌亥时]*(?P<sex>[男女])"
 )
 _DISPLAY = r"(?:图片|文字|image|text)"
 _NUMBER_AND_DISPLAY = re.compile(rf"\A[0-9]+(?P<display>{_DISPLAY})(?=\Z|\s)")
@@ -101,6 +103,14 @@ def normalize_compact_arguments(text: str) -> NormalizedArguments:
     calendar = re.match(rf"^{_CALENDARS}(?=[0-9])", masked)
     if calendar:
         normalized = _split_at(normalized, {calendar.end()})
+
+    named_clock = re.match(
+        rf"^(?:{_CALENDARS}\s+)?{NAMED_DATE_PATTERN}"
+        r"(?P<clock>[0-9子丑寅卯辰巳午未申酉戌亥])",
+        _unquoted(normalized),
+    )
+    if named_clock:
+        normalized = _split_at(normalized, {named_clock.start("clock")})
 
     joined_clock = _JOINED_DATE_CLOCK.match(_unquoted(normalized))
     if joined_clock:

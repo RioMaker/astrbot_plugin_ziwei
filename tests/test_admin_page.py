@@ -204,6 +204,9 @@ def test_web_request_cannot_supply_chat_identity_or_invalid_birth(page, extra):
         (DEMO_BIRTH + " 流年=2026", "year"),
         (DEMO_BIRTH + " 流盘=20261006 流时=1000", "date"),
         ("农历 2023闰02161200 女", "natal"),
+        ("阴历2023年闰二月十六日1200 女", "natal"),
+        ("199005230830 男 历法=阴历", "natal"),
+        ("阳历1990年6月15日0830 男 流年=2026", "year"),
     ],
 )
 def test_page_uses_same_chart_modes_as_commands(page, args, kind):
