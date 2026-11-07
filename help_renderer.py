@@ -74,28 +74,18 @@ class HelpRenderer:
             outline=p.paper,
             radius=8,
         )
-        # Labels sit under their own field, so beginners can see what to replace.
-        fields = [
-            (
-                value,
-                label,
-                max(
-                    painter.font(40).getlength(value),
-                    painter.font(24).getlength(label),
-                ),
-            )
-            for value, label in HELP_BIRTH_FIELDS
-        ]
-        gap = (content_width - 48 - sum(item[2] for item in fields)) / (len(fields) - 1)
+        # Show a copyable command with ordinary single spaces. Field labels
+        # follow the actual token positions rather than stretching across the card.
         x = left + 24
-        for value, label, field_width in fields:
-            for text, size, y, color in (
-                (value, 40, 252, p.accent),
-                (label, 24, 306, p.muted),
-            ):
-                text_width = painter.font(size).getlength(text)
-                painter.text(text, x + (field_width - text_width) / 2, y, size, color)
-            x += field_width + gap
+        painter.text(
+            " ".join(value for value, _ in HELP_BIRTH_FIELDS), x, 252, 40, p.accent
+        )
+        gap = painter.font(40).getlength(" ")
+        for value, label in HELP_BIRTH_FIELDS:
+            value_width = painter.font(40).getlength(value)
+            label_width = painter.font(24).getlength(label)
+            painter.text(label, x + (value_width - label_width) / 2, 306, 24, p.muted)
+            x += value_width + gap
         painter.text(HELP_BIRTH_NOTE, left, 366, 26, p.ink)
 
         examples(
