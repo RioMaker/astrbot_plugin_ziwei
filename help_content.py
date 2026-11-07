@@ -22,6 +22,7 @@ HELP_COMPATIBILITY = (
 )
 HELP_OPTIONS = (
     ("看某一年", "末尾加流年", f"/紫微 {DEMO_BIRTH} 流年=2026"),
+    ("看大运", "序号1—12，0为童限", f"/紫微 {DEMO_BIRTH} 大运=2"),
     ("换成白底", "末尾加主题", f"/紫微 {DEMO_BIRTH} 主题=白天"),
 )
 HELP_OPTIONS_NOTE = "完整示例，出生资料换成需要排盘的资料。"
