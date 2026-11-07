@@ -7,6 +7,9 @@ from .help_content import (
     HELP_BIRTH_FIELDS,
     HELP_BIRTH_NOTE,
     HELP_BIRTH_TITLE,
+    HELP_COMPATIBILITY,
+    HELP_COMPATIBILITY_NOTE,
+    HELP_COMPATIBILITY_TITLE,
     HELP_ENTRY_COMMAND,
     HELP_IMAGE_NOTES,
     HELP_INTRO,
@@ -24,7 +27,12 @@ class HelpRenderer:
 
     def render(self, theme="night"):
         width, margin = 1080, 48
-        painter = Painter(width, 1540, self.font_path, theme)
+        compatibility_top = 426
+        options_top = compatibility_top + 120 + len(HELP_COMPATIBILITY) * 100 + 18
+        personal_top = options_top + 120 + len(HELP_OPTIONS) * 100 + 18
+        footer_top = personal_top + 516
+        height = footer_top + 46 + len(HELP_IMAGE_NOTES) * 34 + 12
+        painter = Painter(width, height, self.font_path, theme)
         p = painter.palette
         left, content_width = margin + 30, width - margin * 2 - 60
 
@@ -39,6 +47,17 @@ class HelpRenderer:
             )
             painter.text(number, left, top + 26, 28, p.accent)
             painter.text(title, left + 62, top + 24, 34, p.ink)
+
+        def examples(number, title, top, rows, note):
+            section(number, title, top, 120 + len(rows) * 100)
+            painter.text(note, left, top + 68, 26, p.muted)
+            for index, (label, hint, example) in enumerate(rows):
+                y = top + 118 + index * 100
+                painter.text(label, left, y, 30, p.ink)
+                painter.text(hint, left + 240, y + 3, 26, p.muted)
+                painter.text(example, left, y + 42, 32, p.accent)
+                if index < len(rows) - 1:
+                    painter.rule(left, y + 86, content_width)
 
         orbit(painter.draw, 84, 78, 28, p)
         painter.text("紫微排盘 · 使用说明", 134, 44, 42, p.ink)
@@ -79,29 +98,40 @@ class HelpRenderer:
             x += field_width + gap
         painter.text(HELP_BIRTH_NOTE, left, 366, 26, p.ink)
 
-        section("02", "常用选项", 426, 420)
-        painter.text(HELP_OPTIONS_NOTE, left, 494, 26, p.muted)
-        for index, (label, hint, example) in enumerate(HELP_OPTIONS):
-            y = 544 + index * 100
-            painter.text(label, left, y, 30, p.ink)
-            painter.text(hint, left + 240, y + 3, 26, p.muted)
-            painter.text(example, left, y + 42, 32, p.accent)
-            if index < len(HELP_OPTIONS) - 1:
-                painter.rule(left, y + 86, content_width)
+        examples(
+            "02",
+            HELP_COMPATIBILITY_TITLE,
+            compatibility_top,
+            HELP_COMPATIBILITY,
+            HELP_COMPATIBILITY_NOTE,
+        )
+        examples("03", "常用选项", options_top, HELP_OPTIONS, HELP_OPTIONS_NOTE)
 
-        section("03", "我的命盘 · 绑定一次，随时查看", 864, 490)
-        painter.text("绑定、换绑都要填出生资料；每次均留记录。", left, 932, 26, p.muted)
+        section("04", "我的命盘 · 绑定一次，随时查看", personal_top, 490)
+        painter.text(
+            "绑定、换绑都要填出生资料；每次均留记录。",
+            left,
+            personal_top + 68,
+            26,
+            p.muted,
+        )
         for index, (label, example) in enumerate(HELP_PERSONAL_ACTIONS):
-            y = 978 + index * 50
+            y = personal_top + 114 + index * 50
             painter.text(label, left, y + 2, 30, p.ink)
             painter.text(example, left + 240, y, 32, p.accent)
-        painter.text("大运填序号，0为童限；解绑保留历史记录。", left, 1280, 24, p.muted)
-        painter.text(HELP_BIND_NOTE, left, 1316, 24, p.muted)
+        painter.text(
+            "大运填序号，0为童限；解绑保留历史记录。",
+            left,
+            personal_top + 416,
+            24,
+            p.muted,
+        )
+        painter.text(HELP_BIND_NOTE, left, personal_top + 452, 24, p.muted)
 
-        painter.text("查看帮助", left, 1384, 26, p.ink)
-        painter.text(HELP_ENTRY_COMMAND, left + 240, 1380, 32, p.accent)
+        painter.text("查看帮助", left, footer_top + 4, 26, p.ink)
+        painter.text(HELP_ENTRY_COMMAND, left + 240, footer_top, 32, p.accent)
         for index, note in enumerate(HELP_IMAGE_NOTES):
-            painter.text(note, margin, 1426 + index * 34, 22, p.muted)
+            painter.text(note, margin, footer_top + 46 + index * 34, 22, p.muted)
 
         stream = io.BytesIO()
         painter.image.save(stream, format="PNG", optimize=True)
