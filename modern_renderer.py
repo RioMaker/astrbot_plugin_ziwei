@@ -2,8 +2,9 @@
 
 import io
 import math
+from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 from .rules import BRANCHES, HUA, STAR_NAMES, STEMS, RuleProfile
 from .starfield import constellation, orbit, starfield
@@ -267,6 +268,23 @@ class Painter:
 
     def rule(self, x, y, width):
         self.draw.line((x, y, x + width, y), fill=self.palette.border)
+
+    def logo(self, cx, cy, size):
+        """Reuse the packaged logo; a missing asset must not break a chart."""
+        try:
+            with Image.open(Path(__file__).with_name("logo.png")) as source:
+                logo = source.convert("RGBA").resize(
+                    (size, size), Image.Resampling.LANCZOS
+                )
+        except OSError:
+            orbit(self.draw, cx, cy, size * 0.44, self.palette)
+            return
+        mask = Image.new("L", logo.size)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            (0, 0, size - 1, size - 1), radius=size // 8, fill=255
+        )
+        mask = ImageChops.multiply(mask, logo.getchannel("A"))
+        self.image.paste(logo, (round(cx - size / 2), round(cy - size / 2)), mask)
 
     def arrow(self, start, end, color, *, head=6, stroke=2):
         dx, dy = end[0] - start[0], end[1] - start[1]
@@ -575,7 +593,7 @@ def _draw_center(painter, chart, x, y, width, height):
     )
     n, profile = chart["normalized"], chart["profile"]
     painter.text("本命星图", x + 28, y + 23, 18, painter.palette.accent)
-    orbit(painter.draw, x + width - 84, y + 72, 45, painter.palette)
+    painter.logo(x + width - 84, y + 72, 96)
     yg = STEMS[n["year_stem"] - 1] + BRANCHES[n["year_branch"] - 1]
     painter.text(f"{yg}年 · {chart['bureau_name']}", x + 28, y + 56, 34)
     painter.pill(
@@ -756,7 +774,7 @@ def render_chart(chart, font_path, theme="day"):
     layers = list(chart["flow"]["layers"].items()) if chart["flow"] else []
     summary_height = math.ceil(len(layers) / 2) * 88 + 38 if layers else 0
     painter = Painter(width, footer_y + summary_height + 84, font_path, theme)
-    orbit(painter.draw, MARGIN + 33, 57, 28, painter.palette)
+    painter.logo(MARGIN + 33, 57, 64)
     painter.text("紫微斗数", MARGIN + 84, 27, 40)
     painter.text("十二宫星曜命盘", MARGIN + 86, 80, 18, painter.palette.muted)
     constellation(painter.draw, MARGIN + 540, 30, 490, 55, painter.palette)
