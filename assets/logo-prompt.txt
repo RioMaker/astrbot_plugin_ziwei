@@ -1,0 +1,18 @@
+紫微斗数插件 Logo
+
+设计：十二宫方盘环绕紫微主星，深靛蓝底、暖金轮廓与紫色星核。
+用途：插件根目录 logo.png，同时用于 README 展示。
+生成方式：内置 image_gen（非 CLI）。原始生成 PNG 未裁切、未重绘。
+图形中的星点是标识装饰，不表示实际命盘的落星规则。
+
+生成提示词：
+Use case: logo-brand
+Asset type: final square application/plugin logo for the Chinese Zi Wei Dou Shu charting plugin astrbot_plugin_ziwei.
+Primary request: Design one distinctive, beautifully balanced celestial emblem, combining a simplified traditional twelve-palace square birth-chart frame with a prominent central Ziwei star. This is the finished icon itself, not a presentation sheet.
+Scene/backdrop: full-bleed deep midnight navy (#0B1128) square background with a very restrained indigo-violet center gradient, nearly flat and very clean.
+Subject: a warm champagne-gold square chart outline occupying about 72 percent of the canvas width, with gently softened outer corners. Divide only its perimeter band into twelve palaces using a clear four-by-four structure with an open two-by-two central space: four cells across the top, four across the bottom, two along each side between them. Use confident, consistent medium-weight geometric lines. A single luminous sculpted four-point star dominates the open center; four tiny diagonal rays give it an elegant celestial character, with a small violet diamond at its heart. Place a few carefully balanced tiny gold star dots in the perimeter cells, avoiding visual clutter. Let the chart frame and star feel like one coherent modern Chinese celestial seal.
+Style/medium: polished flat vector-like logo aesthetic, crisp edges, precise symmetry, graceful negative space, contemporary and understated, small-size readable silhouette.
+Color palette: midnight navy, champagne gold (#E8C778), a restrained violet (#9480CE) accent. Only a very subtle central glow; no photographic texture or metallic rendering.
+Composition/framing: one centered emblem, square 1:1 canvas, approximately 1024 by 1024 pixels. All important geometry stays within the central 76 percent to remain safe in circular avatar crops. Uniform background runs all the way to the edges, no outer rounded app-tile corners.
+Text: no text, no letters, no numbers.
+Constraints: no watermarks, no mockups, no multiple variations, no captions, no zodiac animal drawings, no yin-yang, no bagua trigrams, no crowded starfield, no thin illegible micro-detail, no 3D bevels.
