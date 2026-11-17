@@ -14,11 +14,16 @@ from astrbot_plugin_ziwei.themes import NIGHT  # noqa: E402
 
 def main():
     for size, target in (
-        (256, ROOT / "logo.png"),
+        (128, ROOT / "logo.png"),
         (1024, ROOT / "assets" / "logo-orbit-1024.png"),
     ):
         image = Image.new("RGB", (size, size), NIGHT.bg)
         orbit(image, size / 2, size / 2, size * 0.38, NIGHT)
+        if target == ROOT / "logo.png":
+            # The default list icon needs few colors, including smooth edge shades.
+            image = image.quantize(
+                colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE
+            )
         image.save(target, optimize=True)
         print(target.name)
 

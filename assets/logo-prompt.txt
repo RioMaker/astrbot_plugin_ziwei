@@ -4,7 +4,7 @@
 保留双圆环、横向轨道及四颗环上星点；优化抗锯齿、环线层次和中央四芒星。
 插件图标为深蓝底、暖金星点；盘内和帮助图直接透明叠加，随昼夜主题配色。
 几何源：starfield.py 的 orbit_image / orbit；导出：scripts/preview_logo.py。
-分发：根目录 logo.png 为 256×256；assets/logo-orbit-1024.png 为高清原图。
+分发：根目录 logo.png 为 128×128、128 色优化 PNG；assets/logo-orbit-1024.png 为高清原图。
 当前版本由原有代码图形细化并确定性导出，与盘内标识共用几何，不使用 AI 重绘。
 图形中的星点是标识装饰，不表示实际命盘的落星规则。
 
