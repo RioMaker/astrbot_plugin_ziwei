@@ -48,25 +48,62 @@ def starfield(width, height, palette):
     return canvas
 
 
-def orbit(draw, cx, cy, radius, palette):
-    """A small armillary emblem, kept outside chart text and Hua arrows."""
-    line, light = palette.border, palette.accent
-    for ratio in (1, 0.73):
+def orbit_image(radius, palette):
+    """Refine the original armillary mark as a transparent, antialiased tile."""
+    scale = 4
+    extent = math.ceil(radius * 1.1 + 2)
+    size = extent * 2 + 1
+    tile = Image.new("RGBA", (size * scale, size * scale))
+    draw = ImageDraw.Draw(tile)
+    cx = cy = (extent + 0.5) * scale
+    radius *= scale
+    # Keep the original theme colors, with a little more definition in the rings.
+    line = tuple(
+        round(base * 0.75 + highlight * 0.25)
+        for base, highlight in zip(
+            _rgb(palette.border), _rgb(palette.muted), strict=True
+        )
+    )
+    light = palette.accent
+    for ratio, weight in ((1, 0.035), (0.73, 0.025)):
         r = radius * ratio
-        draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=line, width=1)
+        draw.ellipse(
+            (cx - r, cy - r, cx + r, cy + r),
+            outline=line,
+            width=max(1, round(radius * weight)),
+        )
     draw.ellipse(
         (cx - radius, cy - radius * 0.32, cx + radius, cy + radius * 0.32),
         outline=line,
-        width=1,
+        width=max(1, round(radius * 0.027)),
     )
     for angle in (-70, 20, 130, 210):
         t = math.radians(angle)
         x, y = cx + radius * math.cos(t), cy + radius * math.sin(t)
-        draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=light)
-    r = radius * 0.28
-    draw.line((cx - r, cy, cx + r, cy), fill=light, width=1)
-    draw.line((cx, cy - r, cx, cy + r), fill=light, width=1)
-    draw.polygon(((cx, cy - 6), (cx + 4, cy), (cx, cy + 6), (cx - 4, cy)), fill=light)
+        r = radius * (0.075 if angle == -70 else 0.06)
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=light)
+    h, v, waist = radius * 0.26, radius * 0.29, radius * 0.065
+    draw.polygon(
+        (
+            (cx, cy - v),
+            (cx + waist, cy - waist),
+            (cx + h, cy),
+            (cx + waist, cy + waist),
+            (cx, cy + v),
+            (cx - waist, cy + waist),
+            (cx - h, cy),
+            (cx - waist, cy - waist),
+        ),
+        fill=light,
+    )
+    return tile.resize((size, size), Image.Resampling.LANCZOS)
+
+
+def orbit(image, cx, cy, radius, palette):
+    """Draw the shared logo directly on this request's chart or help background."""
+    tile = orbit_image(radius, palette)
+    extent = tile.width // 2
+    image.paste(tile, (round(cx) - extent, round(cy) - extent), tile)
 
 
 def constellation(draw, x, y, width, height, palette):

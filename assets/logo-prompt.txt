@@ -1,11 +1,15 @@
-紫微斗数插件 Logo
+紫微斗数插件 Logo 设计记录
 
-设计：十二宫方盘环绕紫微主星，深靛蓝底、暖金轮廓与紫色星核。
-用途：插件根目录 logo.png，同时用于 README 展示及排盘标题、中宫徽标。
-生成方式：内置 image_gen（非 CLI）。原始生成 PNG 未裁切、未重绘。
+当前采用：原版圆形星轨的细化版本（2026-11-17，按用户审阅意见）。
+保留双圆环、横向轨道及四颗环上星点；优化抗锯齿、环线层次和中央四芒星。
+插件图标为深蓝底、暖金星点；盘内和帮助图直接透明叠加，随昼夜主题配色。
+几何源：starfield.py 的 orbit_image / orbit；导出：scripts/preview_logo.py。
+分发：根目录 logo.png 为 256×256；assets/logo-orbit-1024.png 为高清原图。
+当前版本由原有代码图形细化并确定性导出，与盘内标识共用几何，不使用 AI 重绘。
 图形中的星点是标识装饰，不表示实际命盘的落星规则。
 
-生成提示词：
+以下保留已停用的初版方盘 Logo 提示词，仅作设计历史；不对应当前 logo.png。
+初版生成方式：内置 image_gen（非 CLI）。
 Use case: logo-brand
 Asset type: final square application/plugin logo for the Chinese Zi Wei Dou Shu charting plugin astrbot_plugin_ziwei.
 Primary request: Design one distinctive, beautifully balanced celestial emblem, combining a simplified traditional twelve-palace square birth-chart frame with a prominent central Ziwei star. This is the finished icon itself, not a presentation sheet.

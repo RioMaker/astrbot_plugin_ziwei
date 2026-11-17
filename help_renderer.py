@@ -59,7 +59,7 @@ class HelpRenderer:
                 if index < len(rows) - 1:
                     painter.rule(left, y + 86, content_width)
 
-        orbit(painter.draw, 84, 78, 28, p)
+        orbit(painter.image, 84, 78, 28, p)
         painter.text("紫微排盘 · 使用说明", 134, 44, 42, p.ink)
         painter.text(HELP_INTRO, 136, 103, 26, p.muted)
         constellation(painter.draw, 782, 49, 230, 68, p)
